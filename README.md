@@ -1,320 +1,219 @@
-# appointement_booking_app
+# Appointment Booking App
 
-this is govermental apointment booking app for every one who interst to visit govermental offfices
-
-## 🚀 Features
-
-### Core Framework
-
-- **FastAPI** with async/await patterns
-- **SQLAlchemy Core** for database operations
-- **Alembic** for database migrations
-- **Pydantic** for data validation
-
-- **PostgreSQL** with connection pooling
-
-### Security & Authentication
-
-- **JWT-based authentication** with access and refresh tokens
-- **Argon2 password hashing**
-
-- **Undeletable system admin** user for recovery
-
-- **Role-Based Access Control (RBAC)** system
-
-- **Enhanced password validation** (8+ chars, uppercase, lowercase, digit, special)
-
-- **Email domain restrictions** (only gmail.com,amoud.org allowed)
-
-- **Security headers** middleware
-- **Request size limiting** and timeout protection
-
-### Middleware Stack
-
-- **Rate limiting** with Redis backend
-
-- **Response caching** with Redis
-
-- **CORS configuration**
-
-- **Error handling** with standardized responses
-- **Security headers** (HSTS, CSP, etc.)
-
-### Monitoring & Health Checks
-
-- **Comprehensive health checks** (database, Redis, system)
-- **Application metrics** collection
-
-- **Kubernetes-ready probes** (liveness, readiness, startup)
-
-### Caching System
-
-- **Redis-based caching** with async support
-- **Response caching** middleware
-- **Cache decorators** for functions
-- **Cache invalidation** patterns
-
-### Admin & User Management
-
-- **User CRUD operations** with proper authorization
-- **Role and permission management**
-- **User profile management**
-- **Account activation/deactivation**
-
-## 📁 Project Structure
-
-```
-appointement_booking_app/
-├── backend/app/
-│   ├── api/v1/           # API endpoints
-│   ├── auth/             # Authentication system
-│   ├── core/             # Core components & middleware
-
-│   ├── admin/            # Admin panel endpoints
-
-│   ├── models/           # Database models
-│   ├── config.py         # Application configuration
-│   ├── database.py       # Database connection
-│   └── main.py           # FastAPI application
+A production-ready FastAPI backend for an appointment booking application. It includes robust authentication, RBAC (roles and permissions), request/response caching, rate limiting, structured logging, email sending via SMTP, and a complete local development environment using Docker (Postgres, Redis, Mailpit, Adminer/pgAdmin).
 
 
-├── nginx/                # Nginx configuration
+## Tech Stack
 
-├── compose.yaml          # Docker Compose configuration
+- Python 3.12
+- FastAPI + Uvicorn
+- Pydantic v2 + pydantic-settings
+- SQLAlchemy 2.x + Alembic (asyncpg)
+- PostgreSQL (via Docker)
+- Redis (caching + rate limiting)
+- FastAPI-Mail (SMTP via Mailpit in dev)
+- Pytest for tests
+- Docker Compose for local infra
 
-└── scripts/              # Deployment & utility scripts
+
+## Features
+
+- JWT authentication with access tokens
+- Role-based access control (RBAC) with bootstrap seeding
+- CORS, security headers, size/time limits, and proxy headers
+- Request logging and structured logs
+- Response caching and Redis-backed rate limiting
+- Healthcheck endpoint and optional OpenAPI docs in dev
+- Email domain restrictions and SMTP integration (Mailpit in dev)
+
+
+## Repository Structure (backend)
+
+- `backend/app/main.py` – FastAPI app factory and middleware
+- `backend/app/config.py` – App settings and environment variables
+- `backend/app/database.py` – DB connection (async)
+- `backend/app/auth/*` – Auth models, routes, utilities
+- `backend/app/admin/*` – Admin routes (user/role management)
+- `backend/app/core/*` – Middleware (caching, logging, security, errors)
+- `backend/app/role_perm_seed.py` – RBAC bootstrap helpers
+- `backend/alembic/*` – Database migrations setup
+- `backend/tests/*` – Pytest suite
+- `compose.yml` – Local infra (Postgres, Redis, Mailpit, Adminer, pgAdmin, Backend)
+
+
+## Quickstart (Docker)
+
+Prerequisites:
+
+- Docker and Docker Compose installed
+
+1) Create an `.env` file in the project root (same folder as `compose.yml`). You can start from the example below.
+2) Start the stack:
+
+   ```bash
+docker compose up --build
 ```
 
-## 🚦 Getting Started
+3) Once running:
 
-### 1. **Environment Setup**
+   - API: <http://localhost:8000/>
+   - Docs (dev only): <http://localhost:8000/docs>
+   - Health: <http://localhost:8000/health>
+   - Adminer (DB UI): <http://localhost:8080/>
+   - pgAdmin: <http://localhost:5050/>
+   - Mailpit (SMTP UI): <http://localhost:8025/>
 
-```bash
-cd appointement_booking_app
-cp backend/.env.example backend/.env
-# Edit backend/.env with your configuration
-```
-
-### 2. **Install Dependencies**
-
-```bash
-cd backend
-
-# Using uv (recommended)
-uv sync --group dev
-
-```
-
-### 3. **Database Setup**
-
-```bash
-# Run database migrations
-alembic upgrade head
+Note: The backend service automatically waits for the database, autogenerates an initial Alembic migration if none exist, upgrades to head, and starts Uvicorn with auto-reload.
 
 
-# Initialize RBAC system (creates system admin)
-python scripts/init_rbac.py
+## Example .env (root)
 
-```
+These values are read by both Docker Compose and the backend settings. Adjust as needed.
 
-### 5. **Development Server**
-
-```bash
-# Start development server
-fastapi dev app/main.py
-
-# Access API documentation
-open http://localhost:8000/docs
-```
-
-### 6. **Production Deployment**
-
-```bash
-# Full production deployment
-./scripts/deploy.sh
-
-
-# Deploy with 3 app instances
-./scripts/deploy.sh --scale 3
-
-
-# Build only (no deployment)
-./scripts/deploy.sh --build-only
-```
-
-## 🔐 Authentication & Authorization
-
-### Default Credentials
-
-After running `python scripts/init_rbac.py`:
-
-- **System Admin**: `system.admin@internal.local` (undeletable)
-- **Regular Admin**: `admin@example.com` (manageable)
-- **⚠️ IMPORTANT**: Change passwords immediately!
-
-### User Registration
-
-```bash
-curl -X POST "http://localhost:8000/api/v1/users/" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "first_name": "John",
-    "last_name": "Doe",
-    "email": "john@gmail.com",
-    "password": "SecurePass123!"
-  }'
-```
-
-### Login
-
-```bash
-curl -X POST "http://localhost:8000/api/v1/users/login" \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "username=john@gmail.com&password=SecurePass123!"
-```
-
-## 🔧 Configuration
-
-### Key Environment Variables
-
-```bash
-# Project
-PROJECT_NAME=appointement_booking_app
+```env
+SECRET_KEY=changethis
 ENVIRONMENT=local
 
-# Security
-SECRET_KEY=your-secret-key
-
-
-# Database
-
-POSTGRES_SERVER=localhost
-POSTGRES_USER=appointement_booking_app
-POSTGRES_PASSWORD=your-password
+# Postgres
+POSTGRES_USER=appuser
+POSTGRES_PASSWORD=changethis
 POSTGRES_DB=appointement_app
 
+# Optional for pgAdmin
+PGADMIN_DEFAULT_EMAIL=admin@example.com
+PGADMIN_DEFAULT_PASSWORD=changethis
 
+# Backend
+FRONTEND_HOST=http://localhost:3000
+API_V1_STR=/api/v1
 
-# Redis
-REDIS_HOST=localhost
+# Redis (Docker service name)
+REDIS_HOST=redis
 REDIS_PORT=6379
 
+# Email (Mailpit defaults)
+MAIL_SERVER=mailpit
+MAIL_PORT=1025
+MAIL_FROM=noreply@test.com
+MAIL_FROM_NAME=App
+MAIL_USERNAME=
+MAIL_PASSWORD=
+MAIL_STARTTLS=false
+MAIL_SSL_TLS=false
+MAIL_DEBUG=true
+SUPPRESS_SEND=false
 
+# RBAC bootstrap on startup (safe/idempotent)
+INIT_RBAC_ON_STARTUP=true
 
-# Email Restrictions
-ALLOWED_EMAIL_DOMAINS=gmail.com,amoud.org
-ENFORCE_EMAIL_DOMAIN=true
-
+# First superuser (only used when bootstrapping)
+FIRST_SUPERUSER=admin@example.com
+FIRST_SUPERUSER_PASSWORD=changethis
 ```
 
-## 🌐 Service URLs
+## Running Locally Without Docker (advanced)
 
-After deployment:
+Prerequisites:
 
-- **API**: http://localhost/
-- **API Docs**: http://localhost/docs (dev only)
-- **Health Check**: http://localhost/api/v1/health/
+- Python 3.12
+- PostgreSQL running locally
+- Redis running locally
 
-- **Database Admin**: http://localhost:8080 (Adminer)
+1) Create and activate a virtual environment in `backend/` and install deps:
 
-- **Email Testing**: http://localhost:8025 (Mailpit)
-
-## 🧪 Validation Rules
-
-### Password Requirements
-
-- ✅ **Minimum 8 characters** long
-- ✅ **At least 1 uppercase** letter (A-Z)
-- ✅ **At least 1 lowercase** letter (a-z)
-- ✅ **At least 1 digit** (0-9)
-- ✅ **At least 1 special character** (!@#$%^&\*()\_+-=[]{}|;:,.<>?)
-
-### Email Requirements
-
-- ✅ **Only gmail.com,amoud.org domains** allowed
-- ✅ **Case insensitive** validation
-
-## 📊 API Endpoints
-
-### Core Endpoints
-
-- `GET /` - Root endpoint
-- `GET /api/v1/health/` - Basic health check
-- `POST /api/v1/users/` - User registration
-- `POST /api/v1/users/login` - User login
-- `GET /api/v1/users/me` - Current user profile
-
-### Validation Endpoints
-
-- `GET /api/v1/validation/password-requirements` - Password rules
-- `GET /api/v1/validation/email-requirements` - Email rules
-- `POST /api/v1/validation/check-password-strength` - Password strength check
-
-### Admin Endpoints (Protected)
-
-- `GET /api/v1/admin/users` - List all users
-- `DELETE /api/v1/admin/users/{id}` - Delete user (system users protected)
-- `GET /api/v1/admin/system/info` - System information
-
-## 🛠️ Development
-
-### Adding New Endpoints
-
-```python
-from app.auth.dependencies import require_permissions
-
-@router.get("/my-endpoint")
-async def my_endpoint(
-    current_user: CurrentUser = Depends(require_permissions("resource:action"))
-):
-    return {"message": "Authorized access"}
+   ```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -e .
 ```
 
-### Custom Caching
+2) Create a `.env` file in the project root or `backend/` with your DB and Redis settings (ensure `POSTGRES_SERVER=localhost`, etc.).
 
-```python
-from app.core.cache import cache
+3) Initialize DB and run migrations from `backend/`:
 
-@cache("my_data", ttl=300)
-async def expensive_operation():
-    return result
+   ```bash
+alembic upgrade head
 ```
 
-## 🚀 Production Checklist
+4) Start the app from `backend/`:
 
-- ✅ Change default passwords in .env
-- ✅ Set strong SECRET_KEY
+   ```bash
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```
 
-- ✅ Configure proper CORS origins
+## Common URLs
 
-- ✅ Set up SSL certificates
-- ✅ Configure backup automation
+- API Root: <http://localhost:8000/>
+- API Docs (dev): <http://localhost:8000/docs>
+- Health: <http://localhost:8000/health>
+- Adminer: <http://localhost:8080/>
+- pgAdmin: <http://localhost:5050/>
+- Mailpit UI: <http://localhost:8025/> (SMTP on 1025)
 
-- ✅ Review security headers
-- ✅ Test disaster recovery
 
-## 📚 Documentation
+## Environment Variables (selected)
 
-- [Validation Guide](VALIDATION_GUIDE.md) - Password & email validation
+Defined in `backend/app/config.py`. Key ones include:
 
-- [System Admin Guide](SYSTEM_ADMIN_GUIDE.md) - Undeletable admin user
+- PROJECT_NAME, ENVIRONMENT, API_V1_STR, FRONTEND_HOST
+- SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
+- POSTGRES_SERVER, POSTGRES_PORT, POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB
+- SQLALCHEMY_DATABASE_URI (computed)
+- REDIS_HOST, REDIS_PORT, REDIS_PASSWORD, REDIS_DB, REDIS_SSL, CACHE_TTL, CACHE_PREFIX
+- RATE_LIMIT_ENABLED, RATE_LIMIT_REQUESTS, RATE_LIMIT_WINDOW, RATE_LIMIT_STORAGE_URL
+- LOG_LEVEL, LOG_FORMAT, LOG_FILE, LOG_ROTATION, LOG_RETENTION, REQUEST_LOGGING
+- ENABLE_METRICS
+- API_KEYS_ENABLED
+- INIT_RBAC_ON_STARTUP
+- ENABLE_SECURITY_HEADERS, ALLOWED_HOSTS, TRUSTED_PROXIES, MAX_REQUEST_SIZE, REQUEST_TIMEOUT
+- BACKEND_CORS_ORIGINS, USE_CREDENTIALS
+- ALLOWED_EMAIL_DOMAINS, ENFORCE_EMAIL_DOMAIN
+- MAIL_* settings (see example above)
+- SENTRY_DSN, SENTRY_TRACES_Sample_Rate, SENTRY_ENVIRONMENT
+- FIRST_SUPERUSER, FIRST_SUPERUSER_PASSWORD
 
-- [Deployment Guide](DEPLOYMENT_GUIDE.md) - Production deployment
-- [API Documentation](http://localhost:8000/docs) - Interactive API docs
+Note: In non-local environments, defaults like SECRET_KEY/POSTGRES_PASSWORD value "changethis" are rejected for security.
 
-## 🤝 Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests
-5. Submit a pull request
+## Migrations
 
-## 📄 License
+Alembic is configured under `backend/alembic/`.
 
-This project is licensed under the MIT License.
+- Docker flow will auto-generate an initial revision if none exist, then apply `alembic upgrade head`.
+- Manually create a revision: `alembic revision --autogenerate -m "your message"`
+- Apply: `alembic upgrade head`
 
----
 
-**Generated from FastAPI Production Boilerplate** 🚀
-Built with ❤️ by zygo tech
+## Testing
+
+Run from the `backend/` directory:
+
+```bash
+pytest -q
+```
+
+
+## API Overview
+
+- Root: GET `/` – basic metadata
+- Health: GET `/health`
+- Auth: routes under `/api/v1/auth/*`
+- Admin: routes under `/api/v1/admin/*` (minimal admin router for user/role management)
+
+Docs are available at `/docs` and `/redoc` in local/dev environments.
+
+
+## Production Notes
+
+- Set `ENVIRONMENT=production` and provide strong values for `SECRET_KEY`, DB creds, and mail settings.
+- Set proper `ALLOWED_HOSTS` and CORS (`BACKEND_CORS_ORIGINS`).
+- Consider turning off `INIT_RBAC_ON_STARTUP` after bootstrap.
+- Ensure Redis is reachable and secured if used across networks.
+- Configure logging outputs and retention as needed.
+
+
+## Troubleshooting
+
+- If backend cannot reach DB/Redis, verify the service names and ports in `.env` and `compose.yml`.
+- If Swagger docs do not appear, ensure `ENVIRONMENT` is `local` or `development`.
+- Email not received? Check Mailpit UI at <http://localhost:8025/> and ensure SMTP points to `mailpit:1025` in dev.
