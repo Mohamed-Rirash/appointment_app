@@ -62,7 +62,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     restart: always
-    command: sh -c "chmod +x scripts/wait_for_db.sh && scripts/wait_for_db.sh && if [ -z \"$(ls -A alembic/versions 2>/dev/null)\" ]; then alembic revision --autogenerate -m \"init\"; fi && alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+    command: sh -c "if [ -z \"$(ls -A alembic/versions 2>/dev/null)\" ]; then alembic revision --autogenerate -m \"init\"; fi && alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
     ports:
       - "8000:8000"
     depends_on:
