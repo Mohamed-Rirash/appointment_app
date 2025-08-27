@@ -1,0 +1,500 @@
+"""
+Global Pydantic schemas for common functionality
+This module provides reusable schemas that can be used across all modules
+"""
+
+from datetime import datetime, timezone
+from enum import Enum
+from typing import Any, Dict, Generic, List, Optional, TypeVar, Union
+from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+# ================================
+# Base Response Schemas
+# ================================
+
+
+class BaseResponse(BaseModel):
+    """Base response schema with common fields"""
+
+    success: bool = True
+    message: str
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class ErrorResponse(BaseModel):
+    """Error response schema"""
+
+    success: bool = False
+    error: str
+    error_code: Optional[str] = None
+    details: Optional[Dict[str, Any]] = None
+    timestamp: datetime = Field(
+        default_factory=lambda: datetime.now(datetime.timezone.utc)
+    )
+
+
+class SuccessResponse(BaseResponse):
+    """Success response schema"""
+
+    data: Optional[Dict[str, Any]] = None
+
+
+# ================================
+# Pagination Schemas
+# ================================
+
+
+class PaginationParams(BaseModel):
+    """Common pagination parameters"""
+
+    page: int = Field(1, ge=1, description="Page number")
+    size: int = Field(20, ge=1, le=100, description="Items per page")
+
+
+class SortParams(BaseModel):
+    """Common sorting parameters"""
+
+    sort_by: Optional[str] = Field(None, description="Field to sort by")
+    sort_order: str = Field("desc", pattern="^(asc|desc)$", description="Sort order")
+
+
+class SearchParams(BaseModel):
+    """Common search parameters"""
+
+    search: Optional[str] = Field(
+        None, min_length=1, max_length=100, description="Search term"
+    )
+
+
+class FilterParams(BaseModel):
+    """Common filtering parameters"""
+
+    is_active: Optional[bool] = Field(None, description="Filter by active status")
+    created_after: Optional[datetime] = Field(
+        None, description="Filter by creation date (after)"
+    )
+    created_before: Optional[datetime] = Field(
+        None, description="Filter by creation date (before)"
+    )
+
+    @field_validator("created_before")
+    @classmethod
+    def validate_date_range(cls, v, info):
+        if hasattr(info, "data") and info.data:
+            created_after = info.data.get("created_after")
+            if created_after and v and v < created_after:
+                raise ValueError("created_before must be after created_after")
+        return v
+
+
+class PaginationMeta(BaseModel):
+    """Pagination metadata"""
+
+    total: int = Field(..., description="Total number of items")
+    page: int = Field(..., description="Current page number")
+    size: int = Field(..., description="Items per page")
+    pages: int = Field(..., description="Total number of pages")
+    has_next: bool = Field(..., description="Whether there is a next page")
+    has_prev: bool = Field(..., description="Whether there is a previous page")
+
+
+# Generic paginated response
+T = TypeVar("T")
+
+
+class PaginatedResponse(BaseModel, Generic[T]):
+    """Generic paginated response"""
+
+    items: List[T]
+    meta: PaginationMeta
+
+
+# ================================
+# Bulk Operation Schemas
+# ================================
+
+
+class BulkOperationType(str, Enum):
+    """Common bulk operation types"""
+
+    DELETE = "delete"
+    ACTIVATE = "activate"
+    DEACTIVATE = "deactivate"
+    ARCHIVE = "archive"
+    RESTORE = "restore"
+    UPDATE = "update"
+
+
+class BulkOperationRequest(BaseModel):
+    """Base bulk operation request"""
+
+    item_ids: List[UUID] = Field(
+        ..., min_length=1, max_length=1000, description="List of item IDs"
+    )
+    operation: BulkOperationType = Field(..., description="Operation to perform")
+    reason: Optional[str] = Field(
+        None, max_length=500, description="Reason for bulk operation"
+    )
+    confirm: bool = Field(
+        False, description="Confirmation flag for destructive operations"
+    )
+
+    @field_validator("confirm")
+    @classmethod
+    def validate_confirmation(cls, v, info):
+        if hasattr(info, "data") and info.data:
+            operation = info.data.get("operation")
+            destructive_ops = [BulkOperationType.DELETE, BulkOperationType.ARCHIVE]
+
+            if operation in destructive_ops and not v:
+                raise ValueError(f"Confirmation required for {operation} operation")
+
+        return v
+
+
+class BulkOperationResult(BaseModel):
+    """Bulk operation result"""
+
+    total_items: int = Field(..., description="Total number of items processed")
+    successful_items: int = Field(
+        ..., description="Number of successfully processed items"
+    )
+    failed_items: int = Field(..., description="Number of failed items")
+    operation: BulkOperationType = Field(..., description="Operation performed")
+    errors: List[Dict[str, Any]] = Field(
+        default_factory=list, description="List of errors"
+    )
+    processed_at: datetime = Field(
+        default_factory=lambda: datetime.now(datetime.now(timezone.utc))
+    )
+
+    @property
+    def success_rate(self) -> float:
+        """Calculate success rate percentage"""
+        if self.total_items == 0:
+            return 0.0
+        return (self.successful_items / self.total_items) * 100
+
+
+# ================================
+# Status Update Schemas
+# ================================
+
+
+class StatusUpdate(BaseModel):
+    """Generic status update schema"""
+
+    status: str = Field(..., description="New status")
+    reason: Optional[str] = Field(
+        None, max_length=500, description="Reason for status change"
+    )
+    effective_date: Optional[datetime] = Field(
+        None, description="When the status change takes effect"
+    )
+
+
+class ActivationRequest(BaseModel):
+    """Request to activate/deactivate a resource"""
+
+    is_active: bool = Field(..., description="Active status")
+    reason: Optional[str] = Field(
+        None, max_length=500, description="Reason for status change"
+    )
+
+
+# ================================
+# Audit and Activity Schemas
+# ================================
+
+
+class ActivityType(str, Enum):
+    """Common activity types"""
+
+    CREATE = "create"
+    READ = "read"
+    UPDATE = "update"
+    DELETE = "delete"
+    LOGIN = "login"
+    LOGOUT = "logout"
+    EXPORT = "export"
+    IMPORT = "import"
+    APPROVE = "approve"
+    REJECT = "reject"
+
+
+class ActivityLog(BaseModel):
+    """Activity log entry"""
+
+    id: UUID
+    user_id: Optional[UUID] = None
+    activity_type: ActivityType
+    resource_type: str
+    resource_id: Optional[UUID] = None
+    description: str
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+    ip_address: Optional[str] = None
+    user_agent: Optional[str] = None
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ================================
+# Permission and Role Schemas
+# ================================
+
+
+class PermissionLevel(str, Enum):
+    """Permission levels"""
+
+    NONE = "none"
+    READ = "read"
+    WRITE = "write"
+    ADMIN = "admin"
+    OWNER = "owner"
+
+
+class ResourcePermission(BaseModel):
+    """Resource permission schema"""
+
+    resource_type: str = Field(..., description="Type of resource")
+    resource_id: Optional[UUID] = Field(
+        None, description="Specific resource ID (null for all)"
+    )
+    permission_level: PermissionLevel = Field(..., description="Permission level")
+    granted_by: UUID = Field(..., description="Who granted the permission")
+    granted_at: datetime = Field(
+        default_factory=lambda: datetime.now(datetime.timezone.utc)
+    )
+    expires_at: Optional[datetime] = Field(None, description="When permission expires")
+
+
+class RoleAssignment(BaseModel):
+    """Role assignment schema"""
+
+    user_id: UUID
+    role_id: UUID
+    assigned_by: UUID
+    assigned_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    expires_at: Optional[datetime] = None
+    is_temporary: bool = Field(
+        False, description="Whether this is a temporary assignment"
+    )
+
+
+# ================================
+# File and Media Schemas
+# ================================
+
+
+class FileInfo(BaseModel):
+    """File information schema"""
+
+    filename: str
+    content_type: str
+    size: int
+    checksum: Optional[str] = None
+    url: Optional[str] = None
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+
+
+class FileUploadResponse(BaseModel):
+    """File upload response"""
+
+    file_id: UUID
+    filename: str
+    content_type: str
+    size: int
+    url: str
+    uploaded_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+# ================================
+# Notification Schemas
+# ================================
+
+
+class NotificationType(str, Enum):
+    """Notification types"""
+
+    INFO = "info"
+    SUCCESS = "success"
+    WARNING = "warning"
+    ERROR = "error"
+    SYSTEM = "system"
+
+
+class NotificationChannel(str, Enum):
+    """Notification channels"""
+
+    EMAIL = "email"
+    SMS = "sms"
+    PUSH = "push"
+    IN_APP = "in_app"
+    WEBHOOK = "webhook"
+
+
+class NotificationRequest(BaseModel):
+    """Notification request schema"""
+
+    recipient_id: UUID
+    title: str = Field(..., max_length=200)
+    message: str = Field(..., max_length=1000)
+    notification_type: NotificationType = NotificationType.INFO
+    channels: List[NotificationChannel] = Field(
+        default_factory=lambda: [NotificationChannel.IN_APP]
+    )
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+    scheduled_for: Optional[datetime] = None
+
+
+# ================================
+# Analytics and Metrics Schemas
+# ================================
+
+
+class MetricType(str, Enum):
+    """Metric types"""
+
+    COUNTER = "counter"
+    GAUGE = "gauge"
+    HISTOGRAM = "histogram"
+    TIMER = "timer"
+
+
+class MetricPoint(BaseModel):
+    """Single metric data point"""
+
+    timestamp: datetime
+    value: float
+    tags: Dict[str, str] = Field(default_factory=dict)
+
+
+class MetricSeries(BaseModel):
+    """Time series metric data"""
+
+    name: str
+    metric_type: MetricType
+    description: Optional[str] = None
+    unit: Optional[str] = None
+    data_points: List[MetricPoint]
+
+
+class AnalyticsQuery(BaseModel):
+    """Analytics query parameters"""
+
+    metrics: List[str] = Field(..., description="List of metrics to query")
+    start_time: datetime = Field(..., description="Query start time")
+    end_time: datetime = Field(..., description="Query end time")
+    group_by: Optional[List[str]] = Field(None, description="Fields to group by")
+    filters: Dict[str, Any] = Field(
+        default_factory=dict, description="Additional filters"
+    )
+    aggregation: str = Field("sum", description="Aggregation method")
+
+
+# ================================
+# Export and Import Schemas
+# ================================
+
+
+class ExportFormat(str, Enum):
+    """Export formats"""
+
+    JSON = "json"
+    CSV = "csv"
+    XLSX = "xlsx"
+    PDF = "pdf"
+    XML = "xml"
+
+
+class ExportRequest(BaseModel):
+    """Export request schema"""
+
+    resource_type: str = Field(..., description="Type of resource to export")
+    format: ExportFormat = Field(ExportFormat.JSON, description="Export format")
+    filters: Dict[str, Any] = Field(default_factory=dict, description="Export filters")
+    fields: Optional[List[str]] = Field(None, description="Specific fields to export")
+    include_metadata: bool = Field(True, description="Include metadata in export")
+    compress: bool = Field(False, description="Compress the export file")
+
+
+class ExportResponse(BaseModel):
+    """Export response schema"""
+
+    export_id: UUID
+    status: str = Field("pending", description="Export status")
+    download_url: Optional[str] = None
+    file_size: Optional[int] = None
+    record_count: Optional[int] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    completed_at: Optional[datetime] = None
+    expires_at: Optional[datetime] = None
+
+
+# ================================
+# Health Check Schemas
+# ================================
+
+
+class HealthStatus(str, Enum):
+    """Health check status"""
+
+    HEALTHY = "healthy"
+    DEGRADED = "degraded"
+    UNHEALTHY = "unhealthy"
+    UNKNOWN = "unknown"
+
+
+class ComponentHealth(BaseModel):
+    """Individual component health"""
+
+    name: str
+    status: HealthStatus
+    response_time: Optional[float] = None
+    details: Dict[str, Any] = Field(default_factory=dict)
+    last_checked: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class SystemHealth(BaseModel):
+    """Overall system health"""
+
+    status: HealthStatus
+    components: List[ComponentHealth]
+    overall_response_time: Optional[float] = None
+    uptime: Optional[int] = None
+    version: Optional[str] = None
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+# ================================
+# Configuration Schemas
+# ================================
+
+
+class ConfigurationUpdate(BaseModel):
+    """Configuration update schema"""
+
+    section: str = Field(..., description="Configuration section")
+    key: str = Field(..., description="Configuration key")
+    value: Any = Field(..., description="New configuration value")
+    reason: Optional[str] = Field(None, max_length=500, description="Reason for change")
+    apply_immediately: bool = Field(True, description="Apply change immediately")
+
+
+class ConfigurationHistory(BaseModel):
+    """Configuration change history"""
+
+    id: UUID
+    section: str
+    key: str
+    old_value: Optional[Any] = None
+    new_value: Any
+    changed_by: UUID
+    reason: Optional[str] = None
+    changed_at: datetime
+    applied_at: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)

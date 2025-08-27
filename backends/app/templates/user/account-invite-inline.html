@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>You're invited</title>
+  </head>
+  <body style="margin:0;padding:0;background-color:#f5f7fb;font-family:Arial,Helvetica,sans-serif;color:#2b2b2b;">
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color:#f5f7fb;">
+      <tr>
+        <td align="center" style="padding:24px;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width:600px;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e6e9f2;">
+            <tr>
+              <td style="padding:24px 24px 0 24px;text-align:center;background:#ffffff;">
+                <h1 style="margin:0 0 8px 0;font-size:22px;line-height:28px;color:#111827;">You're invited to {{ app_name }}</h1>
+                <p style="margin:0 0 8px 0;font-size:14px;color:#6b7280;">Hello <strong>{{ name }}</strong>, your account has been created.</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:0 24px 16px 24px;background:#ffffff;">
+                <p style="margin:16px 0 0 0;font-size:14px;color:#374151;">Please set your password using the button below:</p>
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:16px 0 8px 0;">
+                  <tr>
+                    <td align="center" bgcolor="#2563eb" style="border-radius:8px;">
+                      <a href="{{ activate_url }}" style="display:inline-block;padding:12px 18px;color:#ffffff;text-decoration:none;font-weight:600;font-size:14px;line-height:16px;border-radius:8px;">Set your password</a>
+                    </td>
+                  </tr>
+                </table>
+                <p style="margin:8px 0 0 0;font-size:12px;color:#6b7280;word-break:break-all;">If the button doesn’t work, copy and paste this URL into your browser:<br>
+                  <a href="{{ activate_url }}" style="color:#2563eb;text-decoration:underline;">{{ activate_url }}</a></p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:0 24px 24px 24px;background:#ffffff;">
+                <p style="margin:16px 0 8px 0;font-size:14px;color:#374151;">After setting your password, you can log in here:</p>
+                <a href="{{ login_url }}" style="display:inline-block;margin-top:8px;padding:12px 18px;background:#111827;color:#ffffff;text-decoration:none;border-radius:8px;font-weight:600;font-size:14px;">Go to Login</a>
+                <p style="margin:16px 0 0 0;font-size:12px;color:#6b7280;">If you didn’t expect this invitation, you can safely ignore this email.</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:16px 24px 24px 24px;background:#f9fafb;border-top:1px solid #e6e9f2;text-align:center;">
+                <p style="margin:0;font-size:12px;color:#9ca3af;">© {{ app_name }}</p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

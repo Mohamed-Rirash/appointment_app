@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>You're invited</title>
+  </head>
+  <body>
+    <p>Hello {{ name }},</p>
+    <p>Your account has been created on {{ app_name }}.</p>
+    <p>
+      Please set your password using the following link:
+      <a href="{{ activate_url }}">Set your password</a>
+    </p>
+    <p>
+      After setting your password, you can log in here:
+      <a href="{{ login_url }}">Login</a>
+    </p>
+    <p>If you did not expect this invitation, you can ignore this email.</p>
+  </body>
+  </html>
+
+
