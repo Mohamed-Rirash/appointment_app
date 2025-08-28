@@ -47,10 +47,6 @@ DEFAULT_ROLE_PERMISSIONS = {
         "appointments:*",  # full appointment control
     ],
     "host": [
-        "appointments:read",
-        "appointments:approve",
-        "appointments:deny",
-        "appointments:postpone",
-        "appointments:list",
+        "appointments:*",  # full appointment control for host
     ],
 }

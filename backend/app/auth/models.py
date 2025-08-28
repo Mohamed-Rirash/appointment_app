@@ -245,6 +245,16 @@ DEFAULT_PERMISSIONS = [
     },
     {
         "resource": "appointments",
+        "action": "update",
+        "description": "Update appointment details",
+    },
+    {
+        "resource": "appointments",
+        "action": "delete",
+        "description": "Delete appointments",
+    },
+    {
+        "resource": "appointments",
         "action": "approve",
         "description": "Approve appointments",
     },

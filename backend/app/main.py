@@ -41,7 +41,7 @@ from app.core.middleware.security import (
     SecurityHeadersMiddleware,
 )
 from app.database import database
-# from app.items.router import router as items_router
+from app.items.router import router as appointments_router
 from app.loggs import get_logger, structured_logger
 from app.rate_limiting import RateLimitMiddleware, EndpointRateLimitMiddleware, rate_limiter
 from app.role_perm_seed import (
@@ -227,3 +227,6 @@ app.include_router(auth_router, prefix=settings.API_V1_STR)
 
 # Include minimal Admin router (user management, role assignment)
 app.include_router(admin_router, prefix=settings.API_V1_STR)
+
+# Include Appointments (repurposed items) router
+app.include_router(appointments_router, prefix=settings.API_V1_STR)
