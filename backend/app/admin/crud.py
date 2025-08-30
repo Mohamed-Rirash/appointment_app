@@ -181,13 +181,16 @@ class AdminUserCRUD:
     @staticmethod
     async def delete_user(db: Database, user_id: UUID) -> bool:
         """Delete user (soft delete by deactivating)"""
-
         # Check if user exists and is not a system user
         user_query = select(users).where(users.c.id == user_id)
         user = await db.fetch_one(user_query)
-
         if not user:
             raise UserNotFoundError(str(user_id))
+        # convert to dict
+        user = dict(user) if user else {}
+        print("##############################################################")
+        print(user)
+        print("##############################################################")
 
         if user["is_system_user"]:
             raise ValueError("System users cannot be deleted")

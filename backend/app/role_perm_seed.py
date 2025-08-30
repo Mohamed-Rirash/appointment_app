@@ -76,7 +76,7 @@ async def assign_permissions():
     all_perms = await database.fetch_all(select(permissions))
     all_perms_dict = {p["name"]: p for p in all_perms}
 
-    for role_name, perm_patterns in DEFAULT_ROLE_PERMISSIONS.appointments():
+    for role_name, perm_patterns in DEFAULT_ROLE_PERMISSIONS.items():
         role = await RoleCRUD.get_by_name(database, role_name)
         if not role:
             print(f"❌ Role {role_name} not found, skipping...")
@@ -127,6 +127,7 @@ async def create_first_admin():
         "password": hashed_password,
         "is_active": True,
         "is_verified": True,
+        "is_system_user": True,
     }
 
     admin_user = await UserCRUD.create(database, admin_data)

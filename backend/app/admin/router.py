@@ -195,7 +195,7 @@ async def delete_user(
     admin_user: AdminUser = RequireUsersDelete,
     db: Database = Depends(get_db),
 ):
-    """Delete user (super admin only) - System users are protected"""
+    """Delete user (admin only) - System users are protected"""
 
     result = await AdminUserService.delete_user(db, user_id, admin_user.id)
 

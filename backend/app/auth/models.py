@@ -37,6 +37,7 @@ users = Table(
     Column("is_active", Boolean, nullable=False, server_default=text("false")),
     Column("is_verified", Boolean, nullable=False, server_default=text("false")),
     Column("verified_at", DateTime(timezone=True), nullable=True),
+    Column("is_system_user", Boolean, nullable=False, server_default=text("false")),
 )
 
 
@@ -167,7 +168,6 @@ rbac_audit_log = Table(
     Column("ip_address", String(45), nullable=True),
     Column("user_agent", Text, nullable=True),
     Column("created_at", DateTime, server_default=func.now()),
-
     Index("idx_rbac_audit_action", "action"),
     Index("idx_rbac_audit_resource", "resource_type", "resource_id"),
     Index("idx_rbac_audit_performed_by", "performed_by"),

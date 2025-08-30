@@ -193,7 +193,7 @@ def create_application() -> FastAPI:
     # app.add_middleware(AdminRateLimitMiddleware, requests_per_minute=30, enabled=True)
 
     # Add error handling middleware (should be last)
-    app.add_middleware(ErrorHandlingMiddleware)
+    # app.add_middleware(ErrorHandlingMiddleware)
 
     # Add exception handlers
     app.add_exception_handler(BusinessLogicError, business_logic_error_handler)

@@ -5,36 +5,36 @@ Admin module business logic and services
 import asyncio
 import uuid
 from datetime import datetime, timedelta
-from typing import List, Dict, Any, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 from uuid import UUID
 
 from databases import Database
-from fastapi import HTTPException, status, BackgroundTasks
+from fastapi import BackgroundTasks, HTTPException, status
 
-from app.auth.crud import UserCRUD
-from app.auth.rbac import RoleCRUD, RBACCRUD
-from app.core.security import hash_password, generate_password
-from app.admin.crud import AdminUserCRUD, AdminRoleCRUD, AdminAuditCRUD, AdminSystemCRUD
-from app.admin.schemas import (
-    AdminUserCreate,
-    AdminUserUpdate,
-    BulkUserOperation,
-    BulkOperationResult,
-    AdminRoleCreate,
-    AdminRoleUpdate,
-    PaginationParams,
-    UserSearchFilters,
-    AdminActionType,
-    SystemStats,
-    UserAnalytics,
-)
+from app.admin.config import get_admin_config
+from app.admin.crud import AdminAuditCRUD, AdminRoleCRUD, AdminSystemCRUD, AdminUserCRUD
 from app.admin.exceptions import (
     BulkOperationError,
     InvalidBulkOperationError,
-    SystemUserProtectedError,
     RoleAssignmentError,
+    SystemUserProtectedError,
 )
-from app.admin.config import get_admin_config
+from app.admin.schemas import (
+    AdminActionType,
+    AdminRoleCreate,
+    AdminRoleUpdate,
+    AdminUserCreate,
+    AdminUserUpdate,
+    BulkOperationResult,
+    BulkUserOperation,
+    PaginationParams,
+    SystemStats,
+    UserAnalytics,
+    UserSearchFilters,
+)
+from app.auth.crud import UserCRUD
+from app.auth.rbac import RBACCRUD, RoleCRUD
+from app.core.security import generate_password, hash_password
 
 
 class AdminUserService:
@@ -126,8 +126,8 @@ class AdminUserService:
         # Send welcome/invite email if requested
         if user_data.send_welcome_email:
             try:
-                from app.core.security import generate_password_reset_token
                 from app.auth.user_emails import send_account_invite_email
+                from app.core.security import generate_password_reset_token
 
                 # Generate a reset token for first-login password setup
                 reset_token = generate_password_reset_token(created_user["id"])
@@ -172,6 +172,12 @@ class AdminUserService:
 
         # Get user info for logging
         user = await AdminUserCRUD.get_user_with_roles(db, user_id)
+
+        # __AUTO_GENERATED_PRINT_VAR_START__
+        print(
+            f"AdminUserService#delete_user user: {str(user)}"
+        )  # __AUTO_GENERATED_PRINT_VAR_END__
+
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
@@ -333,8 +339,8 @@ class AdminUserService:
 
         # Generate a new reset token and send invite
         try:
-            from app.core.security import generate_password_reset_token
             from app.auth.user_emails import send_account_invite_email
+            from app.core.security import generate_password_reset_token
 
             reset_token = generate_password_reset_token(user_id)
             await send_account_invite_email(user, reset_token, background_tasks)
@@ -373,9 +379,11 @@ class AdminSystemService:
     @staticmethod
     async def get_system_health(db: Database) -> "SystemHealth":
         """Get system health status"""
-        from app.admin.schemas import SystemHealth
-        import psutil
         import time
+
+        import psutil
+
+        from app.admin.schemas import SystemHealth
 
         # Get basic system metrics
         cpu_usage = psutil.cpu_percent(interval=1)

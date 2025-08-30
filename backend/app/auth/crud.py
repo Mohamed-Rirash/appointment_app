@@ -1,10 +1,10 @@
 import uuid
+from datetime import datetime, timezone
 from typing import Any, List, Optional
 
 from databases import Database
 from pydantic import EmailStr
 from sqlalchemy import delete, insert, select, update
-from datetime import datetime, timezone
 
 from .models import permissions, role_permissions, roles, user_tokens, users
 
@@ -15,11 +15,19 @@ from .models import permissions, role_permissions, roles, user_tokens, users
 class UserCRUD:
     @staticmethod
     async def create(session: Database, user_data: dict) -> Optional[dict[str, Any]]:
-        if "id" not in user_data:
-            user_data["id"] = uuid.uuid4()
+        # Ensure ID exists
+        user_data.setdefault("id", uuid.uuid4())
 
-        query = insert(users).values(**user_data).returning(users)
+        # Build insert query
+        query = (
+            insert(users)
+            .values(**user_data)
+            .returning(*users.c)  # return all columns of the inserted row
+        )
+
+        # Execute query
         result = await session.fetch_one(query)
+
         return dict(result) if result else None
 
     @staticmethod
