@@ -1,12 +1,12 @@
 import pytest
-from httpx import AsyncClient
 from databases import Database
+from httpx import AsyncClient
 
-from app.main import app
-from app.auth.dependencies import CurrentUser, require_verified_user
 from app.auth.crud import UserCRUD
-from app.auth.rbac import RoleCRUD, RBACCRUD
+from app.auth.dependencies import CurrentUser, require_verified_user
+from app.auth.rbac import RBACCRUD, RoleCRUD
 from app.core.security import hash_password
+from app.main import app
 
 
 @pytest.fixture
@@ -59,9 +59,9 @@ async def test_admin_create_get_list_update_delete_user(
     r = await client.get("/api/v1/admin/users?page=1&size=10")
     assert r.status_code == 200
     data = r.json()
-    assert "items" in data and isinstance(data["items"], list)
-    assert any(u["email"] == payload["email"] for u in data["items"]) or any(
-        u.get("email") == payload["email"] for u in data["items"]
+    assert "appointments" in data and isinstance(data["appointments"], list)
+    assert any(u["email"] == payload["email"] for u in data["appointments"]) or any(
+        u.get("email") == payload["email"] for u in data["appointments"]
     )
 
     # Get user by id

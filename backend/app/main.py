@@ -5,12 +5,14 @@ FastAPI application with comprehensive security, RBAC, and middleware
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, status
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 
 # from app.admin.middleware import AdminRateLimitMiddleware
 # from app.admin.router import router as admin_router
 from app.admin.routes import router as admin_router
+from app.appointments.router import router as appointments_router
 
 # Router imports
 from app.auth.router import router as auth_router
@@ -41,15 +43,19 @@ from app.core.middleware.security import (
     SecurityHeadersMiddleware,
 )
 from app.database import database
-from app.items.router import router as appointments_router
 from app.loggs import get_logger, structured_logger
-from app.rate_limiting import RateLimitMiddleware, EndpointRateLimitMiddleware, rate_limiter
+from app.rate_limiting import (
+    EndpointRateLimitMiddleware,
+    RateLimitMiddleware,
+    rate_limiter,
+)
 from app.role_perm_seed import (
     assign_permissions,
     create_first_admin,
     init_permissions,
     init_roles,
 )
+
 # from app.superadmin.router import router as superadmin_router
 
 # API v1 routers removed
@@ -161,6 +167,8 @@ def create_application() -> FastAPI:
     if settings.ALLOWED_HOSTS and "*" not in settings.ALLOWED_HOSTS:
         app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.ALLOWED_HOSTS)
 
+    app.add_middleware(GZipMiddleware, minimum_size=1000, compresslevel=5)
+
     # Add security middleware
     app.add_middleware(SecurityHeadersMiddleware)
     app.add_middleware(ProxyHeadersMiddleware)
@@ -228,5 +236,5 @@ app.include_router(auth_router, prefix=settings.API_V1_STR)
 # Include minimal Admin router (user management, role assignment)
 app.include_router(admin_router, prefix=settings.API_V1_STR)
 
-# Include Appointments (repurposed items) router
+# Include Appointments (repurposed appointments) router
 app.include_router(appointments_router, prefix=settings.API_V1_STR)

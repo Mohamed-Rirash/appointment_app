@@ -1,6 +1,7 @@
 """
 Admin module business logic and services
 """
+
 import asyncio
 import uuid
 from datetime import datetime, timedelta
@@ -15,13 +16,23 @@ from app.auth.rbac import RoleCRUD, RBACCRUD
 from app.core.security import hash_password, generate_password
 from app.admin.crud import AdminUserCRUD, AdminRoleCRUD, AdminAuditCRUD, AdminSystemCRUD
 from app.admin.schemas import (
-    AdminUserCreate, AdminUserUpdate, BulkUserOperation, BulkOperationResult,
-    AdminRoleCreate, AdminRoleUpdate, PaginationParams, UserSearchFilters,
-    AdminActionType, SystemStats, UserAnalytics
+    AdminUserCreate,
+    AdminUserUpdate,
+    BulkUserOperation,
+    BulkOperationResult,
+    AdminRoleCreate,
+    AdminRoleUpdate,
+    PaginationParams,
+    UserSearchFilters,
+    AdminActionType,
+    SystemStats,
+    UserAnalytics,
 )
 from app.admin.exceptions import (
-    BulkOperationError, InvalidBulkOperationError, SystemUserProtectedError,
-    RoleAssignmentError
+    BulkOperationError,
+    InvalidBulkOperationError,
+    SystemUserProtectedError,
+    RoleAssignmentError,
 )
 from app.admin.config import get_admin_config
 
@@ -33,7 +44,7 @@ class AdminUserService:
     async def get_users_paginated(
         db: Database,
         pagination: PaginationParams,
-        filters: Optional[UserSearchFilters] = None
+        filters: Optional[UserSearchFilters] = None,
     ) -> Tuple[List[Dict[str, Any]], int]:
         """Get paginated users with enhanced admin information"""
 
@@ -62,7 +73,7 @@ class AdminUserService:
         if existing_user:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="User with this email already exists"
+                detail="User with this email already exists",
             )
 
         # Always generate a temporary password; user will set their own via invitation
@@ -121,21 +132,18 @@ class AdminUserService:
                 # Generate a reset token for first-login password setup
                 reset_token = generate_password_reset_token(created_user["id"])
                 # Send invite email with login URL and reset link
-                await send_account_invite_email(created_user, reset_token, background_tasks)
+                await send_account_invite_email(
+                    created_user, reset_token, background_tasks
+                )
             except Exception:
                 # Do not fail user creation if email sending fails
                 pass
-
-
 
         return created_user
 
     @staticmethod
     async def update_user(
-        db: Database,
-        user_id: UUID,
-        user_data: AdminUserUpdate,
-        updated_by: UUID
+        db: Database, user_id: UUID, user_data: AdminUserUpdate, updated_by: UUID
     ) -> Dict[str, Any]:
         """Update user with admin capabilities"""
 
@@ -143,8 +151,7 @@ class AdminUserService:
         current_user = await AdminUserCRUD.get_user_with_roles(db, user_id)
         if not current_user:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
             )
 
         # Check if trying to modify system user
@@ -153,40 +160,31 @@ class AdminUserService:
 
         # Update user
         update_dict = user_data.model_dump(exclude_unset=True)
-        updated_user = await AdminUserCRUD.update_user(db, user_id, update_dict, updated_by)
-
-
+        updated_user = await AdminUserCRUD.update_user(
+            db, user_id, update_dict, updated_by
+        )
 
         return updated_user
 
     @staticmethod
-    async def delete_user(
-        db: Database,
-        user_id: UUID,
-        deleted_by: UUID
-    ) -> bool:
+    async def delete_user(db: Database, user_id: UUID, deleted_by: UUID) -> bool:
         """Delete user (soft delete)"""
 
         # Get user info for logging
         user = await AdminUserCRUD.get_user_with_roles(db, user_id)
         if not user:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
             )
 
         # Delete user
         result = await AdminUserCRUD.delete_user(db, user_id)
 
-
-
         return result
 
     @staticmethod
     async def bulk_operation(
-        db: Database,
-        operation: BulkUserOperation,
-        admin_id: UUID
+        db: Database, operation: BulkUserOperation, admin_id: UUID
     ) -> BulkOperationResult:
         """Perform bulk operations on users"""
 
@@ -195,12 +193,12 @@ class AdminUserService:
         # Validate bulk operation limits
         if len(operation.user_ids) > config.MAX_BULK_OPERATIONS:
             raise InvalidBulkOperationError(
-                f"Bulk operation exceeds maximum limit of {config.MAX_BULK_OPERATIONS} items",
-                max_allowed=config.MAX_BULK_OPERATIONS
+                f"Bulk operation exceeds maximum limit of {config.MAX_BULK_OPERATIONS} appointments",
+                max_allowed=config.MAX_BULK_OPERATIONS,
             )
 
-        successful_items = 0
-        failed_items = 0
+        successful_appointments = 0
+        failed_appointments = 0
         errors = []
 
         # Process each user
@@ -223,30 +221,22 @@ class AdminUserService:
                 else:
                     raise ValueError(f"Unknown operation: {operation.operation}")
 
-                successful_items += 1
+                successful_appointments += 1
 
             except Exception as e:
-                failed_items += 1
-                errors.append({
-                    "user_id": str(user_id),
-                    "error": str(e)
-                })
-
-
+                failed_appointments += 1
+                errors.append({"user_id": str(user_id), "error": str(e)})
 
         return BulkOperationResult(
-            total_items=len(operation.user_ids),
-            successful_items=successful_items,
-            failed_items=failed_items,
-            errors=errors
+            total_appointments=len(operation.user_ids),
+            successful_appointments=successful_appointments,
+            failed_appointments=failed_appointments,
+            errors=errors,
         )
 
     @staticmethod
     async def assign_role(
-        db: Database,
-        user_id: UUID,
-        role_id: UUID,
-        assigned_by: UUID
+        db: Database, user_id: UUID, role_id: UUID, assigned_by: UUID
     ) -> bool:
         """Assign role to user"""
 
@@ -256,8 +246,7 @@ class AdminUserService:
 
         if not user or not role:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User or role not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="User or role not found"
             )
 
         # Check if user already has this role
@@ -280,18 +269,15 @@ class AdminUserService:
             details={
                 "user_email": user["email"],
                 "role_name": role["name"],
-                "role_display_name": role["display_name"]
-            }
+                "role_display_name": role["display_name"],
+            },
         )
 
         return True
 
     @staticmethod
     async def revoke_role(
-        db: Database,
-        user_id: UUID,
-        role_id: UUID,
-        revoked_by: UUID
+        db: Database, user_id: UUID, role_id: UUID, revoked_by: UUID
     ) -> bool:
         """Revoke role from user"""
 
@@ -301,13 +287,14 @@ class AdminUserService:
 
         if not user or not role:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User or role not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="User or role not found"
             )
 
         # Check system user protection
         if user.get("is_system_user", False) and role["name"] == "super_admin":
-            raise SystemUserProtectedError(user["email"], "remove super_admin role from")
+            raise SystemUserProtectedError(
+                user["email"], "remove super_admin role from"
+            )
 
         # Revoke role
         await RBACCRUD.remove_role_from_user(db, user_id, role_id, revoked_by)
@@ -322,8 +309,8 @@ class AdminUserService:
             details={
                 "user_email": user["email"],
                 "role_name": role["name"],
-                "role_display_name": role["display_name"]
-            }
+                "role_display_name": role["display_name"],
+            },
         )
 
         return True
@@ -371,10 +358,7 @@ class AdminSystemService:
         return SystemStats(**stats_dict)
 
     @staticmethod
-    async def get_user_analytics(
-        db: Database,
-        days: int = 30
-    ) -> UserAnalytics:
+    async def get_user_analytics(db: Database, days: int = 30) -> UserAnalytics:
         """Get user analytics data"""
 
         # This would typically involve complex queries
@@ -383,7 +367,7 @@ class AdminSystemService:
             registration_trend=[],
             login_trend=[],
             user_activity=[],
-            role_distribution=[]
+            role_distribution=[],
         )
 
     @staticmethod
@@ -396,7 +380,7 @@ class AdminSystemService:
         # Get basic system metrics
         cpu_usage = psutil.cpu_percent(interval=1)
         memory = psutil.virtual_memory()
-        disk = psutil.disk_usage('/')
+        disk = psutil.disk_usage("/")
 
         # Check database connectivity
         try:
@@ -414,25 +398,22 @@ class AdminSystemService:
                 "total": disk.total,
                 "used": disk.used,
                 "free": disk.free,
-                "percentage": disk.percent
+                "percentage": disk.percent,
             },
             memory_usage={
                 "total": memory.total,
                 "used": memory.used,
                 "free": memory.available,
-                "percentage": memory.percent
+                "percentage": memory.percent,
             },
             cpu_usage=cpu_usage,
             uptime=int(time.time()),  # Mock uptime
             active_sessions=0,  # Would be calculated from active sessions
-            error_rate=0.0  # Would be calculated from logs
+            error_rate=0.0,  # Would be calculated from logs
         )
 
     @staticmethod
-    async def get_dashboard_data(
-        db: Database,
-        admin_id: UUID
-    ) -> Dict[str, Any]:
+    async def get_dashboard_data(db: Database, admin_id: UUID) -> Dict[str, Any]:
         """Get comprehensive dashboard data"""
 
         # Get system stats
@@ -440,10 +421,9 @@ class AdminSystemService:
 
         # Get recent audit logs
         from app.admin.schemas import AdminActivityFilters
+
         recent_activities, _ = await AdminAuditCRUD.get_audit_logs_paginated(
-            db=db,
-            pagination=PaginationParams(page=1, size=10),
-            filters=None
+            db=db, pagination=PaginationParams(page=1, size=10), filters=None
         )
 
         # Get user analytics
@@ -459,9 +439,17 @@ class AdminSystemService:
             "recent_activities": recent_activities,
             "alerts": [],  # TODO: Implement system alerts
             "quick_actions": [
-                {"name": "Create User", "url": "/admin/users/create", "icon": "user-plus"},
+                {
+                    "name": "Create User",
+                    "url": "/admin/users/create",
+                    "icon": "user-plus",
+                },
                 {"name": "View Audit Logs", "url": "/admin/audit", "icon": "file-text"},
-                {"name": "System Health", "url": "/admin/system/health", "icon": "heart"},
-                {"name": "Export Data", "url": "/admin/export", "icon": "download"}
-            ]
+                {
+                    "name": "System Health",
+                    "url": "/admin/system/health",
+                    "icon": "heart",
+                },
+                {"name": "Export Data", "url": "/admin/export", "icon": "download"},
+            ],
         }

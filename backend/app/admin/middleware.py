@@ -1,25 +1,19 @@
 """
 Admin module middleware for request logging and audit
 """
+
 import time
 import uuid
 from datetime import datetime, timezone
-from typing import Callable, Optional, Dict, Any
+from typing import Any, Callable, Dict, Optional
 
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
-from app.database import database
-
-
 from app.admin.config import AdminAuditConfig
 from app.admin.utils import mask_sensitive_data
-
-
-
-
-
+from app.database import database
 
 
 class AdminRateLimitMiddleware(BaseHTTPMiddleware):
@@ -52,10 +46,10 @@ class AdminRateLimitMiddleware(BaseHTTPMiddleware):
                         "message": f"Rate limit exceeded. Maximum {self.requests_per_minute} requests per minute.",
                         "details": {
                             "limit": self.requests_per_minute,
-                            "window": "1 minute"
-                        }
+                            "window": "1 minute",
+                        },
                     }
-                }
+                },
             )
 
         # Record request
@@ -89,8 +83,7 @@ class AdminRateLimitMiddleware(BaseHTTPMiddleware):
 
         # Clean old requests
         client_data["requests"] = [
-            req_time for req_time in client_data["requests"]
-            if req_time > window_start
+            req_time for req_time in client_data["requests"] if req_time > window_start
         ]
 
         return len(client_data["requests"]) >= self.requests_per_minute
@@ -117,9 +110,10 @@ class AdminRateLimitMiddleware(BaseHTTPMiddleware):
 
         clients_to_remove = []
 
-        for client_id, client_data in self.request_counts.items():
+        for client_id, client_data in self.request_counts.appointments():
             client_data["requests"] = [
-                req_time for req_time in client_data["requests"]
+                req_time
+                for req_time in client_data["requests"]
                 if req_time > window_start
             ]
 

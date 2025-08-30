@@ -4,22 +4,27 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException, status
-from sqlalchemy import update
 
 from app.auth.config import get_auth_settings
 from app.auth.constants import USER_VERIFY_ACCOUNT
 from app.auth.crud import UserCRUD, UserTokenCRUD
-from app.auth.models import users
-from app.auth.security import hash_password, str_encode, verify_password
-from app.auth.user_emails import send_account_activation_confirmation_email
-from app.auth.utils import get_context_string, unique_string
+from app.auth.rbac import RBACCRUD
+from app.auth.security import hash_password, verify_password
+from app.auth.user_emails import (
+    send_account_activation_confirmation_email,
+    send_password_reset_email,
+    send_account_verification_email,
+)
+from app.auth.utils import get_context_string
 from app.core.security import (
+    TokenError,
     create_access_token,
     create_refresh_token,
-    verify_token,
-    TokenError,
     is_jti_revoked,
     revoke_token_jti,
+    verify_token,
+    generate_password_reset_token,
+    verify_password_reset_token,
 )
 
 settings = get_auth_settings()
@@ -54,13 +59,12 @@ async def activate_user_account(data, session, background_tasks):
         raise HTTPException(
             status_code=400, detail="This link either expired or not valid."
         )
-    # update user
-    query = (
-        update(users)
-        .where(users.c.id == user["id"])
-        .values(is_active=True, verified_at=datetime.now(), is_verified=True)
+    # update user via CRUD
+    await UserCRUD.update(
+        session,
+        user["id"],
+        {"is_active": True, "verified_at": datetime.now(), "is_verified": True},
     )
-    await session.execute(query)
     # Activation confirmation email
 
     await send_account_activation_confirmation_email(user, background_tasks)
@@ -81,7 +85,7 @@ async def user_authenticate_service(session, data, response):
     if not user["is_verified"]:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="your acount has not been verified please check your email to verify your account",
+            detail="your acount has not been verified please contact the admin",
         )
 
     if not user["is_active"]:
@@ -91,6 +95,146 @@ async def user_authenticate_service(session, data, response):
         )
 
     return await _generate_tokens(user, session, response)
+
+
+async def logout_user_service(session, request, response, current_user) -> None:
+    """Perform logout by invalidating access and refresh tokens and clearing cookies.
+
+    - Revoke current access token JTI (if present in Authorization header)
+    - Revoke and delete current refresh token (if present in cookie)
+    - Delete any remaining refresh tokens for the user
+    - Clear refresh token cookie
+    """
+    # Attempt to revoke current access token (best-effort)
+    try:
+        auth_header = request.headers.get("authorization") or request.headers.get("Authorization")
+        if auth_header and auth_header.lower().startswith("bearer "):
+            access_token = auth_header.split(" ", 1)[1]
+            payload = verify_token(access_token, token_type="access")
+            jti = payload.get("jti")
+            exp = payload.get("exp")
+            if jti and exp:
+                await revoke_token_jti(jti, exp)
+    except Exception:
+        pass
+
+    # Handle refresh token from cookie
+    refresh_token = request.cookies.get("refresh_token")
+    if refresh_token:
+        # Revoke refresh token JTI and delete from DB
+        try:
+            payload = verify_token(refresh_token, token_type="refresh")
+            rjti = payload.get("jti")
+            rexp = payload.get("exp")
+            if rjti and rexp:
+                await revoke_token_jti(rjti, rexp)
+        except Exception:
+            pass
+        # Delete this specific refresh token (rotation support)
+        try:
+            await UserTokenCRUD.delete_by_refresh(session, refresh_token)
+        except Exception:
+            pass
+
+    # As a safety net, delete all refresh tokens for this user
+    try:
+        await UserTokenCRUD.delete_by_user(session, current_user.id)
+    except Exception:
+        pass
+
+    # Clear refresh token cookie
+    response.delete_cookie("refresh_token")
+
+
+async def get_current_user_profile_service(session, current_user):
+    """Get current user profile with role and permission names."""
+    # Fetch roles and permissions using RBAC CRUD helpers
+    user_roles = await RBACCRUD.get_user_roles(session, current_user.id)
+    role_names = [r.get("name") for r in user_roles] if user_roles else []
+
+    user_perms = await RBACCRUD.get_user_permissions(session, current_user.id)
+    perm_names = (
+        list({f"{p['resource']}:{p['action']}" for p in user_perms}) if user_perms else []
+    )
+
+    return {
+        "id": current_user.id,
+        "first_name": current_user.first_name,
+        "last_name": current_user.last_name,
+        "email": current_user.email,
+        "is_active": current_user.is_active,
+        "is_verified": current_user.is_verified,
+        "created_at": current_user.created_at,
+        "roles": role_names,
+        "permissions": perm_names,
+    }
+
+
+async def change_password_service(session, current_user, request):
+    """Change the current user's password after verifying current password."""
+    user = await UserCRUD.get_by_id(session, current_user.id)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    if not await verify_password(user["password"], request.current_password):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Current password is incorrect")
+
+    new_password_hash = await hash_password(request.new_password)
+    await UserCRUD.update(session, current_user.id, {"password": new_password_hash})
+
+
+async def request_password_reset_service(session, request, background_tasks):
+    """Request a password reset by sending an email with a reset token."""
+    user = await UserCRUD.get_by_email(session, request.email)
+    if not user:
+        return  # Don't reveal if email exists or not
+
+    reset_token = generate_password_reset_token(user["id"])
+    await send_password_reset_email(user, reset_token, background_tasks)
+
+
+async def reset_password_service(session, request):
+    """Reset password using a valid reset token."""
+    user_id = verify_password_reset_token(request.token)
+    if not user_id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired reset token")
+
+    new_password_hash = await hash_password(request.new_password)
+    result = await UserCRUD.update(
+        session,
+        user_id,
+        {"password": new_password_hash, "is_verified": True, "is_active": True},
+    )
+    if not result:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+
+async def set_password_first_time_service(session, request):
+    """Set password for first-time login using invitation/reset token."""
+    user_id = verify_password_reset_token(request.token)
+    if not user_id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
+
+    new_password_hash = await hash_password(request.new_password)
+    result = await UserCRUD.update(
+        session,
+        user_id,
+        {"password": new_password_hash, "is_verified": True, "is_active": True},
+    )
+    if not result:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+
+async def resend_verification_email_service(session, request, background_tasks):
+    """Resend email verification to a user if not already verified."""
+    user = await UserCRUD.get_by_email(session, request.email)
+    if not user:
+        return  # Don't reveal if email exists or not
+
+    if user["is_verified"]:
+        return  # Already verified
+
+    await send_account_verification_email(user, background_tasks)
 
 
 async def _generate_tokens(user, session, response):
@@ -147,26 +291,42 @@ async def refresh_access_token_service(session, refresh_token: str, response):
     Prefers rotating the refresh token and resetting the cookie for better security.
     """
     if not refresh_token:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token missing")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token missing"
+        )
 
     try:
         payload = verify_token(refresh_token, token_type="refresh")
         # Denylist check (revoked tokens)
         jti = payload.get("jti")
         if await is_jti_revoked(jti):
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token is revoked")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Refresh token is revoked",
+            )
         user_id = payload.get("sub")
         if not user_id:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
+            )
     except TokenError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired refresh token")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired refresh token",
+        )
     except Exception:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired refresh token")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired refresh token",
+        )
 
     # Ensure token exists in DB (rotation/invalidation detection)
     token_row = await UserTokenCRUD.get_by_refresh(session, refresh_token)
     if not token_row:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token is not valid anymore")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token is not valid anymore",
+        )
 
     # Load user and validate status
     try:
@@ -181,11 +341,17 @@ async def refresh_access_token_service(session, refresh_token: str, response):
         user = None
 
     if not user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found"
+        )
     if not user.get("is_verified"):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Account not verified")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Account not verified"
+        )
     if not user.get("is_active"):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Account is inactive")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Account is inactive"
+        )
 
     # Reuse existing generator to mint new access/refresh tokens and set cookie
     # Also delete the old refresh token (rotation)

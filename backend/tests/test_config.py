@@ -1,7 +1,9 @@
 """
 Test configuration settings
 """
+
 import os
+
 from app.config import get_settings
 
 
@@ -30,7 +32,7 @@ def get_test_settings():
     }
 
     # Set environment variables for testing
-    for key, value in test_env_vars.items():
+    for key, value in test_env_vars.appointments():
         if key not in os.environ:
             os.environ[key] = value
 

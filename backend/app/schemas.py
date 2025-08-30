@@ -50,7 +50,7 @@ class PaginationParams(BaseModel):
     """Common pagination parameters"""
 
     page: int = Field(1, ge=1, description="Page number")
-    size: int = Field(20, ge=1, le=100, description="Items per page")
+    size: int = Field(20, ge=1, le=100, description="appointments per page")
 
 
 class SortParams(BaseModel):
@@ -92,9 +92,9 @@ class FilterParams(BaseModel):
 class PaginationMeta(BaseModel):
     """Pagination metadata"""
 
-    total: int = Field(..., description="Total number of items")
+    total: int = Field(..., description="Total number of appointments")
     page: int = Field(..., description="Current page number")
-    size: int = Field(..., description="Items per page")
+    size: int = Field(..., description="appointments per page")
     pages: int = Field(..., description="Total number of pages")
     has_next: bool = Field(..., description="Whether there is a next page")
     has_prev: bool = Field(..., description="Whether there is a previous page")
@@ -107,7 +107,7 @@ T = TypeVar("T")
 class PaginatedResponse(BaseModel, Generic[T]):
     """Generic paginated response"""
 
-    items: List[T]
+    appointments: List[T]
     meta: PaginationMeta
 
 
@@ -157,11 +157,13 @@ class BulkOperationRequest(BaseModel):
 class BulkOperationResult(BaseModel):
     """Bulk operation result"""
 
-    total_items: int = Field(..., description="Total number of items processed")
-    successful_items: int = Field(
-        ..., description="Number of successfully processed items"
+    total_appointments: int = Field(
+        ..., description="Total number of appointments processed"
     )
-    failed_items: int = Field(..., description="Number of failed items")
+    successful_appointments: int = Field(
+        ..., description="Number of successfully processed appointments"
+    )
+    failed_appointments: int = Field(..., description="Number of failed appointments")
     operation: BulkOperationType = Field(..., description="Operation performed")
     errors: List[Dict[str, Any]] = Field(
         default_factory=list, description="List of errors"
@@ -173,9 +175,9 @@ class BulkOperationResult(BaseModel):
     @property
     def success_rate(self) -> float:
         """Calculate success rate percentage"""
-        if self.total_items == 0:
+        if self.total_appointments == 0:
             return 0.0
-        return (self.successful_items / self.total_items) * 100
+        return (self.successful_appointments / self.total_appointments) * 100
 
 
 # ================================

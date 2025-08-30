@@ -2,30 +2,29 @@ from typing import List, Optional
 from uuid import UUID
 
 from databases import Database
-from fastapi import APIRouter, Depends, HTTPException, status, Query, BackgroundTasks
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from sqlalchemy import and_, select
 
-from app.auth.crud import UserCRUD
-from app.auth.dependencies import CurrentUser, require_permissions, require_verified_user
-from app.auth.models import (
-    permissions,
-    role_permissions,
-    roles,
-    user_roles,
-)
-from app.auth.rbac import RBACCRUD, RoleCRUD
-from app.database import get_db
-from app.admin.service import AdminUserService
 from app.admin.crud import AdminUserCRUD
 from app.admin.schemas import (
     AdminBaseResponse,
     AdminUserCreate,
     AdminUserResponse,
     AdminUserUpdate,
+    PaginatedResponse,
     PaginationParams,
     UserSearchFilters,
-    PaginatedResponse,
 )
+from app.admin.service import AdminUserService
+from app.auth.crud import UserCRUD
+from app.auth.dependencies import (
+    CurrentUser,
+    require_permissions,
+    require_verified_user,
+)
+from app.auth.models import permissions, role_permissions, roles, user_roles
+from app.auth.rbac import RBACCRUD, RoleCRUD
+from app.database import get_db
 
 router = APIRouter(prefix="/admin", tags=["Admin (RBAC)"])
 
@@ -71,12 +70,16 @@ def _normalize_admin_user(enriched: dict) -> dict:
     return data
 
 
-@router.post("/users", response_model=AdminUserResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/users", response_model=AdminUserResponse, status_code=status.HTTP_201_CREATED
+)
 async def admin_create_user(
     payload: AdminUserCreate,
     background_tasks: BackgroundTasks,
     db: Database = Depends(get_db),
-    admin: CurrentUser = Depends(require_permissions("users:create", require_all=False)),
+    admin: CurrentUser = Depends(
+        require_permissions("users:create", require_all=False)
+    ),
 ):
     """Create a user with optional initial roles and send invite email (Option B)."""
     created = await AdminUserService.create_user(
@@ -107,12 +110,20 @@ async def admin_list_users(
         is_verified=is_verified,
         is_system_user=None,
     )
-    items, total = await AdminUserService.get_users_paginated(db, pagination, filters)
+    appointments, total = await AdminUserService.get_users_paginated(
+        db, pagination, filters
+    )
     # Normalize each item and convert to Pydantic models for safe serialization
-    items = [AdminUserResponse(**_normalize_admin_user(u)) for u in items]
+    appointments = [AdminUserResponse(**_normalize_admin_user(u)) for u in appointments]
     pages = (total + size - 1) // size
     return PaginatedResponse(
-        items=items, total=total, page=page, size=size, pages=pages, has_next=page < pages, has_prev=page > 1
+        appointments=appointments,
+        total=total,
+        page=page,
+        size=size,
+        pages=pages,
+        has_next=page < pages,
+        has_prev=page > 1,
     )
 
 
@@ -133,7 +144,9 @@ async def admin_update_user(
     user_id: UUID,
     payload: AdminUserUpdate,
     db: Database = Depends(get_db),
-    admin: CurrentUser = Depends(require_permissions("users:update", require_all=False)),
+    admin: CurrentUser = Depends(
+        require_permissions("users:update", require_all=False)
+    ),
 ):
     updated = await AdminUserService.update_user(db, user_id, payload, admin.id)
     enriched = await AdminUserCRUD.get_user_with_roles(db, user_id)
@@ -145,7 +158,9 @@ async def admin_delete_user(
     user_id: UUID,
     db: Database = Depends(get_db),
     admin: CurrentUser = Depends(
-        require_permissions("users:delete", "users:update", "admin:*", require_all=False)
+        require_permissions(
+            "users:delete", "users:update", "admin:*", require_all=False
+        )
     ),
 ):
     result = await AdminUserService.delete_user(db, user_id, admin.id)
@@ -157,7 +172,9 @@ async def admin_resend_invite(
     user_id: UUID,
     background_tasks: BackgroundTasks,
     db: Database = Depends(get_db),
-    admin: CurrentUser = Depends(require_permissions("users:update", require_all=False)),
+    admin: CurrentUser = Depends(
+        require_permissions("users:update", require_all=False)
+    ),
 ):
     await AdminUserService.resend_invite(db, user_id, admin.id, background_tasks)
     return AdminBaseResponse(message="Invitation sent")
@@ -167,7 +184,9 @@ async def admin_resend_invite(
 async def admin_activate_user(
     user_id: UUID,
     db: Database = Depends(get_db),
-    admin: CurrentUser = Depends(require_permissions("users:update", require_all=False)),
+    admin: CurrentUser = Depends(
+        require_permissions("users:update", require_all=False)
+    ),
 ):
     user = await UserCRUD.update(db, user_id, {"is_active": True})
     if not user:
@@ -179,7 +198,9 @@ async def admin_activate_user(
 async def admin_deactivate_user(
     user_id: UUID,
     db: Database = Depends(get_db),
-    admin: CurrentUser = Depends(require_permissions("users:update", require_all=False)),
+    admin: CurrentUser = Depends(
+        require_permissions("users:update", require_all=False)
+    ),
 ):
     user = await UserCRUD.update(db, user_id, {"is_active": False})
     if not user:
@@ -191,7 +212,9 @@ async def admin_deactivate_user(
 async def admin_suspend_user(
     user_id: UUID,
     db: Database = Depends(get_db),
-    admin: CurrentUser = Depends(require_permissions("users:update", require_all=False)),
+    admin: CurrentUser = Depends(
+        require_permissions("users:update", require_all=False)
+    ),
 ):
     # For now, suspend == deactivate (no suspended_until column available)
     user = await UserCRUD.update(db, user_id, {"is_active": False})
@@ -240,7 +263,9 @@ async def admin_assign_role_by_name(
     role_name: str,
     db: Database = Depends(get_db),
     admin: CurrentUser = Depends(
-        require_permissions("roles:assign", "users:update", "admin:*", require_all=False)
+        require_permissions(
+            "roles:assign", "users:update", "admin:*", require_all=False
+        )
     ),
 ):
     role = await RoleCRUD.get_by_name(db, role_name)
@@ -256,13 +281,19 @@ async def admin_revoke_role_by_name(
     role_name: str,
     db: Database = Depends(get_db),
     admin: CurrentUser = Depends(
-        require_permissions("roles:revoke", "users:update", "admin:*", require_all=False)
+        require_permissions(
+            "roles:revoke", "users:update", "admin:*", require_all=False
+        )
     ),
 ):
     role = await RoleCRUD.get_by_name(db, role_name)
     if not role:
         raise HTTPException(status_code=404, detail="Role not found")
-    result = await RBACCRUD.remove_role_from_user(db, user_id, role["id"], removed_by=admin.id)
+    result = await RBACCRUD.remove_role_from_user(
+        db, user_id, role["id"], removed_by=admin.id
+    )
     if not result:
-        raise HTTPException(status_code=400, detail="Role removal failed or role not assigned")
+        raise HTTPException(
+            status_code=400, detail="Role removal failed or role not assigned"
+        )
     return AdminBaseResponse(message="Role revoked successfully")

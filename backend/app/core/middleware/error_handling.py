@@ -1,15 +1,16 @@
 """
 Error handling middleware for FastAPI application
 """
+
 import traceback
 from typing import Callable, Union
 
-from fastapi import Request, HTTPException, status
+from fastapi import HTTPException, Request, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
-from starlette.middleware.base import BaseHTTPMiddleware
 from pydantic import ValidationError
 from sqlalchemy.exc import SQLAlchemyError
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.config import get_settings
 from app.loggs import get_logger
@@ -30,14 +31,16 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
             # FastAPI HTTP exceptions - pass through
             return JSONResponse(
                 status_code=e.status_code,
-                content=jsonable_encoder({
-                    "error": {
-                        "type": "http_exception",
-                        "message": e.detail,
-                        "status_code": e.status_code
+                content=jsonable_encoder(
+                    {
+                        "error": {
+                            "type": "http_exception",
+                            "message": e.detail,
+                            "status_code": e.status_code,
+                        }
                     }
-                }),
-                headers=e.headers
+                ),
+                headers=e.headers,
             )
 
         except ValidationError as e:
@@ -45,13 +48,15 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
             logger.warning(f"Validation error: {e}")
             return JSONResponse(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                content=jsonable_encoder({
-                    "error": {
-                        "type": "validation_error",
-                        "message": "Validation failed",
-                        "details": e.errors()
+                content=jsonable_encoder(
+                    {
+                        "error": {
+                            "type": "validation_error",
+                            "message": "Validation failed",
+                            "details": e.errors(),
+                        }
                     }
-                })
+                ),
             )
 
         except SQLAlchemyError as e:
@@ -61,23 +66,27 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
             if settings.is_development:
                 return JSONResponse(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    content=jsonable_encoder({
-                        "error": {
-                            "type": "database_error",
-                            "message": "Database operation failed",
-                            "details": str(e) if settings.is_development else None
+                    content=jsonable_encoder(
+                        {
+                            "error": {
+                                "type": "database_error",
+                                "message": "Database operation failed",
+                                "details": str(e) if settings.is_development else None,
+                            }
                         }
-                    })
+                    ),
                 )
             else:
                 return JSONResponse(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    content=jsonable_encoder({
-                        "error": {
-                            "type": "database_error",
-                            "message": "Database operation failed"
+                    content=jsonable_encoder(
+                        {
+                            "error": {
+                                "type": "database_error",
+                                "message": "Database operation failed",
+                            }
                         }
-                    })
+                    ),
                 )
 
         except ValueError as e:
@@ -85,12 +94,9 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
             logger.warning(f"Value error: {e}")
             return JSONResponse(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                content=jsonable_encoder({
-                    "error": {
-                        "type": "value_error",
-                        "message": str(e)
-                    }
-                })
+                content=jsonable_encoder(
+                    {"error": {"type": "value_error", "message": str(e)}}
+                ),
             )
 
         except PermissionError as e:
@@ -98,12 +104,14 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
             logger.warning(f"Permission error: {e}")
             return JSONResponse(
                 status_code=status.HTTP_403_FORBIDDEN,
-                content=jsonable_encoder({
-                    "error": {
-                        "type": "permission_error",
-                        "message": "Insufficient permissions"
+                content=jsonable_encoder(
+                    {
+                        "error": {
+                            "type": "permission_error",
+                            "message": "Insufficient permissions",
+                        }
                     }
-                })
+                ),
             )
 
         except Exception as e:
@@ -116,14 +124,16 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
 
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                content=jsonable_encoder({
-                    "error": {
-                        "type": "internal_error",
-                        "message": "An unexpected error occurred",
-                        "error_id": error_id,
-                        "details": str(e) if settings.is_development else None
+                content=jsonable_encoder(
+                    {
+                        "error": {
+                            "type": "internal_error",
+                            "message": "An unexpected error occurred",
+                            "error_id": error_id,
+                            "details": str(e) if settings.is_development else None,
+                        }
                     }
-                })
+                ),
             )
 
 
@@ -131,36 +141,30 @@ def create_error_response(
     status_code: int,
     message: str,
     error_type: str = "error",
-    details: Union[dict, list, str, None] = None
+    details: Union[dict, list, str, None] = None,
 ) -> JSONResponse:
     """Helper function to create standardized error responses"""
-    content = {
-        "error": {
-            "type": error_type,
-            "message": message
-        }
-    }
+    content = {"error": {"type": error_type, "message": message}}
 
     if details is not None:
         content["error"]["details"] = details
 
-    return JSONResponse(
-        status_code=status_code,
-        content=jsonable_encoder(content)
-    )
+    return JSONResponse(status_code=status_code, content=jsonable_encoder(content))
 
 
 def create_validation_error_response(errors: list) -> JSONResponse:
     """Helper function to create validation error responses"""
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        content=jsonable_encoder({
-            "error": {
-                "type": "validation_error",
-                "message": "Validation failed",
-                "details": errors
+        content=jsonable_encoder(
+            {
+                "error": {
+                    "type": "validation_error",
+                    "message": "Validation failed",
+                    "details": errors,
+                }
             }
-        })
+        ),
     )
 
 
@@ -214,12 +218,7 @@ async def business_logic_error_handler(request: Request, exc: BusinessLogicError
     """Handler for business logic errors"""
     return JSONResponse(
         status_code=exc.status_code,
-        content={
-            "error": {
-                "type": "business_logic_error",
-                "message": exc.message
-            }
-        }
+        content={"error": {"type": "business_logic_error", "message": exc.message}},
     )
 
 
@@ -227,12 +226,7 @@ async def authentication_error_handler(request: Request, exc: AuthenticationErro
     """Handler for authentication errors"""
     return JSONResponse(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        content={
-            "error": {
-                "type": "authentication_error",
-                "message": exc.message
-            }
-        }
+        content={"error": {"type": "authentication_error", "message": exc.message}},
     )
 
 
@@ -240,25 +234,17 @@ async def authorization_error_handler(request: Request, exc: AuthorizationError)
     """Handler for authorization errors"""
     return JSONResponse(
         status_code=status.HTTP_403_FORBIDDEN,
-        content={
-            "error": {
-                "type": "authorization_error",
-                "message": exc.message
-            }
-        }
+        content={"error": {"type": "authorization_error", "message": exc.message}},
     )
 
 
-async def resource_not_found_error_handler(request: Request, exc: ResourceNotFoundError):
+async def resource_not_found_error_handler(
+    request: Request, exc: ResourceNotFoundError
+):
     """Handler for resource not found errors"""
     return JSONResponse(
         status_code=status.HTTP_404_NOT_FOUND,
-        content={
-            "error": {
-                "type": "resource_not_found",
-                "message": exc.message
-            }
-        }
+        content={"error": {"type": "resource_not_found", "message": exc.message}},
     )
 
 
@@ -266,10 +252,5 @@ async def conflict_error_handler(request: Request, exc: ConflictError):
     """Handler for conflict errors"""
     return JSONResponse(
         status_code=status.HTTP_409_CONFLICT,
-        content={
-            "error": {
-                "type": "conflict_error",
-                "message": exc.message
-            }
-        }
+        content={"error": {"type": "conflict_error", "message": exc.message}},
     )

@@ -1,18 +1,20 @@
 """
 Test configuration and fixtures
 """
+
 import asyncio
-import sys
 import os
+import sys
 from pathlib import Path
+from typing import AsyncGenerator, Generator
+
 import pytest
 import pytest_asyncio
-from typing import AsyncGenerator, Generator
+import redis.asyncio as redis
+from databases import Database
 from httpx import AsyncClient
 from sqlalchemy import create_engine, text
 from sqlalchemy.pool import StaticPool
-from databases import Database
-import redis.asyncio as redis
 
 # Add the backend directory to Python path
 backend_dir = Path(__file__).parent.parent
@@ -38,14 +40,14 @@ from tests.test_config import get_test_settings
 USER_NAME = "Test User"
 USER_EMAIL = "test@example.com"
 USER_PASSWORD = "TestPassword123!"
-from app.database import get_db, metadata
-from app.core.cache import cache_manager
-from app.rate_limiting import rate_limiter
-from app.auth.crud import UserCRUD
-from app.auth.rbac import RoleCRUD, PermissionCRUD, RBACCRUD
-from app.core.security import hash_password, create_access_token
 from app.auth.constants import DEFAULT_ROLES
+from app.auth.crud import UserCRUD
 from app.auth.models import DEFAULT_PERMISSIONS
+from app.auth.rbac import RBACCRUD, PermissionCRUD, RoleCRUD
+from app.core.cache import cache_manager
+from app.core.security import create_access_token, hash_password
+from app.database import get_db, metadata
+from app.rate_limiting import rate_limiter
 
 # Test database URL - using SQLite for tests
 TEST_DATABASE_URL = "sqlite+aiosqlite:///./test.db"
@@ -66,22 +68,22 @@ async def test_db() -> AsyncGenerator[Database, None]:
     """Create test database"""
     # Create test database
     database = Database(TEST_DATABASE_URL)
-    
+
     # Create engine for table creation
     engine = create_engine(
         TEST_DATABASE_URL.replace("+aiosqlite", ""),
         poolclass=StaticPool,
-        connect_args={"check_same_thread": False}
+        connect_args={"check_same_thread": False},
     )
-    
+
     # Create all tables
     metadata.create_all(engine)
-    
+
     # Connect to database
     await database.connect()
-    
+
     yield database
-    
+
     # Cleanup
     await database.disconnect()
     metadata.drop_all(engine)
@@ -101,14 +103,16 @@ async def test_redis() -> AsyncGenerator[redis.Redis, None]:
     """Create test Redis connection"""
     try:
         # Try to connect to Redis
-        redis_client = redis.from_url("redis://localhost:6379/15")  # Use DB 15 for tests
+        redis_client = redis.from_url(
+            "redis://localhost:6379/15"
+        )  # Use DB 15 for tests
         await redis_client.ping()
-        
+
         # Clear test database
         await redis_client.flushdb()
-        
+
         yield redis_client
-        
+
         # Cleanup
         await redis_client.flushdb()
         await redis_client.aclose()
@@ -120,25 +124,26 @@ async def test_redis() -> AsyncGenerator[redis.Redis, None]:
 @pytest_asyncio.fixture
 async def client(db_session: Database, test_redis) -> AsyncGenerator[AsyncClient, None]:
     """Create test client with database override"""
-    
+
     # Override database dependency
     async def override_get_db():
         yield db_session
-    
+
     app.dependency_overrides[get_db] = override_get_db
-    
+
     # Override cache manager if Redis is available
     if test_redis:
         cache_manager._redis = test_redis
         cache_manager._connected = True
         rate_limiter._redis = test_redis
         rate_limiter._connected = True
-    
+
     from httpx import ASGITransport
+
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
-    
+
     # Clear overrides
     app.dependency_overrides.clear()
 
@@ -152,9 +157,9 @@ async def test_user(db_session: Database) -> dict:
         "email": "test@gmail.com",
         "password": await hash_password("TestPass123!"),
         "is_active": True,
-        "is_verified": True
+        "is_verified": True,
     }
-    
+
     user = await UserCRUD.create(db_session, user_data)
     return user
 
@@ -170,9 +175,11 @@ async def admin_user(db_session: Database) -> dict:
                 "name": "admin",
                 "display_name": "Administrator",
                 "description": "Admin user for testing",
-                "is_system": True
+                "is_system": True,
             }
-            admin_role = await RoleCRUD.create(db_session, admin_role_data, created_by="system")
+            admin_role = await RoleCRUD.create(
+                db_session, admin_role_data, created_by="system"
+            )
     except Exception:
         # If role creation fails due to unique constraint, try to get existing role
         admin_role = await RoleCRUD.get_by_name(db_session, "admin")
@@ -184,17 +191,14 @@ async def admin_user(db_session: Database) -> dict:
         "email": "admin@example.com",
         "password": await hash_password("AdminPass123!"),
         "is_active": True,
-        "is_verified": True
+        "is_verified": True,
     }
 
     admin_user = await UserCRUD.create(db_session, admin_data)
 
     # Assign admin role
     await RBACCRUD.assign_role_to_user(
-        db_session,
-        admin_user["id"],
-        admin_role["id"],
-        assigned_by=admin_user["id"]
+        db_session, admin_user["id"], admin_role["id"], assigned_by=admin_user["id"]
     )
 
     return admin_user
@@ -211,9 +215,11 @@ async def super_admin_user(db_session: Database) -> dict:
                 "name": "super_admin",
                 "display_name": "Super Administrator",
                 "description": "Super admin user for testing",
-                "is_system": True
+                "is_system": True,
             }
-            super_admin_role = await RoleCRUD.create(db_session, super_admin_role_data, created_by="system")
+            super_admin_role = await RoleCRUD.create(
+                db_session, super_admin_role_data, created_by="system"
+            )
     except Exception:
         # If role creation fails due to unique constraint, try to get existing role
         super_admin_role = await RoleCRUD.get_by_name(db_session, "super_admin")
@@ -225,7 +231,7 @@ async def super_admin_user(db_session: Database) -> dict:
         "email": "superadmin@gmail.com",
         "password": await hash_password("SuperAdminPass123!"),
         "is_active": True,
-        "is_verified": True
+        "is_verified": True,
     }
 
     super_admin_user = await UserCRUD.create(db_session, super_admin_data)
@@ -235,7 +241,7 @@ async def super_admin_user(db_session: Database) -> dict:
         db_session,
         super_admin_user["id"],
         super_admin_role["id"],
-        assigned_by=super_admin_user["id"]
+        assigned_by=super_admin_user["id"],
     )
 
     return super_admin_user
@@ -252,9 +258,11 @@ async def system_admin_user(db_session: Database) -> dict:
                 "name": "system_admin",
                 "display_name": "System Administrator",
                 "description": "System admin user for testing",
-                "is_system": True
+                "is_system": True,
             }
-            system_admin_role = await RoleCRUD.create(db_session, system_admin_role_data, created_by="system")
+            system_admin_role = await RoleCRUD.create(
+                db_session, system_admin_role_data, created_by="system"
+            )
     except Exception:
         # If role creation fails due to unique constraint, try to get existing role
         system_admin_role = await RoleCRUD.get_by_name(db_session, "system_admin")
@@ -267,7 +275,7 @@ async def system_admin_user(db_session: Database) -> dict:
         "password": await hash_password("SystemAdminPass123!"),
         "is_active": True,
         "is_verified": True,
-        "is_system_user": True  # Mark as system user
+        "is_system_user": True,  # Mark as system user
     }
 
     system_admin_user = await UserCRUD.create(db_session, system_admin_data)
@@ -277,7 +285,7 @@ async def system_admin_user(db_session: Database) -> dict:
         db_session,
         system_admin_user["id"],
         system_admin_role["id"],
-        assigned_by=system_admin_user["id"]
+        assigned_by=system_admin_user["id"],
     )
 
     return system_admin_user
@@ -287,19 +295,19 @@ async def system_admin_user(db_session: Database) -> dict:
 async def test_permissions(db_session: Database) -> list:
     """Create test permissions"""
     permissions = []
-    
+
     test_perms = [
         {"resource": "test", "action": "read", "description": "Test read permission"},
         {"resource": "test", "action": "write", "description": "Test write permission"},
         {"resource": "users", "action": "read", "description": "Read users"},
         {"resource": "users", "action": "create", "description": "Create users"},
     ]
-    
+
     for perm_data in test_perms:
         perm_data["name"] = f"{perm_data['resource']}:{perm_data['action']}"
         perm = await PermissionCRUD.create(db_session, perm_data, created_by="system")
         permissions.append(perm)
-    
+
     return permissions
 
 
@@ -339,49 +347,52 @@ def api_key_headers() -> dict:
 
 class TestDataFactory:
     """Factory for creating test data"""
-    
+
     @staticmethod
     def user_data(email: str = None, **kwargs) -> dict:
         """Generate user data"""
         from faker import Faker
+
         fake = Faker()
-        
+
         return {
             "first_name": fake.first_name(),
             "last_name": fake.last_name(),
             "email": email or fake.email(),
             "password": "TestPass123!",
-            **kwargs
+            **kwargs,
         }
-    
+
     @staticmethod
     def role_data(name: str = None, **kwargs) -> dict:
         """Generate role data"""
         from faker import Faker
+
         fake = Faker()
-        
+
         return {
             "name": name or fake.slug(),
             "display_name": fake.job(),
             "description": fake.text(max_nb_chars=100),
-            **kwargs
+            **kwargs,
         }
-    
+
     @staticmethod
     def permission_data(resource: str = None, action: str = None, **kwargs) -> dict:
         """Generate permission data"""
         from faker import Faker
+
         fake = Faker()
-        
+
         resource = resource or fake.word()
         action = action or fake.random_element(["create", "read", "update", "delete"])
-        
+
         return {
             "resource": resource,
             "action": action,
             "name": f"{resource}:{action}",
             "description": fake.text(max_nb_chars=100),
-            **kwargs
+            **kwargs,
         }
 
 
@@ -394,26 +405,20 @@ def test_factory() -> TestDataFactory:
 # Pytest configuration
 def pytest_configure(config):
     """Configure pytest"""
-    config.addinivalue_line(
-        "markers", "asyncio: mark test as async"
-    )
-    config.addinivalue_line(
-        "markers", "integration: mark test as integration test"
-    )
-    config.addinivalue_line(
-        "markers", "unit: mark test as unit test"
-    )
-    config.addinivalue_line(
-        "markers", "slow: mark test as slow running"
-    )
+    config.addinivalue_line("markers", "asyncio: mark test as async")
+    config.addinivalue_line("markers", "integration: mark test as integration test")
+    config.addinivalue_line("markers", "unit: mark test as unit test")
+    config.addinivalue_line("markers", "slow: mark test as slow running")
 
 
 # Test utilities
 class TestUtils:
     """Utility functions for tests"""
-    
+
     @staticmethod
-    async def create_test_user(db: Database, email: str = "test@example.com", **kwargs) -> dict:
+    async def create_test_user(
+        db: Database, email: str = "test@example.com", **kwargs
+    ) -> dict:
         """Create a test user"""
         user_data = {
             "first_name": "Test",
@@ -422,16 +427,16 @@ class TestUtils:
             "password": await hash_password("TestPass123!"),
             "is_active": True,
             "is_verified": True,
-            **kwargs
+            **kwargs,
         }
         return await UserCRUD.create(db, user_data)
-    
+
     @staticmethod
     def get_auth_headers(user_id: str) -> dict:
         """Get authentication headers for user"""
         access_token = create_access_token(user_id)
         return {"Authorization": f"Bearer {access_token}"}
-    
+
     @staticmethod
     async def clear_cache(redis_client):
         """Clear test cache"""
@@ -460,7 +465,7 @@ def pytest_ignore_collect(path, config):
 
     legacy_patterns = (
         "tests/test_admin_comprehensive.py",
-        "tests/test_items_comprehensive.py",
+        "tests/test_appointments_comprehensive.py",
         "tests/test_superadmin_comprehensive.py",
         "tests/test_system_admin.py",
         "tests/test_auth.py",  # superseded by tests/test_auth_routes.py

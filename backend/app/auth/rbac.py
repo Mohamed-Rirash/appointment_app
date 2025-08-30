@@ -19,7 +19,7 @@ from app.auth.models import (
     role_permissions,
     roles,
     user_roles,
-    users
+    users,
 )
 from app.core.security import hash_password
 from app.loggs import log_security_event
@@ -119,7 +119,9 @@ class RoleCRUD:
         if role and role["is_system"]:
             # Only allow updating description and display_name for system roles
             allowed_updates = {
-                k: v for k, v in updates.items() if k in ["description", "display_name"]
+                k: v
+                for k, v in updates.appointments()
+                if k in ["description", "display_name"]
             }
             updates = allowed_updates
 
