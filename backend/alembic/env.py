@@ -6,11 +6,12 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from alembic import context
+from app.auth import models  # noqa: F401
 from app.auth.constants import SQLALCHEMY_DATABASE_URI
 
 # Import your models here to ensure they are registered with SQLAlchemy
 from app.database import metadata
-from app.auth import models  # noqa: F401
+from app.office_mgnt import models  # noqa: F401
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -71,12 +72,13 @@ def run_migrations_online() -> None:
     In this scenario we need to create an Engine
     and associate a connection with the context.
     """
+
     def process_revision_directives(context, revision, directives):
         if config.cmd_opts.autogenerate:
             script = directives[0]
             if script.upgrade_ops.is_empty():
                 directives[:] = []
-                print('No changes in schema detected.')
+                print("No changes in schema detected.")
 
     connectable = engine_from_config(
         config.get_section(config.config_ini_section, {}),
