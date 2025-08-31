@@ -84,3 +84,14 @@ async def deactivate_office(
     Deactivate an office (soft delete)
     """
     return await OfficeService.deactivate_office(db, office_id)
+
+
+# WARNING: this is not implemented yet
+@router.patch("/{office_id}/activate", response_model=OfficeRead)
+async def activate_office(
+    office_id: UUID, db: Database = Depends(get_db)
+) -> OfficeRead:
+    """
+    Deactivate an office (soft delete)
+    """
+    return await OfficeService.deactivate_office(db, office_id)

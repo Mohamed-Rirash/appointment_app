@@ -12,6 +12,7 @@ from sqlalchemy import (
     Table,
     Text,
     func,
+    text,
 )
 
 from app.database import metadata
@@ -23,6 +24,7 @@ offices = Table(
     Column("name", String(100), nullable=False, unique=True),
     Column("description", Text, nullable=True),
     Column("location", String, nullable=False),
+    Column("is_active", Boolean, nullable=False, server_default=text("true")),
     Column("created_at", DateTime(timezone=True), server_default=func.now()),
     Column(
         "updated_at",

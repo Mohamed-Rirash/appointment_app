@@ -1,6 +1,7 @@
 import html
 from datetime import datetime
 from typing import Optional
+from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -102,9 +103,10 @@ class OfficeUpdate(OfficeBase):
 
 
 class OfficeRead(OfficeBase):
-    id: str = Field(..., description="Unique identifier for the office")
+    id: UUID = Field(..., description="Unique identifier for the office")
     created_at: datetime = Field(description="Date and time of creation")
     updated_at: datetime = Field(description="Date and time of last update")
+    is_active: bool = Field(description="Whether the office is active or not")
 
     # Config to handle ORM objects
     class Config:

@@ -26,31 +26,34 @@ class OfficeMgmtCRUD:
     ) -> Optional[dict[str, Any]]:
         query = select(offices).where(offices.c.id == office_id)
         result = await session.fetch_one(query)
-        return dict(result) if result else {"message": "office not found"}
+        return dict(result) if result else None
 
     @staticmethod
-    async def get_by_status(
-        session: Database, is_active: bool
-    ) -> Optional[dict[str, Any]]:
+    async def get_by_status(session: Database, is_active: bool) -> list[dict[str, Any]]:
         query = select(offices).where(offices.c.is_active == is_active)
-        result = await session.fetch_one(query)
-        return dict(result) if result else {"message": "office not found"}
+        result = await session.fetch_all(query)
+        return [dict(row) for row in result]
 
     @staticmethod
-    async def read_by_name(
+    async def get_by_name(
         session: Database, office_name: str
     ) -> Optional[dict[str, Any]]:
         query = select(offices).where(offices.c.name == office_name)
         result = await session.fetch_one(query)
-        return dict(result) if result else {"message": "office not found"}
+        return dict(result) if result else None
 
     @staticmethod
     async def update(
         session: Database, office_id: uuid.UUID, office_data: dict
     ) -> Optional[dict[str, Any]]:
-        query = update(offices).where(offices.c.id == office_id).values(**office_data)
+        query = (
+            offices.update()
+            .where(offices.c.id == office_id)
+            .values(**office_data)
+            .returning(offices)  # this makes PostgreSQL return the updated row
+        )
         result = await session.fetch_one(query)
-        return dict(result) if result else {"message": "office not updated"}
+        return dict(result) if result else None
 
     @staticmethod
     async def delete(

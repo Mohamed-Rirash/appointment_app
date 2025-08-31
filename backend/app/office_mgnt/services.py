@@ -23,17 +23,6 @@ class OfficeService:
                 detail="Office with this name already exists",
             )
 
-        # Optional: Check for duplicate location if needed
-        if office_data.location:
-            existing_location = await OfficeMgmtCRUD.get_by_location(
-                session=session, location=office_data.location
-            )
-            if existing_location:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Another office already exists at this location",
-                )
-
         # Create office
         office_dict = office_data.model_dump()
         created_office = await OfficeMgmtCRUD.create(session, office_dict)

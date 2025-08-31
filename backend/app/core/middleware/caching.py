@@ -79,7 +79,7 @@ class ResponseCachingMiddleware(BaseHTTPMiddleware):
             if inm and etag and inm.strip() == etag:
                 resp_304 = Response(status_code=304)
                 # propagate cache-relevant headers
-                for hk, hv in cached_response.get("headers", {}).appointments():
+                for hk, hv in cached_response.get("headers", {}).items():
                     if hk.lower() in {"cache-control", "expires", "etag", "vary"}:
                         resp_304.headers[hk] = hv
                 resp_304.headers["X-Cache"] = "HIT"
