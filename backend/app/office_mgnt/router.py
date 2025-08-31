@@ -1,8 +1,8 @@
-from typing import List
+from typing import List, Optional
 from uuid import UUID
 
 from databases import Database
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.database import get_db
 from app.office_mgnt.schemas import OfficeCreate, OfficeRead, OfficeUpdate
@@ -10,7 +10,7 @@ from app.office_mgnt.services import OfficeService
 
 router = APIRouter(
     prefix="/offices",
-    tags=["Offices"],
+    tags=["admin"],
     responses={404: {"description": "Not found"}},
 )
 
@@ -26,11 +26,27 @@ async def create_office(
 
 
 @router.get("/", response_model=List[OfficeRead])
-async def read_offices(db: Database = Depends(get_db)) -> List[OfficeRead]:
+async def list_offices(
+    db: Database = Depends(get_db),
+    status: Optional[str] = Query(
+        None,
+        description="Filter by status: 'active', 'deactivated'. Omit for all.",
+        example="active",
+    ),
+) -> List[OfficeRead]:
     """
-    Get all offices
+    Retrieve all offices, optionally filtered by status.
     """
-    return await OfficeService.get_all_offices(db)
+    if status is None:
+        return await OfficeService.get_all_offices(db)
+    elif status == "active" or status == "deactivated":
+        return await OfficeService.get_offices_by_status(db, status)
+    else:
+        # Optional: return 400 for invalid status
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid status filter. Use 'active' or 'deactivated'.",
+        )
 
 
 @router.get("/{office_id}", response_model=OfficeRead)
@@ -58,14 +74,6 @@ async def delete_office(office_id: UUID, db: Database = Depends(get_db)) -> None
     """
     await OfficeService.delete_office(db, office_id)
     return None
-
-
-@router.get("/active/", response_model=List[OfficeRead])
-async def read_active_offices(db: Database = Depends(get_db)) -> List[OfficeRead]:
-    """
-    Get all active offices
-    """
-    return await OfficeService.get_active_offices(db)
 
 
 @router.patch("/{office_id}/deactivate", response_model=OfficeRead)

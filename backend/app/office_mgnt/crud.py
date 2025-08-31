@@ -29,6 +29,14 @@ class OfficeMgmtCRUD:
         return dict(result) if result else {"message": "office not found"}
 
     @staticmethod
+    async def get_by_status(
+        session: Database, is_active: bool
+    ) -> Optional[dict[str, Any]]:
+        query = select(offices).where(offices.c.is_active == is_active)
+        result = await session.fetch_one(query)
+        return dict(result) if result else {"message": "office not found"}
+
+    @staticmethod
     async def read_by_name(
         session: Database, office_name: str
     ) -> Optional[dict[str, Any]]:

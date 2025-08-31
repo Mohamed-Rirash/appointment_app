@@ -1,12 +1,25 @@
-from sqlalchemy import (Boolean, Column, DateTime, Float, ForeignKey, Integer,
-                        String, Table, Text)
+import uuid
+
+from sqlalchemy import (
+    UUID,
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Table,
+    Text,
+    func,
+)
 
 from app.database import metadata
 
-offices= Table(
+offices = Table(
     "offices",
     metadata,
-    Column("id" UUID(as_uuid=True), primary_key=True, default=uuid.uuid4),
+    Column("id", UUID(as_uuid=True), primary_key=True, default=uuid.uuid4),
     Column("name", String(100), nullable=False, unique=True),
     Column("description", Text, nullable=True),
     Column("location", String, nullable=False),
@@ -17,5 +30,4 @@ offices= Table(
         server_default=func.now(),
         onupdate=func.now(),
     ),
-
 )

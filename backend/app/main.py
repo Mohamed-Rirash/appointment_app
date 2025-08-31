@@ -44,6 +44,7 @@ from app.core.middleware.security import (
 )
 from app.database import database
 from app.loggs import get_logger, structured_logger
+from app.office_mgnt.router import router as office_mgnt_router
 from app.rate_limiting import (
     EndpointRateLimitMiddleware,
     RateLimitMiddleware,
@@ -238,3 +239,6 @@ app.include_router(admin_router, prefix=settings.API_V1_STR)
 
 # Include Appointments (repurposed appointments) router
 app.include_router(appointments_router, prefix=settings.API_V1_STR)
+
+# Include Office Management router
+app.include_router(office_mgnt_router, prefix=settings.API_V1_STR)

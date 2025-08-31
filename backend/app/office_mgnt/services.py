@@ -138,11 +138,12 @@ class OfficeService:
         return [OfficeRead(**office) for office in offices]
 
     @staticmethod
-    async def get_active_offices(session) -> List[OfficeRead]:
+    async def get_offices_by_status(session, status: str) -> List[OfficeRead]:
         """
         Get only active offices
         """
-        offices = await OfficeMgmtCRUD.get_by_status(session, is_active=True)
+        is_active: bool = True if status == "active" else False
+        offices = await OfficeMgmtCRUD.get_by_status(session, is_active=is_active)
 
         if not offices:
             return []
