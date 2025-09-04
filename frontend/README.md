@@ -1,0 +1,2 @@
+FIRST_SUPERUSER=admin@gmail.com
+FIRST_SUPERUSER_PASSWORD=Moh@juro1
