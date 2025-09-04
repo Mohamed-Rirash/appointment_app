@@ -28,20 +28,18 @@ from app.auth.schemas import (
 )
 from app.auth.service import (
     activate_user_account,
-    create_user_service,
-    user_authenticate_service,
-    refresh_access_token_service,
-    logout_user_service,
-    get_current_user_profile_service,
     change_password_service,
+    create_user_service,
+    get_current_user_profile_service,
+    logout_user_service,
+    refresh_access_token_service,
     request_password_reset_service,
+    resend_verification_email_service,
     reset_password_service,
     set_password_first_time_service,
-    resend_verification_email_service,
+    user_authenticate_service,
 )
-from app.auth.user_emails import (
-    send_account_invite_email,
-)
+from app.auth.user_emails import send_account_invite_email
 from app.core.middleware.error_handling import (
     AuthenticationError,
     BusinessLogicError,
@@ -99,7 +97,6 @@ async def login_user(
 async def refresh_token(
     response: Response,
     request: Request,
-    payload: RefreshTokenRequest | None = None,
     session: Database = Depends(get_db),
 ):
     """Refresh access token using the refresh token.
@@ -108,8 +105,7 @@ async def refresh_token(
     Rotates the refresh token and resets the cookie for security.
     """
     cookie_token = request.cookies.get("refresh_token")
-    body_token = getattr(payload, "refresh_token", None) if payload else None
-    token = cookie_token or body_token
+    token = cookie_token
     return await refresh_access_token_service(session, token, response)
 
 
@@ -172,7 +168,9 @@ async def request_password_reset(
 ):
     """Request password reset"""
     await request_password_reset_service(session, request, background_tasks)
-    return MessageResponse(message="If the email exists, a password reset link has been sent")
+    return MessageResponse(
+        message="If the email exists, a password reset link has been sent"
+    )
 
 
 @router.post(
@@ -197,17 +195,19 @@ async def set_password_first_time(
     return MessageResponse(message="Password set successfully")
 
 
-@router.post(
-    "/resend-verification",
-    status_code=status.HTTP_200_OK,
-    response_model=MessageResponse,
-)
-async def resend_verification_email(
-    request: EmailVerificationRequest,
-    background_tasks: BackgroundTasks,
-    session: Database = Depends(get_db),
-):
-    """Resend email verification"""
-    await resend_verification_email_service(session, request, background_tasks)
-    # Always respond generically
-    return MessageResponse(message="If the email exists, a verification link has been sent")
+# @router.post(
+#     "/resend-verification",
+#     status_code=status.HTTP_200_OK,
+#     response_model=MessageResponse,
+# )
+# async def resend_verification_email(
+#     request: EmailVerificationRequest,
+#     background_tasks: BackgroundTasks,
+#     session: Database = Depends(get_db),
+# ):
+#     """Resend email verification"""
+#     await resend_verification_email_service(session, request, background_tasks)
+#     # Always respond generically
+#     return MessageResponse(
+#         message="If the email exists, a verification link has been sent"
+#     )
