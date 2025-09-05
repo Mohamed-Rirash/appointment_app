@@ -3,8 +3,15 @@ from uuid import UUID
 
 from fastapi import HTTPException, status
 
-from app.office_mgnt.crud import OfficeMgmtCRUD
-from app.office_mgnt.schemas import OfficeCreate, OfficeRead, OfficeUpdate
+from app.office_mgnt.crud import OfficeMembershipMgmtCRUD, OfficeMgmtCRUD
+from app.office_mgnt.schemas import (
+    MembershipCreate,
+    MembershipRead,
+    MembershipUpdate,
+    OfficeCreate,
+    OfficeRead,
+    OfficeUpdate,
+)
 
 
 class OfficeService:
@@ -164,3 +171,133 @@ class OfficeService:
             )
 
         return OfficeRead(**updated_office)
+
+
+class OfficeMembershipService:
+    @staticmethod
+    async def assign_user_to_office(
+        session, office_id: UUID, membership_data: MembershipCreate
+    ) -> MembershipRead:
+        """
+        Assign a user to an office.
+        - Ensure the user is not already assigned to this office.
+        """
+        existing_membership = await OfficeMembershipMgmtCRUD.get_membership(
+            session, office_id, membership_data.user_id
+        )
+        if existing_membership:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="User is already assigned to this office",
+            )
+
+        created = await OfficeMembershipMgmtCRUD.create_membership(
+            session, office_id, membership_data.model_dump()
+        )
+        if not created:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to assign user to office",
+            )
+
+        return MembershipRead(**created)
+
+    @staticmethod
+    async def list_office_members(session, office_id: UUID) -> List[MembershipRead]:
+        """
+        List all members of a given office.
+        """
+        members = await OfficeMembershipMgmtCRUD.get_members_by_office(
+            session, office_id
+        )
+        return [MembershipRead(**m) for m in members] if members else []
+
+    @staticmethod
+    async def get_office_member(
+        session, office_id: UUID, membership_id: UUID
+    ) -> MembershipRead:
+        """
+        Get a specific membership record.
+        """
+        record = await OfficeMembershipMgmtCRUD.get_membership(
+            session, office_id, membership_id
+        )
+        if not record:
+            raise HTTPException(status_code=404, detail="Membership not found")
+
+        return MembershipRead(**record)
+
+    @staticmethod
+    async def update_office_member(
+        session, office_id: UUID, membership_id: UUID, data: MembershipUpdate
+    ) -> MembershipRead:
+        """
+        Update an existing membership.
+        """
+        updated = await OfficeMembershipMgmtCRUD.update_membership(
+            session, office_id, membership_id, data.model_dump(exclude_unset=True)
+        )
+        if not updated:
+            raise HTTPException(status_code=404, detail="Membership not found")
+
+        return MembershipRead(**updated)
+
+    @staticmethod
+    async def remove_office_member(
+        session, office_id: UUID, membership_id: UUID
+    ) -> Dict[str, str]:
+        """
+        Soft delete a membership from an office.
+        """
+        existing = await OfficeMembershipMgmtCRUD.get_membership(
+            session, office_id, membership_id
+        )
+        if not existing:
+            raise HTTPException(status_code=404, detail="Membership not found")
+
+        success = await OfficeMembershipMgmtCRUD.soft_delete_membership(
+            session, office_id, membership_id
+        )
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to remove membership",
+            )
+
+        return {"message": f"Membership {membership_id} removed successfully"}
+
+    @staticmethod
+    async def list_user_offices(session, user_id: UUID) -> List[MembershipRead]:
+        """
+        List all offices that a user is a member of.
+        """
+        memberships = await OfficeMembershipMgmtCRUD.get_user_memberships(
+            session, user_id
+        )
+        return [MembershipRead(**m) for m in memberships] if memberships else []
+
+    @staticmethod
+    async def search_office_members(
+        session,
+        name: Optional[str] = None,
+        position: Optional[str] = None,
+        office_id: Optional[UUID] = None,
+    ) -> List[MembershipRead]:
+        """
+        Search memberships by name, position, or office.
+        """
+        records = await OfficeMembershipMgmtCRUD.search_memberships(
+            session, name=name, position=position, office_id=office_id
+        )
+        return [MembershipRead(**r) for r in records] if records else []
+
+    @staticmethod
+    async def get_office_primary_contact(session, office_id: UUID) -> MembershipRead:
+        """
+        Get the primary contact of an office.
+        """
+        record = await OfficeMembershipMgmtCRUD.get_primary_contact(session, office_id)
+        if not record:
+            raise HTTPException(status_code=404, detail="Primary contact not found")
+
+        return MembershipRead(**record)

@@ -3,10 +3,10 @@ import uuid
 from typing import Any, Optional
 
 from databases import Database
-from sqlalchemy import delete, insert, select, update.func
+from sqlalchemy import delete, func, insert, select, update
 
+from app.auth.models import users
 from app.office_mgnt.models import office_memberships, offices
-from app.users.models import users
 
 
 class OfficeMgmtCRUD:
@@ -153,13 +153,12 @@ class OfficeMembershipMgmtCRUD:
         result = await session.fetch_all(query)
         return [dict(row) for row in result]
 
-
     @staticmethod
     async def get_primary_contact(session, office_id):
         query = select(office_memberships).where(
             office_memberships.c.office_id == office_id,
-            office_memberships.c.is_primary == True,
-            office_memberships.c.is_active == True,
+            office_memberships.c.is_primary,
+            office_memberships.c.is_active,
         )
         result = await session.fetch_one(query)
         return dict(result) if result else None
