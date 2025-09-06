@@ -2,7 +2,6 @@ import html
 from datetime import datetime
 from typing import Optional
 from uuid import UUID
-
 from pydantic import BaseModel, Field, field_validator
 
 
@@ -108,6 +107,37 @@ class OfficeRead(OfficeBase):
     updated_at: datetime = Field(description="Date and time of last update")
     is_active: bool = Field(description="Whether the office is active or not")
 
-    # Config to handle ORM objects
-    class Config:
-        from_attributes = True
+
+
+
+
+
+class MembershipBase(BaseModel):
+    user_id: UUID
+    position: Optional[str] = None
+    is_primary: bool = False
+
+
+class MembershipCreate(MembershipBase):
+    pass
+
+
+class MembershipUpdate(BaseModel):
+    position: Optional[str] = None
+    is_primary: Optional[bool] = None
+    is_active: Optional[bool] = None
+    ended_at: Optional[datetime] = None
+
+
+class MembershipRead(BaseModel):
+    id: UUID
+    user_id: UUID
+    office_id: UUID
+    position: Optional[str]
+    is_primary: bool
+    is_active: bool
+    assigned_at: Optional[datetime]
+    ended_at: Optional[datetime]
+    assigned_by_id: Optional[UUID]
+
+    
