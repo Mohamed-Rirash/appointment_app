@@ -107,6 +107,7 @@ export default function Signin() {
                       {...field}
                     />
                   </FormControl>
+                  <p className="bg-amber-500"> Forget Password?</p>
                   <FormMessage className="py-2 text-lg" />
                 </FormItem>
               )}
