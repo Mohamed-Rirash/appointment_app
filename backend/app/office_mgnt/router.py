@@ -142,6 +142,7 @@ async def assign_user_to_office(
     )
 
 
+# WARNING: in here we need to fix the admin role requirement and also return the users data
 @router.get("/{office_id}/memberships", response_model=List[MembershipRead])
 async def get_office_members(
     office_id: UUID,
@@ -151,17 +152,7 @@ async def get_office_members(
     return await OfficeMembershipService.list_office_members(db, office_id)
 
 
-@router.get("/{office_id}/memberships/{membership_id}", response_model=MembershipRead)
-async def get_office_member(
-    office_id: UUID,
-    membership_id: UUID,
-    admin: CurrentUser = Depends(require_role(AdminLevel.ADMIN)),
-    db: Database = Depends(get_db),
-):
-    return await OfficeMembershipService.get_office_member(db, office_id, membership_id)
-
-
-@router.put("/{office_id}/memberships/{membership_id}", response_model=MembershipRead)
+@router.put("/{office_id}/memberships/{membership_id}")
 async def update_office_membership(
     office_id: UUID,
     membership_id: UUID,
@@ -208,12 +199,3 @@ async def search_memberships(
     return await OfficeMembershipService.search_office_members(
         db, name, position, office_id
     )
-
-
-@router.get("/{office_id}/primary", response_model=MembershipRead)
-async def get_primary_contact(
-    office_id: UUID,
-    admin: CurrentUser = Depends(require_role(AdminLevel.ADMIN)),
-    db: Database = Depends(get_db),
-):
-    return await OfficeMembershipService.get_office_primary_contact(db, office_id)

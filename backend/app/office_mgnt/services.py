@@ -213,27 +213,13 @@ class OfficeMembershipService:
         members = await OfficeMembershipMgmtCRUD.get_members_by_office(
             session, office_id
         )
+
         return [MembershipRead(**m) for m in members] if members else []
-
-    @staticmethod
-    async def get_office_member(
-        session, office_id: UUID, membership_id: UUID
-    ) -> MembershipRead:
-        """
-        Get a specific membership record.
-        """
-        record = await OfficeMembershipMgmtCRUD.get_membership(
-            session, office_id, membership_id
-        )
-        if not record:
-            raise HTTPException(status_code=404, detail="Membership not found")
-
-        return MembershipRead(**record)
 
     @staticmethod
     async def update_office_member(
         session, office_id: UUID, membership_id: UUID, data: MembershipUpdate
-    ) -> MembershipRead:
+    ) -> dict[str, str]:
         """
         Update an existing membership.
         """
@@ -243,7 +229,7 @@ class OfficeMembershipService:
         if not updated:
             raise HTTPException(status_code=404, detail="Membership not found")
 
-        return MembershipRead(**updated)
+        return {"message": "Membership updated successfully"}
 
     @staticmethod
     async def remove_office_member(
@@ -293,14 +279,3 @@ class OfficeMembershipService:
             session, name=name, position=position, office_id=office_id
         )
         return [MembershipRead(**r) for r in records] if records else []
-
-    @staticmethod
-    async def get_office_primary_contact(session, office_id: UUID) -> MembershipRead:
-        """
-        Get the primary contact of an office.
-        """
-        record = await OfficeMembershipMgmtCRUD.get_primary_contact(session, office_id)
-        if not record:
-            raise HTTPException(status_code=404, detail="Primary contact not found")
-
-        return MembershipRead(**record)

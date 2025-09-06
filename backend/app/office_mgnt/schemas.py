@@ -128,16 +128,18 @@ class MembershipUpdate(BaseModel):
     is_active: Optional[bool] = None
     ended_at: Optional[datetime] = None
 
-
 class MembershipRead(BaseModel):
-    id: UUID
+    # User info
     user_id: UUID
-    office_id: UUID
-    position: Optional[str]
-    is_primary: bool
-    is_active: bool
-    assigned_at: Optional[datetime]
-    ended_at: Optional[datetime]
-    assigned_by_id: Optional[UUID]
+    first_name: str
+    last_name: str
+    email: str
+    user_active: bool
 
-    
+    # Membership info
+    membership_id: UUID
+    position: str | None = None
+    is_primary: bool
+    membership_active: bool
+    assigned_at: datetime
+
