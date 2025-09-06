@@ -19,7 +19,7 @@ from app.office_mgnt.services import OfficeMembershipService, OfficeService
 
 router = APIRouter(
     prefix="/offices",
-    tags=["admin"],
+    tags=["office_mgnt for addmin only"],
     responses={404: {"description": "Not found"}},
 )
 
@@ -63,7 +63,11 @@ async def list_offices(
 
 
 @router.get("/{office_id}", response_model=OfficeRead)
-async def read_office(office_id: UUID, db: Database = Depends(get_db)) -> OfficeRead:
+async def read_office(
+    office_id: UUID,
+    admin: CurrentUser = Depends(require_role(AdminLevel.ADMIN)),
+    db: Database = Depends(get_db),
+) -> OfficeRead:
     """
     Get a specific office by ID
     """
@@ -134,7 +138,7 @@ async def assign_user_to_office(
     db: Database = Depends(get_db),
 ):
     return await OfficeMembershipService.assign_user_to_office(
-        db, office_id, membership
+        db, office_id, membership, admin.id
     )
 
 

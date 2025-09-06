@@ -116,7 +116,6 @@ class MembershipBase(BaseModel):
     user_id: UUID
     position: Optional[str] = None
     is_primary: bool = False
-    assigned_by_id: Optional[UUID] = None
 
 
 class MembershipCreate(MembershipBase):

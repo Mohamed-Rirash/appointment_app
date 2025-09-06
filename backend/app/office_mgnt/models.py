@@ -52,7 +52,7 @@ office_memberships = Table(
         nullable=False,
         index=True,
     ),
-    Column("Position", String(100), nullable=True),
+    Column("position", String(100), nullable=True),
     # Mark if this user is the primary contact/head of the office
     Column("is_primary", Boolean, nullable=False, server_default=text("false")),
     # Soft delete / active status

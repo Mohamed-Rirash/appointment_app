@@ -176,7 +176,7 @@ class OfficeService:
 class OfficeMembershipService:
     @staticmethod
     async def assign_user_to_office(
-        session, office_id: UUID, membership_data: MembershipCreate
+        session, office_id: UUID, membership_data: MembershipCreate, admin_id: UUID
     ) -> MembershipRead:
         """
         Assign a user to an office.
@@ -190,9 +190,12 @@ class OfficeMembershipService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="User is already assigned to this office",
             )
+        # lets add assigned by admin id
+        membership_data_dict = membership_data.model_dump()
+        membership_data_dict["assigned_by_id"] = admin_id
 
         created = await OfficeMembershipMgmtCRUD.create_membership(
-            session, office_id, membership_data.model_dump()
+            session, office_id, membership_data_dict
         )
         if not created:
             raise HTTPException(

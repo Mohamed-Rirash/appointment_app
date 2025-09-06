@@ -15,11 +15,7 @@ class OfficeMgmtCRUD:
         office_data.setdefault("id", uuid.uuid4())
         query = insert(offices).values(**office_data).returning(*offices.c)
         result = await session.fetch_one(query)
-        return (
-            dict(result)
-            if result
-            else {"message": "office did not created successfully"}
-        )
+        return dict(result) if result else None
 
     @staticmethod
     async def get_by_id(
@@ -76,10 +72,12 @@ class OfficeMembershipMgmtCRUD:
 
     @staticmethod
     async def create_membership(session, office_id, data):
+        data.setdefault("id", uuid.uuid4())
         query = (
             insert(office_memberships)
             .values(
                 **data,
+                office_id=office_id,
             )
             .returning(office_memberships)
         )
