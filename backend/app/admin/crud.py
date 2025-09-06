@@ -70,14 +70,14 @@ class AdminUserCRUD:
             if filters.is_verified is not None:
                 conditions.append(users.c.is_verified == filters.is_verified)
 
-            if filters.is_system_user is not None:
-                conditions.append(users.c.is_system_user == filters.is_system_user)
+            # if filters.is_system_user is not None:
+            #     conditions.append(users.c.is_system_user == filters.is_system_user)
+            #
+            # if filters.created_after:
+            #     conditions.append(users.c.created_at >= filters.created_after)
 
-            if filters.created_after:
-                conditions.append(users.c.created_at >= filters.created_after)
-
-            if filters.created_before:
-                conditions.append(users.c.created_at <= filters.created_before)
+            # if filters.created_before:
+            #     conditions.append(users.c.created_at <= filters.created_before)
 
             if conditions:
                 query = query.where(and_(*conditions))
@@ -188,9 +188,6 @@ class AdminUserCRUD:
             raise UserNotFoundError(str(user_id))
         # convert to dict
         user = dict(user) if user else {}
-        print("##############################################################")
-        print(user)
-        print("##############################################################")
 
         if user["is_system_user"]:
             raise ValueError("System users cannot be deleted")

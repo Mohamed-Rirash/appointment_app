@@ -3,11 +3,11 @@ Admin module Pydantic schemas
 """
 
 from datetime import datetime
-from typing import List, Optional, Dict, Any, Union
-from uuid import UUID
 from enum import Enum
+from typing import Any, Dict, List, Optional, Union
+from uuid import UUID
 
-from pydantic import BaseModel, Field, validator, EmailStr
+from pydantic import BaseModel, EmailStr, Field, validator
 
 from app.auth.schemas import UserRead
 
@@ -351,14 +351,14 @@ class UserSearchFilters(BaseModel):
         None, description="Filter by system user status"
     )
     roles: Optional[List[str]] = Field(None, description="Filter by roles")
-    created_after: Optional[datetime] = Field(None, description="Created after date")
-    created_before: Optional[datetime] = Field(None, description="Created before date")
-    last_login_after: Optional[datetime] = Field(
-        None, description="Last login after date"
-    )
-    last_login_before: Optional[datetime] = Field(
-        None, description="Last login before date"
-    )
+    # created_after: Optional[datetime] = Field(None, description="Created after date")
+    # created_before: Optional[datetime] = Field(None, description="Created before date")
+    # last_login_after: Optional[datetime] = Field(
+    #     None, description="Last login after date"
+    # )
+    # last_login_before: Optional[datetime] = Field(
+    #     None, description="Last login before date"
+    # )
 
 
 class AdminActivityFilters(BaseModel):

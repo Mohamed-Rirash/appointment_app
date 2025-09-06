@@ -1,55 +1,30 @@
 # Router for authentication endpoints
 
-from typing import Annotated
 
 from databases import Database
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Request, status
 from fastapi.responses import Response
 from fastapi.security import OAuth2PasswordRequestForm
-from starlette.responses import JSONResponse
 
-from app.auth.crud import UserCRUD
 from app.auth.dependencies import CurrentUser, require_authentication
-from app.auth.rbac import RBACCRUD, RoleCRUD
 from app.auth.schemas import (
-    EmailVerificationRequest,
-    LoginRequest,
     LoginResponse,
     MessageResponse,
     PasswordChangeRequest,
     PasswordResetConfirm,
     PasswordResetRequest,
-    RefreshTokenRequest,
     RefreshTokenResponse,
-    UserCreate,
     UserProfile,
-    UserRead,
-    VerifyUserRequest,
 )
 from app.auth.service import (
-    activate_user_account,
     change_password_service,
-    create_user_service,
     get_current_user_profile_service,
     logout_user_service,
     refresh_access_token_service,
     request_password_reset_service,
-    resend_verification_email_service,
     reset_password_service,
     set_password_first_time_service,
     user_authenticate_service,
-)
-from app.auth.user_emails import send_account_invite_email
-from app.core.middleware.error_handling import (
-    AuthenticationError,
-    BusinessLogicError,
-    ResourceNotFoundError,
-)
-from app.core.security import (
-    create_access_token,
-    create_refresh_token,
-    generate_email_verification_token,
-    verify_email_verification_token,
 )
 from app.database import get_db
 
@@ -168,9 +143,7 @@ async def request_password_reset(
 ):
     """Request password reset"""
     await request_password_reset_service(session, request, background_tasks)
-    return MessageResponse(
-        message="If the email exists, a password reset link has been sent"
-    )
+    return MessageResponse(message="a password reset link has been sent")
 
 
 @router.post(
