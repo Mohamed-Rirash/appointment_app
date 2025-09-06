@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse
 
 # from app.admin.middleware import AdminRateLimitMiddleware
 # from app.admin.router import router as admin_router
-from app.admin.routes import router as admin_router
+from app.admin.router import router as admin_router
 from app.appointments.router import router as appointments_router
 
 # Router imports

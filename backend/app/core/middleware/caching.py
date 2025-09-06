@@ -287,7 +287,7 @@ class ResponseCachingMiddleware(BaseHTTPMiddleware):
             "content-language",
             "content-encoding",
         }
-        for key, value in cached_data["headers"].appointments():
+        for key, value in cached_data["headers"].items():
             if key.lower() in allowlist:
                 response.headers[key] = value
 
