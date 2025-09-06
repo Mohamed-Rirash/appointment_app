@@ -14,6 +14,7 @@ from sqlalchemy import (
     func,
     text,
 )
+from sqlalchemy_views import CreateView
 
 from app.database import metadata
 
@@ -70,4 +71,31 @@ office_memberships = Table(
     ),
     # Optional: Add if you want to track who made the assignment
     Column("assigned_by_id", UUID(as_uuid=True), ForeignKey("users.id"), nullable=True),
+)
+
+
+office_member_details = Table("office_member_details", metadata)
+
+# Define the SQL that powers the view
+office_member_details_def = text(
+    """
+    SELECT
+        u.id AS user_id,
+        u.first_name,
+        u.last_name,
+        u.email,
+        u.is_active AS user_active,
+        m.id AS membership_id,
+        m.office_id,
+        m.position,
+        m.is_primary,
+        m.is_active AS membership_active,
+        m.assigned_at,
+        m.ended_at,
+        o.name AS office_name,
+        o.location AS office_location
+    FROM office_memberships m
+    JOIN users u ON u.id = m.user_id
+    JOIN offices o ON o.id = m.office_id
+"""
 )

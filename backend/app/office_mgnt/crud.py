@@ -3,10 +3,10 @@ import uuid
 from typing import Any, Optional
 
 from databases import Database
-from sqlalchemy import delete, func, insert, select, update
+from sqlalchemy import delete, func, insert, or_, select, update
 
 from app.auth.models import users
-from app.office_mgnt.models import office_memberships, offices
+from app.office_mgnt.models import office_member_details, office_memberships, offices
 
 
 class OfficeMgmtCRUD:
@@ -139,19 +139,20 @@ class OfficeMembershipMgmtCRUD:
         return await session.fetch_all(query)
 
     @staticmethod
-    async def search_memberships(session, name=None, position=None, office_id=None):
-        query = select(
-            office_memberships, users.c.name, offices.c.name.label("office_name")
-        ).select_from(
-            office_memberships.join(
-                users, office_memberships.c.user_id == users.c.id
-            ).join(offices, office_memberships.c.office_id == offices.c.id)
+    async def search_office_members(session, search_term: str):
+        """
+        Search office members by first name, last name, position, or office name.
+        """
+        pattern = f"%{search_term}%"
+
+        query = select(office_member_details).where(
+            or_(
+                office_member_details.c.first_name.ilike(pattern),
+                office_member_details.c.last_name.ilike(pattern),
+                office_member_details.c.position.ilike(pattern),
+                office_member_details.c.office_name.ilike(pattern),
+            )
         )
-        if name:
-            query = query.where(users.c.name.ilike(f"%{name}%"))
-        if position:
-            query = query.where(office_memberships.c.position.ilike(f"%{position}%"))
-        if office_id:
-            query = query.where(office_memberships.c.office_id == office_id)
-        result = await session.fetch_all(query)
-        return [dict(row) for row in result]
+
+        result = await session.execute(query)
+        return [dict(row) for row in result.mappings()]
