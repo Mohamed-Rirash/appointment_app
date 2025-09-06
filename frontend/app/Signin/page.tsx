@@ -15,7 +15,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 // import { signIn } from "next-auth/react";
 import { useState } from "react";
-import { authenticate } from "@/lib/services/action";
+import { authenticate } from "@/fuctions/services/action";
 
 // define the form schema
 const formSchema = z.object({

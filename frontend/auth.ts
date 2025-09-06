@@ -1,6 +1,6 @@
 import NextAuth, { CredentialsSignin } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import { client } from "./lib/api/client";
+import { client } from "./fuctions/api/client";
 
 // Extend NextAuth types
 declare module "next-auth" {
