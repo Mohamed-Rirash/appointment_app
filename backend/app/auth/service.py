@@ -12,19 +12,19 @@ from app.auth.rbac import RBACCRUD
 from app.auth.security import hash_password, verify_password
 from app.auth.user_emails import (
     send_account_activation_confirmation_email,
-    send_password_reset_email,
     send_account_verification_email,
+    send_password_reset_email,
 )
 from app.auth.utils import get_context_string
 from app.core.security import (
     TokenError,
     create_access_token,
     create_refresh_token,
+    generate_password_reset_token,
     is_jti_revoked,
     revoke_token_jti,
-    verify_token,
-    generate_password_reset_token,
     verify_password_reset_token,
+    verify_token,
 )
 
 settings = get_auth_settings()
@@ -107,7 +107,9 @@ async def logout_user_service(session, request, response, current_user) -> None:
     """
     # Attempt to revoke current access token (best-effort)
     try:
-        auth_header = request.headers.get("authorization") or request.headers.get("Authorization")
+        auth_header = request.headers.get("authorization") or request.headers.get(
+            "Authorization"
+        )
         if auth_header and auth_header.lower().startswith("bearer "):
             access_token = auth_header.split(" ", 1)[1]
             payload = verify_token(access_token, token_type="access")
@@ -154,7 +156,9 @@ async def get_current_user_profile_service(session, current_user):
 
     user_perms = await RBACCRUD.get_user_permissions(session, current_user.id)
     perm_names = (
-        list({f"{p['resource']}:{p['action']}" for p in user_perms}) if user_perms else []
+        list({f"{p['resource']}:{p['action']}" for p in user_perms})
+        if user_perms
+        else []
     )
 
     return {
@@ -174,10 +178,15 @@ async def change_password_service(session, current_user, request):
     """Change the current user's password after verifying current password."""
     user = await UserCRUD.get_by_id(session, current_user.id)
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
 
     if not await verify_password(user["password"], request.current_password):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Current password is incorrect")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Current password is incorrect",
+        )
 
     new_password_hash = await hash_password(request.new_password)
     await UserCRUD.update(session, current_user.id, {"password": new_password_hash})
@@ -187,7 +196,9 @@ async def request_password_reset_service(session, request, background_tasks):
     """Request a password reset by sending an email with a reset token."""
     user = await UserCRUD.get_by_email(session, request.email)
     if not user:
-        return  # Don't reveal if email exists or not
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
 
     reset_token = generate_password_reset_token(user["id"])
     await send_password_reset_email(user, reset_token, background_tasks)
@@ -197,32 +208,41 @@ async def reset_password_service(session, request):
     """Reset password using a valid reset token."""
     user_id = verify_password_reset_token(request.token)
     if not user_id:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired reset token")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired reset token",
+        )
 
     new_password_hash = await hash_password(request.new_password)
     result = await UserCRUD.update(
         session,
-        user_id,
+        user_id,  # pyright: ignore[reportArgumentType]
         {"password": new_password_hash, "is_verified": True, "is_active": True},
     )
     if not result:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
 
 
 async def set_password_first_time_service(session, request):
     """Set password for first-time login using invitation/reset token."""
     user_id = verify_password_reset_token(request.token)
     if not user_id:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token"
+        )
 
     new_password_hash = await hash_password(request.new_password)
     result = await UserCRUD.update(
         session,
-        user_id,
+        user_id,  # pyright: ignore[reportArgumentType]
         {"password": new_password_hash, "is_verified": True, "is_active": True},
     )
     if not result:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
 
 
 async def resend_verification_email_service(session, request, background_tasks):
