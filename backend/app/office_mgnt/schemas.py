@@ -143,3 +143,25 @@ class MembershipRead(BaseModel):
     membership_active: bool
     assigned_at: datetime
 
+
+
+
+class OfficeMemberDetailRead(BaseModel):
+    user_id: UUID
+    first_name: str
+    last_name: str
+    email: str
+    user_active: bool
+    membership_id: UUID
+    office_id: UUID
+    position: str | None
+    is_primary: bool
+    membership_active: bool
+    assigned_at: datetime | None
+    ended_at: datetime | None
+    office_name: str
+    office_location: str
+
+    class Config:
+        # allow SQLAlchemy row objects to be dumped directly
+        from_attributes = True

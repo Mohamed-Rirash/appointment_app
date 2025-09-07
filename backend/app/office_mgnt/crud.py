@@ -3,7 +3,7 @@ import uuid
 from typing import Any, Optional
 
 from databases import Database
-from sqlalchemy import delete, func, insert, or_, select, update
+from sqlalchemy import and_, delete, func, insert, or_, select, update
 
 from app.auth.models import users
 from app.office_mgnt.models import office_member_details, office_memberships, offices
@@ -85,6 +85,16 @@ class OfficeMembershipMgmtCRUD:
         return dict(result) if result else None
 
     @staticmethod
+    async def get_membership(session, office_id, membership_id):
+        print(f"membership_id: {type(membership_id)}")
+        print(f"office_id: {type(office_id)}")
+        query = select(office_memberships).where(
+            office_memberships.c.id == membership_id
+        )
+        result = await session.fetch_one(query)
+        return dict(result._mapping) if result else None
+
+    @staticmethod
     async def get_members_by_office(session, office_id):
         j = office_memberships.join(users, office_memberships.c.user_id == users.c.id)
         query = (
@@ -125,7 +135,9 @@ class OfficeMembershipMgmtCRUD:
             update(office_memberships)
             .where(
                 office_memberships.c.id == membership_id,
-                office_memberships.c.office_id == office_id,
+                and_(
+                    office_memberships.c.office_id == office_id,
+                ),
             )
             .values(is_active=False, ended_at=func.now())
         )
@@ -154,5 +166,5 @@ class OfficeMembershipMgmtCRUD:
             )
         )
 
-        result = await session.execute(query)
+        result = await session.fetch_all(query)
         return [dict(row) for row in result.mappings()]

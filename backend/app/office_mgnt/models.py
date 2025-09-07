@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import (
+from sqlalchemy import (  # only so we can keep the original column order / labels
     UUID,
     Boolean,
     Column,
@@ -12,10 +12,13 @@ from sqlalchemy import (
     Table,
     Text,
     func,
+    literal_column,
+    select,
     text,
 )
 from sqlalchemy_views import CreateView
 
+from app.auth.models import users
 from app.database import metadata
 
 offices = Table(
@@ -76,26 +79,24 @@ office_memberships = Table(
 
 office_member_details = Table("office_member_details", metadata)
 
-# Define the SQL that powers the view
-office_member_details_def = text(
-    """
-    SELECT
-        u.id AS user_id,
-        u.first_name,
-        u.last_name,
-        u.email,
-        u.is_active AS user_active,
-        m.id AS membership_id,
-        m.office_id,
-        m.position,
-        m.is_primary,
-        m.is_active AS membership_active,
-        m.assigned_at,
-        m.ended_at,
-        o.name AS office_name,
-        o.location AS office_location
-    FROM office_memberships m
-    JOIN users u ON u.id = m.user_id
-    JOIN offices o ON o.id = m.office_id
-"""
+
+office_member_details_def = select(
+    users.c.id.label("user_id"),
+    users.c.first_name,
+    users.c.last_name,
+    users.c.email,
+    users.c.is_active.label("user_active"),
+    office_memberships.c.id.label("membership_id"),
+    office_memberships.c.office_id,
+    office_memberships.c.position,
+    office_memberships.c.is_primary,
+    office_memberships.c.is_active.label("membership_active"),
+    office_memberships.c.assigned_at,
+    office_memberships.c.ended_at,
+    offices.c.name.label("office_name"),
+    offices.c.location.label("office_location"),
+).select_from(
+    office_memberships.join(users, users.c.id == office_memberships.c.user_id).join(
+        offices, offices.c.id == office_memberships.c.office_id
+    )
 )

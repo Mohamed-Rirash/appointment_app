@@ -177,14 +177,16 @@ class OfficeMembershipService:
     @staticmethod
     async def assign_user_to_office(
         session, office_id: UUID, membership_data: MembershipCreate, admin_id: UUID
-    ) -> MembershipRead:
+    ) -> dict[str, str]:
         """
         Assign a user to an office.
         - Ensure the user is not already assigned to this office.
         """
+
         existing_membership = await OfficeMembershipMgmtCRUD.get_membership(
             session, office_id, membership_data.user_id
         )
+        print(existing_membership)
         if existing_membership:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -197,13 +199,14 @@ class OfficeMembershipService:
         created = await OfficeMembershipMgmtCRUD.create_membership(
             session, office_id, membership_data_dict
         )
+
         if not created:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to assign user to office",
             )
 
-        return MembershipRead(**created)
+        return {"message": "User assigned to office successfully"}
 
     @staticmethod
     async def list_office_members(session, office_id: UUID) -> List[MembershipRead]:
@@ -268,14 +271,12 @@ class OfficeMembershipService:
     @staticmethod
     async def search_office_members(
         session,
-        name: Optional[str] = None,
-        position: Optional[str] = None,
-        office_id: Optional[UUID] = None,
+        search_term: str,
     ) -> List[MembershipRead]:
         """
         Search memberships by name, position, or office.
         """
-        records = await OfficeMembershipMgmtCRUD.search_memberships(
-            session, name=name, position=position, office_id=office_id
+        records = await OfficeMembershipMgmtCRUD.search_office_members(
+            session, search_term=search_term
         )
         return [MembershipRead(**r) for r in records] if records else []

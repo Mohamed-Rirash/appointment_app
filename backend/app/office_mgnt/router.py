@@ -12,6 +12,7 @@ from app.office_mgnt.schemas import (
     MembershipRead,
     MembershipUpdate,
     OfficeCreate,
+    OfficeMemberDetailRead,
     OfficeRead,
     OfficeUpdate,
 )
@@ -128,7 +129,6 @@ async def activate_office(
 # ============================membership=================================================
 @router.post(
     "/{office_id}/memberships",
-    response_model=MembershipRead,
     status_code=status.HTTP_201_CREATED,
 )
 async def assign_user_to_office(
@@ -188,14 +188,10 @@ async def get_user_offices(
     return await OfficeMembershipService.list_user_offices(db, user_id)
 
 
-@router.get("/memberships/search", response_model=List[MembershipRead])
+@router.get("/memberships/search", response_model=List[OfficeMemberDetailRead])
 async def search_memberships(
-    name: str | None = None,
-    position: str | None = None,
-    office_id: UUID | None = None,
+    search_term: str,
     admin: CurrentUser = Depends(require_role(AdminLevel.ADMIN)),
     db: Database = Depends(get_db),
 ):
-    return await OfficeMembershipService.search_office_members(
-        db, name, position, office_id
-    )
+    return await OfficeMembershipService.search_office_members(db, search_term)

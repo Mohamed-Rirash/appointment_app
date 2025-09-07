@@ -59,8 +59,6 @@ from app.role_perm_seed import (
 
 # from app.superadmin.router import router as superadmin_router
 
-# API v1 routers removed
-
 
 settings = get_settings()
 logger = get_logger(__name__)
