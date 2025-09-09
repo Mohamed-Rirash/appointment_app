@@ -86,13 +86,12 @@ class OfficeMembershipMgmtCRUD:
 
     @staticmethod
     async def get_membership(session, office_id, membership_id):
-        print(f"membership_id: {type(membership_id)}")
-        print(f"office_id: {type(office_id)}")
         query = select(office_memberships).where(
-            office_memberships.c.id == membership_id
+            office_memberships.c.office_id == office_id,
+            office_memberships.c.user_id == membership_id,
         )
         result = await session.fetch_one(query)
-        return dict(result._mapping) if result else None
+        return dict(result) if result else None
 
     @staticmethod
     async def get_members_by_office(session, office_id):
