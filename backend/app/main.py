@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse
 
 # from app.admin.middleware import AdminRateLimitMiddleware
 # from app.admin.router import router as admin_router
-from app.admin.routes import router as admin_router
+from app.admin.router import router as admin_router
 from app.appointments.router import router as appointments_router
 
 # Router imports
@@ -58,8 +58,6 @@ from app.role_perm_seed import (
 )
 
 # from app.superadmin.router import router as superadmin_router
-
-# API v1 routers removed
 
 
 settings = get_settings()
