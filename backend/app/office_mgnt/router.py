@@ -5,7 +5,12 @@ from databases import Database
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.admin.config import AdminLevel
-from app.auth.dependencies import CurrentUser, RequireAdminRole, require_role
+from app.auth.dependencies import (
+    CurrentUser,
+    RequireAdminRole,
+    require_authentication,
+    require_role,
+)
 from app.database import get_db
 from app.office_mgnt.schemas import (
     MembershipCreate,
@@ -113,7 +118,6 @@ async def deactivate_office(
     return await OfficeService.deactivate_office(db, office_id)
 
 
-# WARNING: this is not implemented yet
 @router.patch("/{office_id}/activate", response_model=OfficeRead)
 async def activate_office(
     office_id: UUID,
@@ -123,7 +127,7 @@ async def activate_office(
     """
     Deactivate an office (soft delete)
     """
-    return await OfficeService.deactivate_office(db, office_id)
+    return await OfficeService.activate_office(db, office_id)
 
 
 # ============================membership=================================================
@@ -150,6 +154,15 @@ async def get_office_members(
     db: Database = Depends(get_db),
 ):
     return await OfficeMembershipService.list_office_members(db, office_id)
+
+
+@router.get("/{office_id}/hosts", response_model=List[MembershipRead])
+async def get_office_hosts(
+    office_id: UUID,
+    admin: CurrentUser = Depends(require_authentication),
+    db: Database = Depends(get_db),
+):
+    return await OfficeMembershipService.list_office_hosts(db, office_id)
 
 
 @router.put("/{office_id}/memberships/{membership_id}")

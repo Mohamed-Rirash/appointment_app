@@ -1,6 +1,7 @@
 import uuid
 
 from sqlalchemy import (  # only so we can keep the original column order / labels
+    TIMESTAMP,
     UUID,
     Boolean,
     Column,
@@ -11,6 +12,7 @@ from sqlalchemy import (  # only so we can keep the original column order / labe
     String,
     Table,
     Text,
+    Time,
     func,
     literal_column,
     select,
@@ -99,4 +101,25 @@ office_member_details_def = select(
     office_memberships.join(users, users.c.id == office_memberships.c.user_id).join(
         offices, offices.c.id == office_memberships.c.office_id
     )
+)
+
+# TODO:
+# -[x] Host → defines recurring availability (saved in DB).
+#
+# -[] Client → requests available slots for given date → backend: fetch host availability → generate slots → filter booked → return.
+#
+# -[] Client picks slot → create appointment record.
+
+host_availability = Table(
+    "host_availability",
+    metadata,
+    Column("id", UUID(as_uuid=True), primary_key=True, default=uuid.uuid4),
+    Column(
+        "office_id", UUID(as_uuid=True), ForeignKey("offices.id"), nullable=False
+    ),  # who is this belonging to?
+    Column("dayofweek", Integer, nullable=False),  # Monday = 1, Sunday = 7
+    Column("start_time", Time, nullable=False),  # in hours
+    Column("end_time", Time, nullable=False),  # in hours
+    Column("is_recurring", Boolean, nullable=False, server_default=text("false")),
+    Column("created_at", DateTime(timezone=True), server_default=func.now()),
 )

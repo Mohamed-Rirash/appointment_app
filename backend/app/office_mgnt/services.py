@@ -12,6 +12,7 @@ from app.office_mgnt.schemas import (
     OfficeRead,
     OfficeUpdate,
 )
+from app.office_mgnt.utils import has_excluded_role
 
 
 class OfficeService:
@@ -172,6 +173,32 @@ class OfficeService:
 
         return OfficeRead(**updated_office)
 
+    @staticmethod
+    async def activate_office(session, office_id: UUID) -> OfficeRead:
+        """
+        activate an office (soft delete)
+        """
+        office = await OfficeMgmtCRUD.get_by_id(session, office_id)
+
+        if not office:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Office with ID {office_id} not found",
+            )
+
+        # Update only the is_active field
+        updated_office = await OfficeMgmtCRUD.update(
+            session, office_id, {"is_active": True}
+        )
+
+        if not updated_office:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to deactivate office",
+            )
+
+        return OfficeRead(**updated_office)
+
 
 class OfficeMembershipService:
     @staticmethod
@@ -218,6 +245,28 @@ class OfficeMembershipService:
         )
 
         return [MembershipRead(**m) for m in members] if members else []
+
+    @staticmethod
+    async def list_office_hosts(session, office_id: UUID) -> List[MembershipRead]:
+        """
+        List all members of a given office, excluding secretaries and receptions by role.
+        """
+        members = await OfficeMembershipMgmtCRUD.get_members_by_office(
+            session, office_id
+        )
+        print("########################")
+        print(members)
+        print("##################")
+
+        filtered_members = []
+        for m in members:
+            print("##########")
+            print(m)
+
+            if not await has_excluded_role(session, m["user_id"]):
+                filtered_members.append(m)
+
+        return [MembershipRead(**m) for m in filtered_members]
 
     @staticmethod
     async def update_office_member(
