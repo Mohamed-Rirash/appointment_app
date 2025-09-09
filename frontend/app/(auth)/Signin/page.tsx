@@ -16,6 +16,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 // import { signIn } from "next-auth/react";
 import { useState } from "react";
 import { authenticate } from "@/fuctions/services/action";
+import Link from "next/link";
 
 // define the form schema
 const formSchema = z.object({
@@ -107,7 +108,13 @@ export default function Signin() {
                       {...field}
                     />
                   </FormControl>
-                  <p className="bg-amber-500"> Forget Password?</p>
+                  <Link
+                    href={"/forget-password"}
+                    className=" font-semibold underline cursor-pointer py-5 text-right"
+                  >
+                    {" "}
+                    Forget Password?
+                  </Link>
                   <FormMessage className="py-2 text-lg" />
                 </FormItem>
               )}
@@ -115,7 +122,7 @@ export default function Signin() {
             <Button
               disabled={loading}
               type="submit"
-              className={`py-6 w-full text-lg mt-8 ${
+              className={`py-[28px] w-full text-lg mt-4 ${
                 loading ? "opacity-50 pointer-disabled" : ""
               }`}
             >
