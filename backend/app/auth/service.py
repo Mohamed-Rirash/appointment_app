@@ -152,6 +152,9 @@ async def get_current_user_profile_service(session, current_user):
     """Get current user profile with role and permission names."""
     # Fetch roles and permissions using RBAC CRUD helpers
     user_roles = await RBACCRUD.get_user_roles(session, current_user.id)
+    print("##############################################################")
+    print(user_roles)
+    print("##############################################################")
     role_names = [r.get("name") for r in user_roles] if user_roles else []
 
     user_perms = await RBACCRUD.get_user_permissions(session, current_user.id)
@@ -305,7 +308,7 @@ async def _generate_tokens(user, session, response):
     }
 
 
-async def refresh_access_token_service(session, refresh_token: str, response):
+async def refresh_access_token_service(session, refresh_token: str | None, response):
     """Verify refresh token and issue new access/refresh tokens.
 
     Prefers rotating the refresh token and resetting the cookie for better security.

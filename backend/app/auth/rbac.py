@@ -2,27 +2,15 @@
 Role-Based Access Control (RBAC) system implementation
 """
 
-import json
 import uuid
-from datetime import datetime, timezone
-from functools import wraps
-from typing import Any, Dict, List, Optional, Union
+from datetime import datetime
+from typing import List, Optional
 from uuid import UUID
 
 from databases import Database
-from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy import and_, delete, func, insert, or_, select, update
 
-from app.auth.models import (
-    permissions,
-    rbac_audit_log,
-    role_permissions,
-    roles,
-    user_roles,
-    users,
-)
-from app.core.security import hash_password
-from app.loggs import log_security_event
+from app.auth.models import permissions, role_permissions, roles, user_roles
 
 
 class RBACError(Exception):
@@ -53,7 +41,9 @@ class RoleCRUD:
     """CRUD operations for roles"""
 
     @staticmethod
-    async def create(db: Database, role_data: dict, created_by: UUID) -> dict:
+    async def create(
+        db: Database, role_data: dict, created_by: UUID
+    ) -> Optional[dict | None]:
         """Create a new role"""
         # Generate UUID if not provided
         if "id" not in role_data:
@@ -63,17 +53,6 @@ class RoleCRUD:
 
         query = insert(roles).values(**role_data).returning(roles)
         result = await db.fetch_one(query)
-
-        if result and isinstance(created_by, uuid.UUID):
-            # Log audit event only when performed_by is a real user id
-            await RBACCRUD.log_audit_event(
-                db,
-                "role_created",
-                "role",
-                result["id"],
-                performed_by=created_by,
-                details=role_data,
-            )
 
         return dict(result) if result else None
 
@@ -119,9 +98,7 @@ class RoleCRUD:
         if role and role["is_system"]:
             # Only allow updating description and display_name for system roles
             allowed_updates = {
-                k: v
-                for k, v in updates.appointments()
-                if k in ["description", "display_name"]
+                k: v for k, v in updates.items() if k in ["description", "display_name"]
             }
             updates = allowed_updates
 
@@ -137,16 +114,6 @@ class RoleCRUD:
             .returning(roles)
         )
         result = await db.fetch_one(query)
-
-        if result and isinstance(updated_by, uuid.UUID):
-            await RBACCRUD.log_audit_event(
-                db,
-                "role_updated",
-                "role",
-                role_id,
-                performed_by=updated_by,
-                details=updates,
-            )
 
         return dict(result) if result else None
 
@@ -166,16 +133,6 @@ class RoleCRUD:
 
         await db.execute(query)
 
-        if isinstance(deleted_by, uuid.UUID):
-            await RBACCRUD.log_audit_event(
-                db,
-                "role_deleted",
-                "role",
-                role_id,
-                performed_by=deleted_by,
-                details={"is_system": role["is_system"]},
-            )
-
         return True
 
 
@@ -183,7 +140,9 @@ class PermissionCRUD:
     """CRUD operations for permissions"""
 
     @staticmethod
-    async def create(db: Database, permission_data: dict, created_by: UUID) -> dict:
+    async def create(
+        db: Database, permission_data: dict, created_by: UUID
+    ) -> Optional[dict | None]:
         """Create a new permission"""
         # Generate name from resource and action if not provided
         if "name" not in permission_data:
@@ -199,16 +158,6 @@ class PermissionCRUD:
 
         query = insert(permissions).values(**permission_data).returning(permissions)
         result = await db.fetch_one(query)
-
-        if result and isinstance(created_by, uuid.UUID):
-            await RBACCRUD.log_audit_event(
-                db,
-                "permission_created",
-                "permission",
-                result["id"],
-                performed_by=created_by,
-                details=permission_data,
-            )
 
         return dict(result) if result else None
 
@@ -231,7 +180,7 @@ class PermissionCRUD:
         """List all permissions"""
         query = select(permissions)
         if active_only:
-            query = query.where(permissions.c.is_active == True)
+            query = query.where(permissions.c.is_active.is_(True))
         query = query.order_by(permissions.c.resource, permissions.c.action)
 
         results = await db.fetch_all(query)
@@ -244,7 +193,8 @@ class PermissionCRUD:
             select(permissions)
             .where(
                 and_(
-                    permissions.c.resource == resource, permissions.c.is_active == True
+                    permissions.c.resource == resource,
+                    permissions.c.is_active.is_(True),
                 )
             )
             .order_by(permissions.c.action)
@@ -300,17 +250,6 @@ class RBACCRUD:
 
         await db.execute(query)
 
-        await RBACCRUD.log_audit_event(
-            db,
-            "role_assigned",
-            "user",
-            user_id,
-            "role",
-            role_id,
-            performed_by=assigned_by,
-            details={"expires_at": expires_at.isoformat() if expires_at else None},
-        )
-
         return True
 
     @staticmethod
@@ -327,17 +266,6 @@ class RBACCRUD:
         )
 
         result = await db.execute(query)
-
-        if result:
-            await RBACCRUD.log_audit_event(
-                db,
-                "role_removed",
-                "user",
-                user_id,
-                "role",
-                role_id,
-                performed_by=removed_by,
-            )
 
         return result > 0
 
@@ -364,17 +292,6 @@ class RBACCRUD:
 
         await db.execute(query)
 
-        if isinstance(granted_by, uuid.UUID):
-            await RBACCRUD.log_audit_event(
-                db,
-                "permission_granted",
-                "role",
-                role_id,
-                "permission",
-                permission_id,
-                performed_by=granted_by,
-            )
-
         return True
 
     @staticmethod
@@ -391,18 +308,37 @@ class RBACCRUD:
 
         result = await db.execute(query)
 
-        if result and isinstance(revoked_by, uuid.UUID):
-            await RBACCRUD.log_audit_event(
-                db,
-                "permission_revoked",
-                "role",
-                role_id,
-                "permission",
-                permission_id,
-                performed_by=revoked_by,
-            )
-
         return result > 0
+
+    #
+    # @staticmethod
+    # async def get_user_roles(db: Database, user_id: UUID) -> List[dict]:
+    #     """Get all active roles for a user"""
+    #     query = (
+    #         select(
+    #             roles.c.id,
+    #             roles.c.name,
+    #             roles.c.display_name,
+    #             roles.c.description,
+    #             user_roles.c.assigned_at,
+    #             user_roles.c.expires_at,
+    #         )
+    #         .select_from(user_roles.join(roles, user_roles.c.role_id == roles.c.id))
+    #         .where(
+    #             and_(
+    #                 user_roles.c.user_id == user_id,
+    #                 user_roles.c.is_active == True,
+    #                 roles.c.is_active == True,
+    #                 or_(
+    #                     user_roles.c.expires_at.is_(None),
+    #                     user_roles.c.expires_at > func.now(),
+    #                 ),
+    #             )
+    #         )
+    #     )
+    #
+    #     results = await db.fetch_all(query)
+    #     return [dict(row) for row in results]
 
     @staticmethod
     async def get_user_roles(db: Database, user_id: UUID) -> List[dict]:
@@ -420,8 +356,8 @@ class RBACCRUD:
             .where(
                 and_(
                     user_roles.c.user_id == user_id,
-                    user_roles.c.is_active == True,
-                    roles.c.is_active == True,
+                    user_roles.c.is_active.is_(True),
+                    roles.c.is_active.is_(True),
                     or_(
                         user_roles.c.expires_at.is_(None),
                         user_roles.c.expires_at > func.now(),
@@ -431,6 +367,7 @@ class RBACCRUD:
         )
 
         results = await db.fetch_all(query)
+
         return [dict(row) for row in results]
 
     @staticmethod
@@ -452,9 +389,9 @@ class RBACCRUD:
             .where(
                 and_(
                     user_roles.c.user_id == user_id,
-                    user_roles.c.is_active == True,
-                    roles.c.is_active == True,
-                    permissions.c.is_active == True,
+                    user_roles.c.is_active.is_(True),
+                    roles.c.is_active.is_(True),
+                    permissions.c.is_active.is_(True),
                     or_(
                         user_roles.c.expires_at.is_(None),
                         user_roles.c.expires_at > func.now(),
@@ -482,9 +419,9 @@ class RBACCRUD:
             .where(
                 and_(
                     user_roles.c.user_id == user_id,
-                    user_roles.c.is_active == True,
-                    roles.c.is_active == True,
-                    permissions.c.is_active == True,
+                    user_roles.c.is_active.is_(True),
+                    roles.c.is_active.is_(True),
+                    permissions.c.is_active.is_(True),
                     permissions.c.resource == resource,
                     permissions.c.action == action,
                     or_(
@@ -497,37 +434,3 @@ class RBACCRUD:
 
         result = await db.fetch_one(query)
         return result is not None
-
-    @staticmethod
-    async def log_audit_event(
-        db: Database,
-        action: str,
-        resource_type: str,
-        resource_id: UUID,
-        target_type: Optional[str] = None,
-        target_id: Optional[UUID] = None,
-        performed_by: UUID = None,
-        details: Optional[dict] = None,
-        ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None,
-    ):
-        """Log an RBAC audit event"""
-        # Handle system operations where performed_by might be a string
-        if isinstance(performed_by, str) and performed_by == "system":
-            performed_by = None
-
-        audit_data = {
-            "id": uuid.uuid4(),
-            "action": action,
-            "resource_type": resource_type,
-            "resource_id": resource_id,
-            "target_type": target_type,
-            "target_id": target_id,
-            "performed_by": performed_by,
-            "details": json.dumps(details, default=str) if details else None,
-            "ip_address": ip_address,
-            "user_agent": user_agent,
-        }
-
-        query = insert(rbac_audit_log).values(**audit_data)
-        await db.execute(query)

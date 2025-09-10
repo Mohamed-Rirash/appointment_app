@@ -8,23 +8,15 @@ from uuid import UUID
 from databases import Database
 from fastapi import Depends, HTTPException, Request, status
 
-from app.admin.config import (
-    AdminLevel,
-    AdminRoleHierarchy,
-    get_admin_config,
-    is_super_admin_required,
-    is_system_admin_required,
-)
+from app.admin.config import (AdminLevel, AdminRoleHierarchy, get_admin_config,
+                              is_super_admin_required,
+                              is_system_admin_required)
 from app.admin.crud import AdminAuditCRUD
-from app.admin.exceptions import (
-    AdminOnlyError,
-    InsufficientPermissionsError,
-    SelfModificationError,
-    SuperAdminOnlyError,
-    SystemAdminOnlyError,
-)
+from app.admin.exceptions import (AdminOnlyError, InsufficientPermissionsError,
+                                  SelfModificationError, SuperAdminOnlyError,
+                                  SystemAdminOnlyError)
 from app.admin.schemas import AdminActionType
-from app.auth.dependencies import CurrentUser, get_current_user
+from app.auth. import CurrentUser, get_current_user
 from app.auth.rbac import RBACCRUD
 from app.database import get_db
 

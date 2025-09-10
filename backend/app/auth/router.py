@@ -35,28 +35,6 @@ router = APIRouter(
 )
 
 
-# @router.post("/", status_code=status.HTTP_201_CREATED)
-# async def create_user(
-#     session: Annotated[Database, Depends(get_db)],
-#     background_tasks: BackgroundTasks,
-#     user: UserCreate,
-# ):
-#     result = await create_user_service(session, user)
-#     # after creating user, send verification email
-#     await send_account_verification_email(result, background_tasks)
-#     return {"message": "User created successfully"}
-
-
-# @router.post("/verify", status_code=status.HTTP_200_OK)
-# async def verify_user_account(
-#     data: VerifyUserRequest,
-#     background_tasks: BackgroundTasks,
-#     session: Database = Depends(get_db),
-# ):
-#     await activate_user_account(data, session, background_tasks)
-#     return JSONResponse({"message": "Account is activated successfully."})
-
-
 @router.post("/login", status_code=status.HTTP_200_OK, response_model=LoginResponse)
 async def login_user(
     response: Response,
@@ -113,6 +91,9 @@ async def get_current_user_profile(
     session: Database = Depends(get_db),
     current_user: CurrentUser = Depends(require_authentication),
 ):
+    print("##############################################################")
+    print(current_user.id)
+    print("##############################################################")
     """Get current user profile with roles and permissions as lists of strings"""
     data = await get_current_user_profile_service(session, current_user)
     return UserProfile(**data)

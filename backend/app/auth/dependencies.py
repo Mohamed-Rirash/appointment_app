@@ -1,33 +1,37 @@
 """
 Authentication and authorization dependencies for FastAPI
 """
-from typing import Optional, List, Union
+
+from typing import List, Optional
 from uuid import UUID
-from functools import wraps
 
-from fastapi import Depends, HTTPException, status, Request, Security
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from databases import Database
+from fastapi import Depends, HTTPException, Request, Security, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from app.database import get_db
-from app.core.security import verify_token, TokenError
 from app.auth.crud import UserCRUD
-from app.auth.rbac import RBACCRUD, PermissionDeniedError
+from app.auth.rbac import RBACCRUD
 from app.config import get_settings
+from app.core.security import TokenError, verify_token
+from app.database import get_db
 from app.loggs import log_auth_event, log_security_event
 
 settings = get_settings()
 security = HTTPBearer(scheme_name="BearerAuth", auto_error=False)
 
+
 # Debug function to test HTTPBearer
-async def debug_security(credentials: Optional[HTTPAuthorizationCredentials] = Security(security)):
+async def debug_security(
+    credentials: Optional[HTTPAuthorizationCredentials] = Security(security),
+):
     print(f"DEBUG: Raw credentials from HTTPBearer: {credentials}")
     return credentials
 
 
 class CurrentUser:
     """Current user information"""
-    def __init__(self, user_data: dict, permissions: List[dict] = None):
+
+    def __init__(self, user_data: dict, permissions: List[dict]):
         self.id = user_data["id"]
         self.email = user_data["email"]
         self.first_name = user_data["first_name"]
@@ -43,9 +47,9 @@ class CurrentUser:
         """Check if user has a specific permission"""
         permission_name = f"{resource}:{action}"
         return any(
-            perm["name"] == permission_name or
-            perm["name"] == f"{resource}:*" or
-            perm["name"] == "*"
+            perm["name"] == permission_name
+            or perm["name"] == f"{resource}:*"
+            or perm["name"] == "*"
             for perm in self.permissions
         )
 
@@ -54,8 +58,12 @@ class CurrentUser:
         """Check if user has admin permissions"""
         # Check if user has any admin-level permissions
         admin_permissions = [
-            "users:*", "roles:*", "permissions:*", "system:*",
-            "admin:*", "super_admin:*"
+            "users:*",
+            "roles:*",
+            "permissions:*",
+            "system:*",
+            "admin:*",
+            "super_admin:*",
         ]
         return any(
             perm["name"] in admin_permissions or perm["name"] == "*"
@@ -70,7 +78,7 @@ class CurrentUser:
 async def get_current_user_from_token(
     request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Security(security),
-    db: Database = Depends(get_db)
+    db: Database = Depends(get_db),
 ) -> Optional[CurrentUser]:
     """Get current user from JWT token"""
     if not credentials:
@@ -105,7 +113,7 @@ async def get_current_user_from_token(
             user_id=user_id,
             email=user["email"],
             success=True,
-            ip_address=_get_client_ip(request)
+            ip_address=_get_client_ip(request),
         )
 
         return CurrentUser(user, permissions)
@@ -115,70 +123,99 @@ async def get_current_user_from_token(
             event_type="token_authentication",
             success=False,
             reason=str(e),
-            ip_address=_get_client_ip(request)
+            ip_address=_get_client_ip(request),
         )
         # Extra debug print so we can see the raw header coming through
         auth_header = request.headers.get("authorization")
-        print(f"DEBUG get_current_user_from_token: auth_header_present={'yes' if auth_header else 'no'}")
+        print(
+            f"DEBUG get_current_user_from_token: auth_header_present={'yes' if auth_header else 'no'}"
+        )
         return None
     except Exception as e:
         log_security_event(
             event_type="authentication_error",
             severity="medium",
             details={"error": str(e)},
-            ip_address=_get_client_ip(request)
+            ip_address=_get_client_ip(request),
         )
         return None
 
 
 async def get_current_user(
     request: Request,
-    token_user: Optional[CurrentUser] = Depends(get_current_user_from_token)
+    token_user: Optional[CurrentUser] = Depends(get_current_user_from_token),
 ) -> Optional[CurrentUser]:
     """Get current user from either token or API key"""
     return token_user
 
 
 async def require_authentication(
-    current_user: Optional[CurrentUser] = Depends(get_current_user)
+    current_user: Optional[CurrentUser] = Depends(get_current_user),
 ) -> CurrentUser:
     """Require user to be authenticated"""
     if not current_user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Authentication required",
-            headers={"WWW-Authenticate": "Bearer"}
+            headers={"WWW-Authenticate": "Bearer"},
         )
     return current_user
 
 
 async def require_active_user(
-    current_user: CurrentUser = Depends(require_authentication)
+    current_user: CurrentUser = Depends(require_authentication),
 ) -> CurrentUser:
     """Require user to be active"""
     if not current_user.is_active:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Account is deactivated"
+            status_code=status.HTTP_403_FORBIDDEN, detail="Account is deactivated"
         )
     return current_user
 
 
 async def require_verified_user(
-    current_user: CurrentUser = Depends(require_active_user)
+    current_user: CurrentUser = Depends(require_active_user),
 ) -> CurrentUser:
     """Require user to be verified"""
     if not current_user.is_verified:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Account is not verified"
+            status_code=status.HTTP_403_FORBIDDEN, detail="Account is not verified"
         )
     return current_user
 
 
+def require_any_role(*role_names: str) -> callable:
+    """Dependency factory for requiring ANY of the given roles"""
+
+    async def role_dependency(
+        current_user: CurrentUser = Depends(require_verified_user),
+        db: Database = Depends(get_db),
+    ) -> CurrentUser:
+        user_roles = await RBACCRUD.get_user_roles(db, current_user.id)
+        user_role_names = [role["name"] for role in user_roles]
+
+        if not any(role in user_role_names for role in role_names):
+            log_security_event(
+                event_type="role_access_denied",
+                severity="low",
+                details={
+                    "user_id": str(current_user.id),
+                    "required_roles": list(role_names),
+                    "user_roles": user_role_names,
+                },
+            )
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Requires one of the roles: {', '.join(role_names)}",
+            )
+
+        return current_user
+
+    return role_dependency
+
+
 def require_permissions(
-    *required_permissions: str,
-    require_all: bool = True
+    *required_permissions: str, require_all: bool = True
 ) -> callable:
     """
     Dependency factory for requiring specific permissions
@@ -187,8 +224,9 @@ def require_permissions(
         *required_permissions: Permission strings in format "resource:action"
         require_all: If True, user must have ALL permissions. If False, user needs ANY permission.
     """
+
     async def permission_dependency(
-        current_user: CurrentUser = Depends(require_verified_user)
+        current_user: CurrentUser = Depends(require_verified_user),
     ) -> CurrentUser:
         # Superuser/admin override: if user has any admin-level wildcard permission,
         # grant access without evaluating granular checks. This supports roles like
@@ -214,7 +252,10 @@ def require_permissions(
             # User must have ALL permissions
             if not all(user_has_permissions):
                 missing_perms = [
-                    perm for perm, has_perm in zip(required_permissions, user_has_permissions)
+                    perm
+                    for perm, has_perm in zip(
+                        required_permissions, user_has_permissions
+                    )
                     if not has_perm
                 ]
                 log_security_event(
@@ -223,12 +264,12 @@ def require_permissions(
                     details={
                         "user_id": str(current_user.id),
                         "required_permissions": list(required_permissions),
-                        "missing_permissions": missing_perms
-                    }
+                        "missing_permissions": missing_perms,
+                    },
                 )
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Insufficient permissions"
+                    detail="Insufficient permissions",
                 )
         else:
             # User needs ANY permission
@@ -238,12 +279,12 @@ def require_permissions(
                     severity="low",
                     details={
                         "user_id": str(current_user.id),
-                        "required_permissions": list(required_permissions)
-                    }
+                        "required_permissions": list(required_permissions),
+                    },
                 )
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Insufficient permissions"
+                    detail="Insufficient permissions",
                 )
 
         return current_user
@@ -253,9 +294,10 @@ def require_permissions(
 
 def require_role(role_name: str) -> callable:
     """Dependency factory for requiring a specific role"""
+
     async def role_dependency(
         current_user: CurrentUser = Depends(require_verified_user),
-        db: Database = Depends(get_db)
+        db: Database = Depends(get_db),
     ) -> CurrentUser:
         user_roles = await RBACCRUD.get_user_roles(db, current_user.id)
 
@@ -266,12 +308,12 @@ def require_role(role_name: str) -> callable:
                 details={
                     "user_id": str(current_user.id),
                     "required_role": role_name,
-                    "user_roles": [role["name"] for role in user_roles]
-                }
+                    "user_roles": [role["name"] for role in user_roles],
+                },
             )
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Role '{role_name}' required"
+                detail=f"Role '{role_name}' required",
             )
 
         return current_user

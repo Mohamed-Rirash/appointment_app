@@ -2,26 +2,18 @@ from typing import List, Optional
 from uuid import UUID
 
 from databases import Database
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
+from fastapi import (APIRouter, BackgroundTasks, Depends, HTTPException, Query,
+                     status)
 from sqlalchemy import and_, select
 
 from app.admin.crud import AdminUserCRUD
-from app.admin.schemas import (
-    AdminBaseResponse,
-    AdminUserCreate,
-    AdminUserResponse,
-    AdminUserUpdate,
-    PaginatedResponse,
-    PaginationParams,
-    UserSearchFilters,
-)
+from app.admin.schemas import (AdminBaseResponse, AdminUserCreate,
+                               AdminUserResponse, AdminUserUpdate,
+                               PaginatedResponse, PaginationParams,
+                               UserSearchFilters)
 from app.admin.service import AdminUserService
+from app.auth. import CurrentUser, require_permissions, require_verified_user
 from app.auth.crud import UserCRUD
-from app.auth.dependencies import (
-    CurrentUser,
-    require_permissions,
-    require_verified_user,
-)
 from app.auth.models import permissions, role_permissions, roles, user_roles
 from app.auth.rbac import RBACCRUD, RoleCRUD
 from app.database import get_db
