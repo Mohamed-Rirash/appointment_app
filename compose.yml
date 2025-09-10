@@ -62,13 +62,19 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     restart: always
-    command: sh -c "if [ -z \"$(ls -A alembic/versions 2>/dev/null)\" ]; then alembic revision --autogenerate -m \"init\"; fi && alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+    command: >
+      sh -c "
+      mkdir -p alembic/versions &&
+      alembic revision --autogenerate -m 'auto' || true &&
+      alembic upgrade head &&
+      uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+      "
     ports:
       - "8000:8000"
     depends_on:
       db:
         condition: service_healthy
-      redis: # <── ensure Redis is up first
+      redis:
         condition: service_started
     env_file:
       - .env
@@ -78,13 +84,14 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD?Variable not set}
       - POSTGRES_DB=${POSTGRES_DB?Variable not set}
       - POSTGRES_PORT=5432
-      - REDIS_HOST=redis # <── tell backend to use the service name
+      - REDIS_HOST=redis
       - REDIS_PORT=6379
       - ENVIRONMENT=local
       - PYTHONPATH=/app
       - PYTHONUNBUFFERED=1
     volumes:
       - ./backend:/app
+      - ./backend/alembic/versions:/app/alembic/versions # <── persist migrations
       - /app/.venv
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/"]
