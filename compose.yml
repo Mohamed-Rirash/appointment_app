@@ -65,10 +65,15 @@ services:
     command: >
       sh -c "
       mkdir -p alembic/versions &&
-      alembic revision --autogenerate -m 'auto' || true &&
-      alembic upgrade head &&
       uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
       "
+    #  command: >
+    # sh -c "
+    # mkdir -p alembic/versions &&
+    # alembic revision --autogenerate -m 'init' || false &&
+    # alembic upgrade head &&
+    # uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    # "
     ports:
       - "8000:8000"
     depends_on:
