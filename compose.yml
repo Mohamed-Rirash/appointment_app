@@ -65,8 +65,10 @@ services:
     command: >
       sh -c "
       mkdir -p alembic/versions &&
+      alembic upgrade head &&
       uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
       "
+    # since we customised the alembic generated files now we need to run the migrations
     #  command: >
     # sh -c "
     # mkdir -p alembic/versions &&
