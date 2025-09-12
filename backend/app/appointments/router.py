@@ -22,7 +22,7 @@ from app.dependencies import (
     get_verified_user,
     get_admin_user,
 )
-from app.auth.dependencies import (
+from app.auth. import (
     require_authentication,
     require_permissions,
     require_role,
@@ -48,7 +48,7 @@ from app.appointments.schemas import (
     appointmentstatusUpdate,
     ItemAnalytics,
 )
-from app.auth.dependencies import CurrentUser
+from app.auth. import CurrentUser
 
 router = APIRouter(prefix="/appointments", tags=["Appointments"])
 

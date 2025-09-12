@@ -3,32 +3,23 @@ Item module specific dependencies
 Uses global dependencies from app.dependencies and adds item-specific functionality
 """
 
-from typing import Optional, Callable
+from typing import Callable, Optional
 from uuid import UUID
 
-from fastapi import Depends, HTTPException, status, Query, Path
 from databases import Database
+from fastapi import Depends, HTTPException, Path, Query, status
 
-from app.database import get_db
-from app.dependencies import (
-    get_current_user_global,
-    get_optional_user_global,
-    get_verified_user,
-    get_admin_user,
-    require_ownership_or_admin,
-    validate_uuid,
-    CommonPagination,
-    RequireAuth,
-    OptionalAuth,
-    SearchParams,
-    FilterParams,
-)
-from app.schemas import PaginationParams
-from app.auth.dependencies import CurrentUser
 from app.appointments.crud import ItemCRUD
+from app.appointments.models import ItemCategory, appointmentstatus
 from app.appointments.schemas import ItemFilters, appointmentsortOptions
-from app.appointments.models import appointmentstatus, ItemCategory
-
+from app.auth. import CurrentUser
+from app.database import get_db
+from app.dependencies import (CommonPagination, FilterParams, OptionalAuth,
+                              RequireAuth, SearchParams, get_admin_user,
+                              get_current_user_global,
+                              get_optional_user_global, get_verified_user,
+                              require_ownership_or_admin, validate_uuid)
+from app.schemas import PaginationParams
 
 # ================================
 # Item-Specific Dependencies
@@ -215,10 +206,12 @@ async def track_item_view(
 ) -> dict:
     """Track item view for analytics"""
 
-    from app.appointments.models import item_views
-    from sqlalchemy import insert
-    from datetime import datetime, timezone
     import uuid
+    from datetime import datetime, timezone
+
+    from sqlalchemy import insert
+
+    from app.appointments.models import item_views
 
     # Record the view
     view_data = {

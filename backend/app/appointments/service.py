@@ -3,35 +3,24 @@ Item service layer for business logic
 """
 
 from datetime import datetime, timezone
-from typing import List, Dict, Any, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 from uuid import UUID
 
 from databases import Database
 from fastapi import HTTPException, status
+from sqlalchemy import and_, delete, func, insert, select, update
 
 from app.appointments.crud import ItemCRUD
-from app.appointments.schemas import (
-    ItemCreate,
-    ItemUpdate,
-    ItemFilters,
-    PaginationParams,
-    BulkItemOperation,
-    BulkOperationResult,
-    appointmentstatusUpdate,
-    CommentCreate,
-    CommentUpdate,
-    ItemPermissionCreate,
-)
-from app.appointments.models import (
-    appointmentstatus,
-    appointments,
-    item_comments,
-    item_favorites,
-    item_permissions,
-)
 from app.appointments.dependencies import validate_item_status_transition
-from app.auth.dependencies import CurrentUser
-from sqlalchemy import insert, update, delete, select, and_, func
+from app.appointments.models import (appointments, appointmentstatus,
+                                     item_comments, item_favorites,
+                                     item_permissions)
+from app.appointments.schemas import (BulkItemOperation, BulkOperationResult,
+                                      CommentCreate, CommentUpdate, ItemCreate,
+                                      ItemFilters, ItemPermissionCreate,
+                                      ItemUpdate, PaginationParams,
+                                      appointmentstatusUpdate)
+from app.auth. import CurrentUser
 
 
 class appointmentservice:
@@ -328,8 +317,9 @@ class appointmentservice:
     async def _is_new_user(db: Database, user_id: UUID) -> bool:
         """Check if user is considered new (created less than 7 days ago)"""
 
-        from app.auth.models import users
         from datetime import timedelta
+
+        from app.auth.models import users
 
         user_query = select(users.c.created_at).where(users.c.id == user_id)
         user_created = await db.fetch_val(user_query)
