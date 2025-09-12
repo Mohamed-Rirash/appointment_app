@@ -4,15 +4,11 @@ FastAPI application with comprehensive security, RBAC, and middleware
 
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request, status
+from fastapi import FastAPI
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
-from fastapi.responses import JSONResponse
 
-# from app.admin.middleware import AdminRateLimitMiddleware
-# from app.admin.router import router as admin_router
 from app.admin.router import router as admin_router
-from app.appointments.router import router as appointments_router
 
 # Router imports
 from app.auth.router import router as auth_router
@@ -27,7 +23,6 @@ from app.core.middleware.error_handling import (
     AuthorizationError,
     BusinessLogicError,
     ConflictError,
-    ErrorHandlingMiddleware,
     ResourceNotFoundError,
     authentication_error_handler,
     authorization_error_handler,
@@ -43,7 +38,7 @@ from app.core.middleware.security import (
     SecurityHeadersMiddleware,
 )
 from app.database import database
-from app.loggs import get_logger, structured_logger
+from app.loggs import get_logger
 from app.office_mgnt.router import router as office_mgnt_router
 from app.rate_limiting import (
     EndpointRateLimitMiddleware,
@@ -56,6 +51,10 @@ from app.role_perm_seed import (
     init_permissions,
     init_roles,
 )
+
+# from app.admin.middleware import AdminRateLimitMiddleware
+# from app.admin.router import router as admin_router
+
 
 # from app.superadmin.router import router as superadmin_router
 
@@ -236,7 +235,6 @@ app.include_router(auth_router, prefix=settings.API_V1_STR)
 app.include_router(admin_router, prefix=settings.API_V1_STR)
 
 # Include Appointments (repurposed appointments) router
-app.include_router(appointments_router, prefix=settings.API_V1_STR)
 
 # Include Office Management router
 app.include_router(office_mgnt_router, prefix=settings.API_V1_STR)

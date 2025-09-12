@@ -2,8 +2,8 @@ import pytest
 from databases import Database
 from httpx import AsyncClient
 
+from app.auth. import CurrentUser, require_verified_user
 from app.auth.crud import UserCRUD
-from app.auth.dependencies import CurrentUser, require_verified_user
 from app.auth.rbac import RBACCRUD, RoleCRUD
 from app.core.security import hash_password
 from app.main import app
