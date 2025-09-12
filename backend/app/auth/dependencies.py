@@ -20,14 +20,6 @@ settings = get_settings()
 security = HTTPBearer(scheme_name="BearerAuth", auto_error=False)
 
 
-# Debug function to test HTTPBearer
-async def debug_security(
-    credentials: Optional[HTTPAuthorizationCredentials] = Security(security),
-):
-    print(f"DEBUG: Raw credentials from HTTPBearer: {credentials}")
-    return credentials
-
-
 class CurrentUser:
     """Current user information"""
 
@@ -53,6 +45,7 @@ class CurrentUser:
             for perm in self.permissions
         )
 
+    # NOTE: do not forget to edit here for other resource
     @property
     def is_admin(self) -> bool:
         """Check if user has admin permissions"""
@@ -63,7 +56,6 @@ class CurrentUser:
             "permissions:*",
             "system:*",
             "admin:*",
-            "super_admin:*",
         ]
         return any(
             perm["name"] in admin_permissions or perm["name"] == "*"
@@ -127,9 +119,9 @@ async def get_current_user_from_token(
         )
         # Extra debug print so we can see the raw header coming through
         auth_header = request.headers.get("authorization")
-        print(
-            f"DEBUG get_current_user_from_token: auth_header_present={'yes' if auth_header else 'no'}"
-        )
+        # print(
+        #     f"DEBUG get_current_user_from_token: auth_header_present={'yes' if auth_header else 'no'}"
+        # )
         return None
     except Exception as e:
         log_security_event(
@@ -145,7 +137,7 @@ async def get_current_user(
     request: Request,
     token_user: Optional[CurrentUser] = Depends(get_current_user_from_token),
 ) -> Optional[CurrentUser]:
-    """Get current user from either token or API key"""
+    """Get current user from either token"""
     return token_user
 
 
@@ -192,6 +184,7 @@ def require_any_role(*role_names: str) -> callable:
         db: Database = Depends(get_db),
     ) -> CurrentUser:
         user_roles = await RBACCRUD.get_user_roles(db, current_user.id)
+        # BUG: make sure that the user_role has the user role names
         user_role_names = [role["name"] for role in user_roles]
 
         if not any(role in user_role_names for role in role_names):

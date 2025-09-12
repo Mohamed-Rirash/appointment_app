@@ -44,6 +44,7 @@ async def login_user(
     return await user_authenticate_service(session, data, response)
 
 
+# FIX: refresh_token is not working
 @router.post(
     "/refresh", status_code=status.HTTP_200_OK, response_model=RefreshTokenResponse
 )
@@ -74,26 +75,11 @@ async def logout_user(
     return MessageResponse(message="Successfully logged out")
 
 
-# @router.get("/debug-auth")
-# async def debug_auth(
-#     credentials = Depends(require_authentication)
-# ):
-#     """Debug authentication"""
-#     return {
-#         "message": "Authentication working",
-#         "user": credentials.email,
-#         "note": "If this works, your Bearer token is being accepted."
-#     }
-
-
 @router.get("/me", status_code=status.HTTP_200_OK, response_model=UserProfile)
 async def get_current_user_profile(
     session: Database = Depends(get_db),
     current_user: CurrentUser = Depends(require_authentication),
 ):
-    print("##############################################################")
-    print(current_user.id)
-    print("##############################################################")
     """Get current user profile with roles and permissions as lists of strings"""
     data = await get_current_user_profile_service(session, current_user)
     return UserProfile(**data)

@@ -16,7 +16,7 @@ from sqlalchemy import (
     text,
 )
 
-from app.database import metadata  # your metadata object
+from app.database import metadata
 
 # --- Users Table ---
 users = Table(
@@ -153,25 +153,6 @@ user_tokens = Table(
         "created_at", DateTime(timezone=True), nullable=False, server_default=func.now()
     ),
     Column("expires_at", DateTime(timezone=True), nullable=False),
-)
-rbac_audit_log = Table(
-    "rbac_audit_log",
-    metadata,
-    Column("id", UUID(as_uuid=True), primary_key=True, default=uuid.uuid4),
-    Column("action", String(50), nullable=False),  # e.g. "role_assigned"
-    Column("resource_type", String(50), nullable=False),
-    Column("resource_id", UUID(as_uuid=True), nullable=False),
-    Column("target_type", String(50), nullable=True),
-    Column("target_id", UUID(as_uuid=True), nullable=True),
-    Column("performed_by", UUID(as_uuid=True), ForeignKey("users.id"), nullable=True),
-    Column("details", Text, nullable=True),
-    Column("ip_address", String(45), nullable=True),
-    Column("user_agent", Text, nullable=True),
-    Column("created_at", DateTime, server_default=func.now()),
-    Index("idx_rbac_audit_action", "action"),
-    Index("idx_rbac_audit_resource", "resource_type", "resource_id"),
-    Index("idx_rbac_audit_performed_by", "performed_by"),
-    Index("idx_rbac_audit_created_at", "created_at"),
 )
 # --- Default Permissions ---
 DEFAULT_PERMISSIONS = [

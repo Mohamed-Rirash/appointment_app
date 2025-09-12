@@ -110,6 +110,7 @@ async def logout_user_service(session, request, response, current_user) -> None:
         auth_header = request.headers.get("authorization") or request.headers.get(
             "Authorization"
         )
+        # FIX: did jti do its job make it sure pro
         if auth_header and auth_header.lower().startswith("bearer "):
             access_token = auth_header.split(" ", 1)[1]
             payload = verify_token(access_token, token_type="access")
@@ -133,6 +134,7 @@ async def logout_user_service(session, request, response, current_user) -> None:
         except Exception:
             pass
         # Delete this specific refresh token (rotation support)
+        # BUG: this is not deleting any thing
         try:
             await UserTokenCRUD.delete_by_refresh(session, refresh_token)
         except Exception:
@@ -271,6 +273,7 @@ async def _generate_tokens(user, session, response):
     refresh_token = create_refresh_token(subject=user["id"], expires_delta=rt_expires)
 
     # Persist/rotate refresh token in DB (single active token per user)
+    # BUG: tge ritation detection is not working
     try:
         await UserTokenCRUD.delete_by_user(session, user["id"])  # revoke old tokens
     except Exception:
