@@ -148,6 +148,7 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("email"),
     )
+    # Step 1: Create the table without the enum
     op.create_table(
         "host_availability",
         sa.Column("id", sa.UUID(), nullable=False),
@@ -166,30 +167,29 @@ def upgrade() -> None:
             server_default=sa.text("now()"),
             nullable=True,
         ),
-        sa.ForeignKeyConstraint(
-            ["office_id"],
-            ["offices.id"],
-        ),
+        sa.ForeignKeyConstraint(["office_id"], ["offices.id"]),
         sa.PrimaryKeyConstraint("id"),
     )
+
+    # Step 2: Create the enum type manually
+    daysofweek_enum = sa.Enum(
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY",
+        name="daysofweek",
+    )
+    daysofweek_enum.create(op.get_bind(), checkfirst=True)
+
+    # Step 3: Add the enum column
     op.add_column(
         "host_availability",
-        sa.Column(
-            "daysofweek",
-            sa.Enum(
-                "MONDAY",
-                "TUESDAY",
-                "WEDNESDAY",
-                "THURSDAY",
-                "FRIDAY",
-                "SATURDAY",
-                "SUNDAY",
-                name="daysofweek",
-                create_type=False,
-            ),
-            nullable=False,
-        ),
+        sa.Column("daysofweek", daysofweek_enum, nullable=False),
     )
+
     op.create_table(
         "office_memberships",
         sa.Column("id", sa.UUID(), nullable=False),
