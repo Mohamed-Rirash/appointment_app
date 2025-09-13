@@ -339,8 +339,10 @@ class OfficeMembershipService:
 class AvailabilityService:
     @staticmethod
     async def set_availability(session, host_id: UUID, data: HostAvailabilityCreate):
-        # You could delete existing availability for that day before inserting new one
-        await AvailabilityCRUD.delete_by_day(session, host_id, data.dayofweek)
+        # # You could delete existing availability for that day before inserting new one
+        result = await AvailabilityCRUD.delete_by_day(session, host_id, data.daysofweek)
+        if result:
+            pass
         return await AvailabilityCRUD.create(session, host_id, data)
 
     @staticmethod

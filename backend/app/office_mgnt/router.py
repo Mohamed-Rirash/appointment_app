@@ -86,6 +86,9 @@ async def read_office(
     return await OfficeService.get_office(db, office_id)
 
 
+# TODO: allow members to see their office info
+
+
 @router.patch("/{office_id}", response_model=OfficeRead)
 async def update_office(
     office_id: UUID,

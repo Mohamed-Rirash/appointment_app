@@ -166,7 +166,7 @@ class OfficeMemberDetailRead(BaseModel):
 
 
 class HostAvailabilityCreate(BaseModel):
-    dayofweek: Daysofweek
+    daysofweek: Daysofweek
     start_time: time
     end_time: time
     is_recurring: bool = True
@@ -175,6 +175,6 @@ class HostAvailabilityCreate(BaseModel):
 class HostAvailabilityRead(BaseModel):
     id: UUID
     office_id: UUID
-    day_of_week: str
+    daysofweek: Daysofweek
     start_time: time
     end_time: time

@@ -177,8 +177,9 @@ class AvailabilityCRUD:
         query = (
             insert(host_availability)
             .values(
+                id=uuid.uuid4(),
                 office_id=office_id,
-                day_of_week=data.dayofweek,
+                daysofweek=data.daysofweek,
                 start_time=data.start_time,
                 end_time=data.end_time,
             )
@@ -199,6 +200,6 @@ class AvailabilityCRUD:
     async def delete_by_day(session, office_id, day_of_week):
         query = delete(host_availability).where(
             (host_availability.c.office_id == office_id)
-            & (host_availability.c.day_of_week == day_of_week.lower())
+            & (host_availability.c.daysofweek == day_of_week.upper())
         )
         await session.execute(query)
