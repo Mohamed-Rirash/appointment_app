@@ -7,12 +7,14 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from app.admin.config import AdminLevel
 from app.auth.dependencies import (
     CurrentUser,
-    RequireAdminRole,
+    require_any_role,
     require_authentication,
     require_role,
 )
 from app.database import get_db
 from app.office_mgnt.schemas import (
+    HostAvailabilityCreate,
+    HostAvailabilityRead,
     MembershipCreate,
     MembershipRead,
     MembershipUpdate,
@@ -21,7 +23,11 @@ from app.office_mgnt.schemas import (
     OfficeRead,
     OfficeUpdate,
 )
-from app.office_mgnt.services import OfficeMembershipService, OfficeService
+from app.office_mgnt.services import (
+    AvailabilityService,
+    OfficeMembershipService,
+    OfficeService,
+)
 
 router = APIRouter(
     prefix="/offices",
@@ -208,3 +214,27 @@ async def search_memberships(
     db: Database = Depends(get_db),
 ):
     return await OfficeMembershipService.search_office_members(db, search_term)
+
+
+# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+@router.post("/hosts/{host_id}/availability", response_model=HostAvailabilityRead)
+async def set_host_availability(
+    office_id: UUID,
+    data: HostAvailabilityCreate,
+    session=Depends(get_db),
+    current_user: CurrentUser = Depends(require_any_role("host", "secretary")),
+):
+    return await AvailabilityService.set_availability(session, office_id, data)
+
+
+@router.get("/hosts/{host_id}/availability", response_model=List[HostAvailabilityRead])
+async def get_host_availability(
+    office_id: UUID,
+    session=Depends(get_db),
+    current_user: CurrentUser = Depends(
+        require_any_role("host", "secretary", "reception")
+    ),
+):
+    return await AvailabilityService.get_availability(session, office_id)

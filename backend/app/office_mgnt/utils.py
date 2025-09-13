@@ -1,3 +1,4 @@
+from enum import Enum
 from uuid import UUID
 
 from databases import Database
@@ -12,3 +13,13 @@ async def has_excluded_role(session: Database, user_id: UUID) -> bool:
 
     # exclude if any of the roles match
     return any(role in excluded_roles for role in role_names)
+
+
+class Daysofweek(str, Enum):
+    MONDAY = "MONDAY"
+    TUESDAY = "TUESDAY"
+    WEDNESDAY = "WEDNESDAY"
+    THURSDAY = "THURSDAY"
+    FRIDAY = "FRIDAY"
+    SATURDAY = "SATURDAY"
+    SUNDAY = "SUNDAY"

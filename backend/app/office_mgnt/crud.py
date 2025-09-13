@@ -6,8 +6,9 @@ from databases import Database
 from sqlalchemy import and_, delete, func, insert, or_, select, update
 
 from app.auth.models import users
-from app.auth.rbac import RBACCRUD
-from app.office_mgnt.models import office_member_details, office_memberships, offices
+from app.office_mgnt.models import host_availability, office_memberships, offices
+from app.office_mgnt.schemas import HostAvailabilityCreate
+from app.office_mgnt.views import office_member_details
 
 
 class OfficeMgmtCRUD:
@@ -168,3 +169,36 @@ class OfficeMembershipMgmtCRUD:
 
         result = await session.fetch_all(query)
         return [dict(row) for row in result.mappings()]
+
+
+class AvailabilityCRUD:
+    @staticmethod
+    async def create(session, office_id, data: HostAvailabilityCreate):
+        query = (
+            insert(host_availability)
+            .values(
+                office_id=office_id,
+                day_of_week=data.dayofweek,
+                start_time=data.start_time,
+                end_time=data.end_time,
+            )
+            .returning(host_availability)
+        )
+        result = await session.fetch_one(query)
+        return dict(result) if result else None
+
+    @staticmethod
+    async def list_by_host(session, office_id):
+        query = select(host_availability).where(
+            host_availability.c.office_id == office_id
+        )
+        rows = await session.fetch_all(query)
+        return [dict(r) for r in rows]
+
+    @staticmethod
+    async def delete_by_day(session, office_id, day_of_week):
+        query = delete(host_availability).where(
+            (host_availability.c.office_id == office_id)
+            & (host_availability.c.day_of_week == day_of_week.lower())
+        )
+        await session.execute(query)

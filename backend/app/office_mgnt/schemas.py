@@ -1,8 +1,11 @@
 import html
-from datetime import datetime
+from datetime import datetime, time
 from typing import Optional
 from uuid import UUID
+
 from pydantic import BaseModel, Field, field_validator
+
+from app.office_mgnt.utils import Daysofweek
 
 
 class OfficeBase(BaseModel):
@@ -108,10 +111,6 @@ class OfficeRead(OfficeBase):
     is_active: bool = Field(description="Whether the office is active or not")
 
 
-
-
-
-
 class MembershipBase(BaseModel):
     user_id: UUID
     position: Optional[str] = None
@@ -128,6 +127,7 @@ class MembershipUpdate(BaseModel):
     is_active: Optional[bool] = None
     ended_at: Optional[datetime] = None
 
+
 class MembershipRead(BaseModel):
     # User info
     user_id: UUID
@@ -142,8 +142,6 @@ class MembershipRead(BaseModel):
     is_primary: bool
     membership_active: bool
     assigned_at: datetime
-
-
 
 
 class OfficeMemberDetailRead(BaseModel):
@@ -165,3 +163,18 @@ class OfficeMemberDetailRead(BaseModel):
     class Config:
         # allow SQLAlchemy row objects to be dumped directly
         from_attributes = True
+
+
+class HostAvailabilityCreate(BaseModel):
+    dayofweek: Daysofweek
+    start_time: time
+    end_time: time
+    is_recurring: bool = True
+
+
+class HostAvailabilityRead(BaseModel):
+    id: UUID
+    office_id: UUID
+    day_of_week: str
+    start_time: time
+    end_time: time

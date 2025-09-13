@@ -3,8 +3,13 @@ from uuid import UUID
 
 from fastapi import HTTPException, status
 
-from app.office_mgnt.crud import OfficeMembershipMgmtCRUD, OfficeMgmtCRUD
+from app.office_mgnt.crud import (
+    AvailabilityCRUD,
+    OfficeMembershipMgmtCRUD,
+    OfficeMgmtCRUD,
+)
 from app.office_mgnt.schemas import (
+    HostAvailabilityCreate,
     MembershipCreate,
     MembershipRead,
     MembershipUpdate,
@@ -108,6 +113,8 @@ class OfficeService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Office with ID {office_id} not found",
             )
+
+        # FIX: what if office has active employees or resources and we delete it
 
         # Optional: Add business rules before deletion
         # Example: Check if office has active employees or resources
@@ -254,15 +261,9 @@ class OfficeMembershipService:
         members = await OfficeMembershipMgmtCRUD.get_members_by_office(
             session, office_id
         )
-        print("########################")
-        print(members)
-        print("##################")
 
         filtered_members = []
         for m in members:
-            print("##########")
-            print(m)
-
             if not await has_excluded_role(session, m["user_id"]):
                 filtered_members.append(m)
 
@@ -329,3 +330,19 @@ class OfficeMembershipService:
             session, search_term=search_term
         )
         return [MembershipRead(**r) for r in records] if records else []
+
+
+# =================Available time slots for a given day/time period ===============
+# TODO: Implement this
+# -[] for host and secretry let them to tell their Available time slots for meetings
+# -[]
+class AvailabilityService:
+    @staticmethod
+    async def set_availability(session, host_id: UUID, data: HostAvailabilityCreate):
+        # You could delete existing availability for that day before inserting new one
+        await AvailabilityCRUD.delete_by_day(session, host_id, data.dayofweek)
+        return await AvailabilityCRUD.create(session, host_id, data)
+
+    @staticmethod
+    async def get_availability(session, host_id: UUID):
+        return await AvailabilityCRUD.list_by_host(session, host_id)
