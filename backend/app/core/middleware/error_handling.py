@@ -147,7 +147,7 @@ def create_error_response(
     content = {"error": {"type": error_type, "message": message}}
 
     if details is not None:
-        content["error"]["details"] = details
+        content["error"]["details"] = details  # pyright: ignore[reportArgumentType]
 
     return JSONResponse(status_code=status_code, content=jsonable_encoder(content))
 
@@ -196,7 +196,7 @@ class AuthorizationError(Exception):
 class ResourceNotFoundError(Exception):
     """Custom exception for resource not found errors"""
 
-    def __init__(self, resource: str, identifier: str = None):
+    def __init__(self, resource: str, identifier: str = ""):
         if identifier:
             message = f"{resource} with identifier '{identifier}' not found"
         else:

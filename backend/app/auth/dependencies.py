@@ -184,7 +184,6 @@ def require_any_role(*role_names: str) -> callable:
         db: Database = Depends(get_db),
     ) -> CurrentUser:
         user_roles = await RBACCRUD.get_user_roles(db, current_user.id)
-        # BUG: make sure that the user_role has the user role names
         user_role_names = [role["name"] for role in user_roles]
 
         if not any(role in user_role_names for role in role_names):

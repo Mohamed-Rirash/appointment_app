@@ -23,6 +23,7 @@ from app.core.middleware.error_handling import (
     AuthorizationError,
     BusinessLogicError,
     ConflictError,
+    ErrorHandlingMiddleware,
     ResourceNotFoundError,
     authentication_error_handler,
     authorization_error_handler,
@@ -191,14 +192,29 @@ def create_application() -> FastAPI:
     # app.add_middleware(AdminRateLimitMiddleware, requests_per_minute=30, enabled=True)
 
     # Add error handling middleware (should be last)
-    # app.add_middleware(ErrorHandlingMiddleware)
+    app.add_middleware(ErrorHandlingMiddleware)
 
     # Add exception handlers
-    app.add_exception_handler(BusinessLogicError, business_logic_error_handler)
-    app.add_exception_handler(AuthenticationError, authentication_error_handler)
-    app.add_exception_handler(AuthorizationError, authorization_error_handler)
-    app.add_exception_handler(ResourceNotFoundError, resource_not_found_error_handler)
-    app.add_exception_handler(ConflictError, conflict_error_handler)
+    app.add_exception_handler(
+        BusinessLogicError,
+        business_logic_error_handler,  # pyright: ignore[reportArgumentType]
+    )
+    app.add_exception_handler(
+        AuthenticationError,
+        authentication_error_handler,  # pyright: ignore[reportArgumentType]
+    )
+    app.add_exception_handler(
+        AuthorizationError,
+        authorization_error_handler,  # pyright: ignore[reportArgumentType]
+    )
+    app.add_exception_handler(
+        ResourceNotFoundError,
+        resource_not_found_error_handler,  # pyright: ignore[reportArgumentType]
+    )
+    app.add_exception_handler(
+        ConflictError,
+        conflict_error_handler,  # pyright: ignore[reportArgumentType]
+    )
 
     return app
 
