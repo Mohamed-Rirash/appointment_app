@@ -1,12 +1,11 @@
 import uuid
-from datetime import datetime, timezone
 from typing import Any, List, Optional
 
 from databases import Database
 from pydantic import EmailStr
 from sqlalchemy import delete, insert, select, update
 
-from .models import permissions, role_permissions, roles, user_tokens, users
+from .models import permissions, role_permissions, roles, users
 
 
 # ------------------------------
@@ -144,47 +143,3 @@ class RolePermissionCRUD:
         )
         rows = await session.fetch_all(query)
         return [dict(row) for row in rows]
-
-
-# ------------------------------
-# USER TOKEN CRUD
-# ------------------------------
-class UserTokenCRUD:
-    @staticmethod
-    async def create(
-        session: Database, user_token_data: dict
-    ) -> Optional[dict[str, Any]]:
-        if "id" not in user_token_data:
-            user_token_data["id"] = uuid.uuid4()
-
-        query = insert(user_tokens).values(**user_token_data).returning(user_tokens)
-        result = await session.fetch_one(query)
-        return dict(result) if result else None
-
-    @staticmethod
-    async def get_by_refresh(session: Database, refresh_token: str) -> Optional[dict]:
-        """Fetch a user_token row by refresh token value if not expired."""
-        now = datetime.now(timezone.utc)
-        query = select(user_tokens).where(
-            user_tokens.c.refresh_key == refresh_token,
-        )
-        row = await session.fetch_one(query)
-        if not row:
-            return None
-        data = dict(row)
-        # Check expiration (expires_at is timezone-aware)
-        if data.get("expires_at") and data["expires_at"] < now:
-            return None
-        return data
-
-    @staticmethod
-    async def delete_by_user(session: Database, user_id: uuid.UUID) -> None:
-        """Delete all tokens for a user (enforce single active refresh token)."""
-        query = delete(user_tokens).where(user_tokens.c.user_id == user_id)
-        await session.execute(query)
-
-    @staticmethod
-    async def delete_by_refresh(session: Database, refresh_token: str) -> None:
-        """Delete tokens matching a specific refresh token."""
-        query = delete(user_tokens).where(user_tokens.c.refresh_key == refresh_token)
-        await session.execute(query)

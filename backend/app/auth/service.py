@@ -7,7 +7,7 @@ from fastapi import HTTPException, status
 
 from app.auth.config import get_auth_settings
 from app.auth.constants import USER_VERIFY_ACCOUNT
-from app.auth.crud import UserCRUD, UserTokenCRUD
+from app.auth.crud import UserCRUD
 from app.auth.rbac import RBACCRUD
 from app.auth.security import hash_password, verify_password
 from app.auth.user_emails import (
@@ -133,18 +133,6 @@ async def logout_user_service(session, request, response, current_user) -> None:
                 await revoke_token_jti(rjti, rexp)
         except Exception:
             pass
-        # Delete this specific refresh token (rotation support)
-        # BUG: this is not deleting any thing
-        try:
-            await UserTokenCRUD.delete_by_refresh(session, refresh_token)
-        except Exception:
-            pass
-
-    # As a safety net, delete all refresh tokens for this user
-    try:
-        await UserTokenCRUD.delete_by_user(session, current_user.id)
-    except Exception:
-        pass
 
     # Clear refresh token cookie
     response.delete_cookie("refresh_token")
@@ -154,9 +142,6 @@ async def get_current_user_profile_service(session, current_user):
     """Get current user profile with role and permission names."""
     # Fetch roles and permissions using RBAC CRUD helpers
     user_roles = await RBACCRUD.get_user_roles(session, current_user.id)
-    print("##############################################################")
-    print(user_roles)
-    print("##############################################################")
     role_names = [r.get("name") for r in user_roles] if user_roles else []
 
     user_perms = await RBACCRUD.get_user_permissions(session, current_user.id)
@@ -273,25 +258,7 @@ async def _generate_tokens(user, session, response):
     refresh_token = create_refresh_token(subject=user["id"], expires_delta=rt_expires)
 
     # Persist/rotate refresh token in DB (single active token per user)
-    # BUG: tge ritation detection is not working
-    try:
-        await UserTokenCRUD.delete_by_user(session, user["id"])  # revoke old tokens
-    except Exception:
-        pass
     expiry_time = datetime.now(timezone.utc) + rt_expires
-    try:
-        await UserTokenCRUD.create(
-            session,
-            {
-                "user_id": user["id"],
-                "access_key": None,
-                "refresh_key": refresh_token,
-                "expires_at": expiry_time,
-            },
-        )
-    except Exception:
-        # If DB write fails, still proceed but rotation detection won't work
-        pass
 
     # Set refresh token as httpOnly cookie
     response.set_cookie(
@@ -346,13 +313,7 @@ async def refresh_access_token_service(session, refresh_token: str | None, respo
             detail="Invalid or expired refresh token",
         )
 
-    # Ensure token exists in DB (rotation/invalidation detection)
-    token_row = await UserTokenCRUD.get_by_refresh(session, refresh_token)
-    if not token_row:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Refresh token is not valid anymore",
-        )
+    # # Ensure token exists in DB (rotation/invalidation detection)
 
     # Load user and validate status
     try:
@@ -381,10 +342,6 @@ async def refresh_access_token_service(session, refresh_token: str | None, respo
 
     # Reuse existing generator to mint new access/refresh tokens and set cookie
     # Also delete the old refresh token (rotation)
-    try:
-        await UserTokenCRUD.delete_by_refresh(session, refresh_token)
-    except Exception:
-        pass
     # Revoke old refresh token jti in denylist until its exp
     try:
         old_exp = payload.get("exp")

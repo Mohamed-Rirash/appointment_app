@@ -141,19 +141,6 @@ user_roles = Table(
 )
 
 
-# --- UserTokens for auth token tracking ---
-user_tokens = Table(
-    "user_tokens",
-    metadata,
-    Column("id", UUID(as_uuid=True), primary_key=True, default=uuid.uuid4),
-    Column("user_id", UUID(as_uuid=True), ForeignKey("users.id")),
-    Column("access_key", String(250), nullable=True, index=True, default=None),
-    Column("refresh_key", String(250), nullable=True, index=True, default=None),
-    Column(
-        "created_at", DateTime(timezone=True), nullable=False, server_default=func.now()
-    ),
-    Column("expires_at", DateTime(timezone=True), nullable=False),
-)
 # --- Default Permissions ---
 DEFAULT_PERMISSIONS = [
     # Users
