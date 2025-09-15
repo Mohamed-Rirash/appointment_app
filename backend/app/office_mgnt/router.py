@@ -2,7 +2,7 @@ from typing import List, Optional
 from uuid import UUID
 
 from databases import Database
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 
 from app.admin.config import AdminLevel
 from app.auth.dependencies import (
@@ -11,18 +11,9 @@ from app.auth.dependencies import (
     require_authentication,
     require_role,
 )
+from app.auth.schemas import UserRead
 from app.database import get_db
-from app.office_mgnt.schemas import (
-    HostAvailabilityCreate,
-    HostAvailabilityRead,
-    MembershipCreate,
-    MembershipRead,
-    MembershipUpdate,
-    OfficeCreate,
-    OfficeMemberDetailRead,
-    OfficeRead,
-    OfficeUpdate,
-)
+from app.office_mgnt import schemas as sch
 from app.office_mgnt.services import (
     AvailabilityService,
     OfficeMembershipService,
@@ -31,213 +22,332 @@ from app.office_mgnt.services import (
 
 router = APIRouter(
     prefix="/offices",
-    tags=["office_mgnt for addmin only"],
-    responses={404: {"description": "Not found"}},
+    tags=["offices"],
 )
 
 
-@router.post("/", status_code=status.HTTP_201_CREATED, response_model=OfficeRead)
+@router.get(
+    "/unassigned",
+    response_model=List[UserRead],
+    summary="Get unassigned users",
+    status_code=status.HTTP_200_OK,
+)
+async def get_unassigned_users(
+    _admin: CurrentUser = Depends(require_role(AdminLevel.ADMIN)),
+    db: Database = Depends(get_db),
+):
+    return await OfficeMembershipService.fetch_unassigned_users(db)
+
+
+# --------------------------------------------------
+# office CRUD
+# --------------------------------------------------
+@router.post(
+    "/",
+    status_code=status.HTTP_201_CREATED,
+    response_model=sch.OfficeRead,
+    summary="Create a new office",
+    description="Create a new office with details such as name and location. Only admins are allowed.",
+    responses={
+        201: {"description": "Office created successfully"},
+        400: {"description": "Invalid data"},
+        403: {"description": "Forbidden: Only admins can create offices"},
+    },
+)
 async def create_office(
-    office_data: OfficeCreate,
-    admin: CurrentUser = Depends(require_role(AdminLevel.ADMIN)),
+    payload: sch.OfficeCreate,
+    _admin: CurrentUser = Depends(require_role(AdminLevel.ADMIN)),
     db: Database = Depends(get_db),
-) -> OfficeRead:
-    """
-    Create a new office
-    """
-
-    return await OfficeService.create_office(db, office_data)
+):
+    return await OfficeService.create_office(db, payload)
 
 
-@router.get("/", response_model=List[OfficeRead])
+@router.get(
+    "/",
+    response_model=List[sch.OfficeRead],
+    summary="List offices",
+    description="Retrieve all offices. Optionally filter by status (`active` or `deactivated`).",
+    responses={
+        200: {"description": "List of offices returned"},
+        403: {"description": "Forbidden: Only admins can list offices"},
+    },
+)
 async def list_offices(
-    db: Database = Depends(get_db),
-    admin: CurrentUser = Depends(require_role(AdminLevel.ADMIN)),
-    status: Optional[str] = Query(
+    status_filter: Optional[str] = Query(
         None,
-        description="Filter by status: 'active', 'deactivated'. Omit for all.",
-        example="active",
+        regex="^(active|deactivated)$",
+        description="Filter offices by status (active or deactivated).",
     ),
-) -> List[OfficeRead]:
-    """
-    Retrieve all offices, optionally filtered by status.
-    """
-    if status is None:
+    _admin: CurrentUser = Depends(require_role(AdminLevel.ADMIN)),
+    db: Database = Depends(get_db),
+):
+    if status_filter is None:
         return await OfficeService.get_all_offices(db)
-    elif status == "active" or status == "deactivated":
-        return await OfficeService.get_offices_by_status(db, status)
-    else:
-        # Optional: return 400 for invalid status
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid status filter. Use 'active' or 'deactivated'.",
-        )
+    return await OfficeService.get_offices_by_status(db, status_filter)
 
 
-@router.get("/{office_id}", response_model=OfficeRead)
+@router.get(
+    "/{office_id}",
+    response_model=sch.OfficeRead,
+    summary="Get office details",
+    description="Retrieve details of a specific office by its ID.",
+    responses={
+        200: {"description": "Office found"},
+        404: {"description": "Office not found"},
+        403: {"description": "Forbidden: Only admins can view office details"},
+    },
+)
 async def read_office(
     office_id: UUID,
-    admin: CurrentUser = Depends(require_role(AdminLevel.ADMIN)),
+    _admin: CurrentUser = Depends(require_role(AdminLevel.ADMIN)),
     db: Database = Depends(get_db),
-) -> OfficeRead:
-    """
-    Get a specific office by ID
-    """
+):
     return await OfficeService.get_office(db, office_id)
 
 
-# TODO: allow members to see their office info
-
-
-@router.patch("/{office_id}", response_model=OfficeRead)
+@router.patch(
+    "/{office_id}",
+    response_model=sch.OfficeRead,
+    summary="Update an office",
+    description="Update office information such as name or status. Only admins can update offices.",
+    responses={
+        200: {"description": "Office updated successfully"},
+        404: {"description": "Office not found"},
+        403: {"description": "Forbidden: Only admins can update offices"},
+    },
+)
 async def update_office(
     office_id: UUID,
-    office_data: OfficeUpdate,
-    admin: CurrentUser = Depends(require_role(AdminLevel.ADMIN)),
+    payload: sch.OfficeUpdate,
+    _admin: CurrentUser = Depends(require_role(AdminLevel.ADMIN)),
     db: Database = Depends(get_db),
-) -> OfficeRead:
-    """
-    Update an existing office
-    """
-    return await OfficeService.update_office(db, office_id, office_data)
+):
+    return await OfficeService.update_office(db, office_id, payload)
 
 
-@router.delete("/{office_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{office_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete an office",
+    description="Delete an office by its ID. Only admins are allowed.",
+    responses={
+        204: {"description": "Office deleted successfully"},
+        404: {"description": "Office not found"},
+        403: {"description": "Forbidden: Only admins can delete offices"},
+    },
+)
 async def delete_office(
     office_id: UUID,
-    admin: CurrentUser = Depends(require_role(AdminLevel.ADMIN)),
+    _admin: CurrentUser = Depends(require_role(AdminLevel.ADMIN)),
     db: Database = Depends(get_db),
-) -> None:
-    """
-    Delete an office
-    """
+):
     await OfficeService.delete_office(db, office_id)
-    return None
 
 
-@router.patch("/{office_id}/deactivate", response_model=OfficeRead)
+@router.patch(
+    "/{office_id}/deactivate",
+    response_model=sch.OfficeRead,
+    summary="Deactivate an office",
+    description="Deactivate an active office. Only admins are allowed.",
+    responses={
+        200: {"description": "Office deactivated"},
+        404: {"description": "Office not found"},
+        403: {"description": "Forbidden: Only admins can deactivate offices"},
+    },
+)
 async def deactivate_office(
     office_id: UUID,
-    admin: CurrentUser = Depends(require_role(AdminLevel.ADMIN)),
+    _admin: CurrentUser = Depends(require_role(AdminLevel.ADMIN)),
     db: Database = Depends(get_db),
-) -> OfficeRead:
-    """
-    Deactivate an office (soft delete)
-    """
+):
     return await OfficeService.deactivate_office(db, office_id)
 
 
-@router.patch("/{office_id}/activate", response_model=OfficeRead)
+@router.patch(
+    "/{office_id}/activate",
+    response_model=sch.OfficeRead,
+    summary="Activate an office",
+    description="Activate a previously deactivated office. Only admins are allowed.",
+    responses={
+        200: {"description": "Office activated"},
+        404: {"description": "Office not found"},
+        403: {"description": "Forbidden: Only admins can activate offices"},
+    },
+)
 async def activate_office(
     office_id: UUID,
-    admin: CurrentUser = Depends(require_role(AdminLevel.ADMIN)),
+    _admin: CurrentUser = Depends(require_role(AdminLevel.ADMIN)),
     db: Database = Depends(get_db),
-) -> OfficeRead:
-    """
-    Deactivate an office (soft delete)
-    """
+):
     return await OfficeService.activate_office(db, office_id)
 
 
-# ============================membership=================================================
+# --------------------------------------------------
+# memberships
+# --------------------------------------------------
 @router.post(
     "/{office_id}/memberships",
     status_code=status.HTTP_201_CREATED,
+    response_model=sch.MembershipRead,
+    summary="Assign a user to an office",
+    description="Add a user as a member of an office. Only admins are allowed.",
+    responses={
+        201: {"description": "User assigned to office"},
+        404: {"description": "Office or user not found"},
+        403: {"description": "Forbidden: Only admins can assign users"},
+    },
 )
 async def assign_user_to_office(
     office_id: UUID,
-    membership: MembershipCreate,
-    admin: CurrentUser = Depends(require_role(AdminLevel.ADMIN)),
+    payload: sch.MembershipCreate,
+    _admin: CurrentUser = Depends(require_role(AdminLevel.ADMIN)),
     db: Database = Depends(get_db),
 ):
     return await OfficeMembershipService.assign_user_to_office(
-        db, office_id, membership, admin.id
+        db, office_id, payload, _admin.id
     )
 
 
-# WARNING: in here we need to fix the admin role requirement and also return the users data
-@router.get("/{office_id}/memberships", response_model=List[MembershipRead])
+@router.get(
+    "/{office_id}/memberships",
+    response_model=List[sch.MembershipRead],
+    summary="List office members",
+    description="Retrieve all members assigned to a specific office. Only admins are allowed.",
+    responses={
+        200: {"description": "List of office members"},
+        404: {"description": "Office not found"},
+        403: {"description": "Forbidden: Only admins can view office members"},
+    },
+)
 async def get_office_members(
     office_id: UUID,
-    admin: CurrentUser = Depends(require_role(AdminLevel.ADMIN)),
+    _admin: CurrentUser = Depends(require_role(AdminLevel.ADMIN)),
     db: Database = Depends(get_db),
 ):
     return await OfficeMembershipService.list_office_members(db, office_id)
 
 
-@router.get("/{office_id}/hosts", response_model=List[MembershipRead])
+@router.get(
+    "/{office_id}/hosts",
+    response_model=List[sch.MembershipRead],
+    summary="List office hosts",
+    description="Retrieve all hosts assigned to a specific office. Accessible by any authenticated user.",
+    responses={
+        200: {"description": "List of office hosts"},
+        404: {"description": "Office not found"},
+        401: {"description": "Unauthorized"},
+    },
+)
 async def get_office_hosts(
     office_id: UUID,
-    admin: CurrentUser = Depends(require_authentication),
+    _user: CurrentUser = Depends(require_authentication),
     db: Database = Depends(get_db),
 ):
     return await OfficeMembershipService.list_office_hosts(db, office_id)
 
 
-@router.put("/{office_id}/memberships/{membership_id}")
+@router.put(
+    "/{office_id}/memberships/{membership_id}",
+    response_model=sch.MembershipRead,
+    summary="Update office membership",
+    description="Update membership details (e.g., role). Only admins can perform this action.",
+    responses={
+        200: {"description": "Membership updated"},
+        404: {"description": "Membership not found"},
+        403: {"description": "Forbidden: Only admins can update memberships"},
+    },
+)
 async def update_office_membership(
     office_id: UUID,
     membership_id: UUID,
-    membership_data: MembershipUpdate,
-    admin: CurrentUser = Depends(require_role(AdminLevel.ADMIN)),
+    payload: sch.MembershipUpdate,
+    _admin: CurrentUser = Depends(require_role(AdminLevel.ADMIN)),
     db: Database = Depends(get_db),
 ):
     return await OfficeMembershipService.update_office_member(
-        db, office_id, membership_id, membership_data
+        db, office_id, membership_id, payload
     )
 
 
 @router.delete(
-    "/{office_id}/memberships/{membership_id}", status_code=status.HTTP_204_NO_CONTENT
+    "/{office_id}/memberships/{membership_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Remove a member from an office",
+    description="Remove a user from an office membership. Only admins can perform this action.",
+    responses={
+        204: {"description": "Membership removed"},
+        404: {"description": "Membership not found"},
+        403: {"description": "Forbidden: Only admins can remove members"},
+    },
 )
 async def remove_office_member(
     office_id: UUID,
     membership_id: UUID,
-    admin: CurrentUser = Depends(require_role(AdminLevel.ADMIN)),
+    _admin: CurrentUser = Depends(require_role(AdminLevel.ADMIN)),
     db: Database = Depends(get_db),
 ):
-    return await OfficeMembershipService.remove_office_member(
-        db, office_id, membership_id
-    )
+    await OfficeMembershipService.remove_office_member(db, office_id, membership_id)
 
 
-@router.get("/users/{user_id}/offices", response_model=List[MembershipRead])
+# --------------------------------------------------
+# user-centric
+# --------------------------------------------------
+@router.get(
+    "/users/{user_id}/offices",
+    response_model=List[sch.MembershipRead],
+    summary="List offices of a user",
+    description="Retrieve all offices a specific user is assigned to. Only admins can view this.",
+    responses={
+        200: {"description": "List of user's offices"},
+        404: {"description": "User not found"},
+        403: {"description": "Forbidden: Only admins can view user offices"},
+    },
+)
 async def get_user_offices(
     user_id: UUID,
-    admin: CurrentUser = Depends(require_role(AdminLevel.ADMIN)),
+    _admin: CurrentUser = Depends(require_role(AdminLevel.ADMIN)),
     db: Database = Depends(get_db),
 ):
     return await OfficeMembershipService.list_user_offices(db, user_id)
 
 
-@router.get("/memberships/search", response_model=List[OfficeMemberDetailRead])
-async def search_memberships(
-    search_term: str,
-    admin: CurrentUser = Depends(require_role(AdminLevel.ADMIN)),
+# --------------------------------------------------
+# availability
+# --------------------------------------------------
+@router.post(
+    "/hosts/{host_id}/availability",
+    response_model=sch.HostAvailabilityRead,
+    summary="Set host availability",
+    description="Set availability schedule for a host. Accessible by hosts and secretaries.",
+    responses={
+        200: {"description": "Availability set"},
+        404: {"description": "Host not found"},
+        403: {"description": "Forbidden: Only hosts/secretaries can set availability"},
+    },
+)
+async def set_host_availability(
+    office_id: UUID,  # injected by service layer
+    payload: sch.HostAvailabilityCreate,
+    _user: CurrentUser = Depends(require_any_role("host", "secretary")),
     db: Database = Depends(get_db),
 ):
-    return await OfficeMembershipService.search_office_members(db, search_term)
+    return await AvailabilityService.set_availability(db, office_id, payload)
 
 
-# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-
-@router.post("/hosts/{host_id}/availability", response_model=HostAvailabilityRead)
-async def set_host_availability(
-    office_id: UUID,
-    data: HostAvailabilityCreate,
-    session=Depends(get_db),
-    current_user: CurrentUser = Depends(require_any_role("host", "secretary")),
-):
-    return await AvailabilityService.set_availability(session, office_id, data)
-
-
-@router.get("/hosts/{host_id}/availability", response_model=List[HostAvailabilityRead])
+@router.get(
+    "/hosts/{host_id}/availability",
+    response_model=List[sch.HostAvailabilityRead],
+    summary="Get host availability",
+    description="Retrieve availability schedule for a host. Accessible by hosts, secretaries, and receptionists.",
+    responses={
+        200: {"description": "List of availability slots"},
+        404: {"description": "Host not found"},
+        403: {"description": "Forbidden: Insufficient role permissions"},
+    },
+)
 async def get_host_availability(
     office_id: UUID,
-    session=Depends(get_db),
-    current_user: CurrentUser = Depends(
-        require_any_role("host", "secretary", "reception")
-    ),
+    _user: CurrentUser = Depends(require_any_role("host", "secretary", "reception")),
+    db: Database = Depends(get_db),
 ):
-    return await AvailabilityService.get_availability(session, office_id)
+    return await AvailabilityService.get_availability(db, office_id)

@@ -115,9 +115,17 @@ class OfficeService:
             )
 
         # FIX: what if office has active employees or resources and we delete it
-
-        # Optional: Add business rules before deletion
-        # Example: Check if office has active employees or resources
+        try:
+            users = await OfficeMembershipService.list_office_members(
+                session, office_id
+            )
+            if users:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Office has active members",
+                )
+        except Exception:
+            pass
 
         success = await OfficeMgmtCRUD.delete(session, office_id)
 
@@ -209,6 +217,14 @@ class OfficeService:
 
 class OfficeMembershipService:
     @staticmethod
+    async def fetch_unassigned_users(session):
+        """
+        Fetch all users who are not assigned to any office.
+        """
+        unassigned_users = await OfficeMembershipMgmtCRUD.get_unassigned_users(session)
+        return unassigned_users
+
+    @staticmethod
     async def assign_user_to_office(
         session, office_id: UUID, membership_data: MembershipCreate, admin_id: UUID
     ) -> dict[str, str]:
@@ -218,13 +234,12 @@ class OfficeMembershipService:
         """
 
         existing_membership = await OfficeMembershipMgmtCRUD.get_membership(
-            session, office_id, membership_data.user_id
+            session, membership_data.user_id
         )
-        print(existing_membership)
         if existing_membership:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="User is already assigned to this office",
+                detail="User is already assigned to an office",
             )
         # lets add assigned by admin id
         membership_data_dict = membership_data.model_dump()
@@ -291,9 +306,7 @@ class OfficeMembershipService:
         """
         Soft delete a membership from an office.
         """
-        existing = await OfficeMembershipMgmtCRUD.get_membership(
-            session, office_id, membership_id
-        )
+        existing = await OfficeMembershipMgmtCRUD.get_membership(session, membership_id)
         if not existing:
             raise HTTPException(status_code=404, detail="Membership not found")
 

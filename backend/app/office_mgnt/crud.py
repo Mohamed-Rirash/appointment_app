@@ -5,7 +5,7 @@ from typing import Any, Optional
 from databases import Database
 from sqlalchemy import and_, delete, func, insert, or_, select, update
 
-from app.auth.models import users
+from app.auth.models import roles, user_roles, users
 from app.office_mgnt.models import host_availability, office_memberships, offices
 from app.office_mgnt.schemas import HostAvailabilityCreate
 from app.office_mgnt.views import office_member_details
@@ -71,6 +71,35 @@ class OfficeMgmtCRUD:
 
 class OfficeMembershipMgmtCRUD:
     # app/office_memberships/crud.py
+    # @staticmethod
+    # async def get_unassigned_users(session):
+    #     query = select(users).where(
+    #         ~users.c.id.in_(select(office_memberships.c.user_id))
+    #     )
+    #     result = await session.fetch_all(query)
+    #     return [dict(row) for row in result]
+    #
+    @staticmethod
+    async def get_unassigned_users(session):
+        # Subquery: users assigned to an office
+        assigned_users_subq = select(office_memberships.c.user_id)
+
+        # Subquery: users who have "admin" or "reception" role
+        excluded_roles_subq = (
+            select(user_roles.c.user_id)
+            .join(roles, roles.c.id == user_roles.c.role_id)
+            .where(roles.c.name.in_(["admin", "reception"]))
+        )
+
+        # Main query: users not in office AND not in excluded roles
+        query = (
+            select(users)
+            .where(~users.c.id.in_(assigned_users_subq))
+            .where(~users.c.id.in_(excluded_roles_subq))
+        )
+
+        result = await session.fetch_all(query)
+        return [dict(row) for row in result]
 
     @staticmethod
     async def create_membership(session, office_id, data):
@@ -87,10 +116,11 @@ class OfficeMembershipMgmtCRUD:
         return dict(result) if result else None
 
     @staticmethod
-    async def get_membership(session, office_id, membership_id):
+    async def get_membership(session, membership_id):
         query = select(office_memberships).where(
-            office_memberships.c.office_id == office_id,
-            office_memberships.c.user_id == membership_id,
+            # office_memberships.c.office_id == office_id,
+            office_memberships.c.user_id
+            == membership_id,
         )
         result = await session.fetch_one(query)
         return dict(result) if result else None

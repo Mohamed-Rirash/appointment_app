@@ -45,6 +45,7 @@ office_memberships = Table(
         ForeignKey("users.id"),
         nullable=False,
         index=True,
+        unique=True,
     ),
     Column(
         "office_id",

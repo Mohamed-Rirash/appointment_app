@@ -110,7 +110,6 @@ async def logout_user_service(session, request, response, current_user) -> None:
         auth_header = request.headers.get("authorization") or request.headers.get(
             "Authorization"
         )
-        # FIX: did jti do its job make it sure pro
         if auth_header and auth_header.lower().startswith("bearer "):
             access_token = auth_header.split(" ", 1)[1]
             payload = verify_token(access_token, token_type="access")
