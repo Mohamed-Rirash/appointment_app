@@ -212,6 +212,7 @@ class AvailabilityCRUD:
                 daysofweek=data.daysofweek,
                 start_time=data.start_time,
                 end_time=data.end_time,
+                is_recurring=data.is_recurring,
             )
             .returning(host_availability)
         )
@@ -233,3 +234,12 @@ class AvailabilityCRUD:
             & (host_availability.c.daysofweek == day_of_week.upper())
         )
         await session.execute(query)
+
+    @staticmethod
+    async def get_availability_for_day(db, office_id, day_of_week):
+        query = select(host_availability).where(
+            (host_availability.c.office_id == office_id)
+            & (host_availability.c.daysofweek == day_of_week.upper())
+        )
+        rows = await db.fetch_all(query)
+        return [dict(r) for r in rows]

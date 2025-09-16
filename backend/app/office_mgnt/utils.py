@@ -1,3 +1,4 @@
+from datetime import date, datetime, timedelta
 from enum import Enum
 from uuid import UUID
 
@@ -23,3 +24,19 @@ class Daysofweek(str, Enum):
     FRIDAY = "FRIDAY"
     SATURDAY = "SATURDAY"
     SUNDAY = "SUNDAY"
+
+
+def generate_slots(start_time, end_time, interval=15):
+    slots = []
+    current = datetime.combine(date.today(), start_time)
+    end_dt = datetime.combine(date.today(), end_time)
+
+    while current + timedelta(minutes=interval) <= end_dt:
+        slots.append(
+            {
+                "slot_start": current,
+                "slot_end": current + timedelta(minutes=interval),
+            }
+        )
+        current += timedelta(minutes=interval)
+    return slots

@@ -1,5 +1,5 @@
 import html
-from datetime import datetime, time
+from datetime import date, datetime, time
 from typing import Optional
 from uuid import UUID
 
@@ -174,7 +174,16 @@ class HostAvailabilityCreate(BaseModel):
 
 class HostAvailabilityRead(BaseModel):
     id: UUID
-    office_id: UUID
+    host_id: UUID
     daysofweek: Daysofweek
     start_time: time
     end_time: time
+    is_recurring: bool
+
+
+# --- Slots (generated, not stored) ---
+class Slot(BaseModel):
+    date: date
+    slot_start: datetime
+    slot_end: datetime
+    is_booked: bool = False

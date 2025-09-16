@@ -40,6 +40,7 @@ from app.core.middleware.security import (
 )
 from app.database import database
 from app.loggs import get_logger
+from app.office_mgnt.router import hostavailableroutes
 from app.office_mgnt.router import router as office_mgnt_router
 from app.rate_limiting import (
     EndpointRateLimitMiddleware,
@@ -254,3 +255,4 @@ app.include_router(admin_router, prefix=settings.API_V1_STR)
 
 # Include Office Management router
 app.include_router(office_mgnt_router, prefix=settings.API_V1_STR)
+app.include_router(hostavailableroutes, prefix=settings.API_V1_STR)

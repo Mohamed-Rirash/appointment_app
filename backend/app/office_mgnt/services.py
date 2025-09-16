@@ -1,8 +1,10 @@
+from datetime import date, datetime
 from typing import Dict, List
 from uuid import UUID
 
 from fastapi import HTTPException, status
 
+from app.office_mgnt import schemas
 from app.office_mgnt.crud import (
     AvailabilityCRUD,
     OfficeMembershipMgmtCRUD,
@@ -16,8 +18,9 @@ from app.office_mgnt.schemas import (
     OfficeCreate,
     OfficeRead,
     OfficeUpdate,
+    Slot,
 )
-from app.office_mgnt.utils import has_excluded_role
+from app.office_mgnt.utils import generate_slots, has_excluded_role
 
 
 class OfficeService:
@@ -361,3 +364,28 @@ class AvailabilityService:
     @staticmethod
     async def get_availability(session, host_id: UUID):
         return await AvailabilityCRUD.list_by_host(session, host_id)
+
+    @staticmethod
+    async def get_slots_for_date(
+        db, office_id: UUID, target_date: date
+    ) -> List[schemas.Slot]:
+        weekday = target_date.strftime("%A").lower()
+        availabilities = await AvailabilityCRUD.get_availability_for_day(
+            db, office_id, weekday
+        )
+
+        slots = []
+        for a in availabilities:
+            generated = generate_slots(a["start_time"], a["end_time"], interval=15)
+            for s in generated:
+                slots.append(
+                    schemas.Slot(
+                        date=target_date,
+                        slot_start=datetime.combine(
+                            target_date, s["slot_start"].time()
+                        ),
+                        slot_end=datetime.combine(target_date, s["slot_end"].time()),
+                        is_booked=False,  # integrate with appointments later
+                    )
+                )
+        return slots

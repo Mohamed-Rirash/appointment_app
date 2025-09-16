@@ -1,3 +1,4 @@
+from datetime import date
 from typing import List, Optional
 from uuid import UUID
 
@@ -99,7 +100,7 @@ async def list_offices(
 )
 async def read_office(
     office_id: UUID,
-    _admin: CurrentUser = Depends(require_role(AdminLevel.ADMIN)),
+    _user: CurrentUser = Depends(require_authentication),
     db: Database = Depends(get_db),
 ):
     return await OfficeService.get_office(db, office_id)
@@ -144,7 +145,7 @@ async def delete_office(
     await OfficeService.delete_office(db, office_id)
 
 
-@router.patch(
+@router.post(
     "/{office_id}/deactivate",
     response_model=sch.OfficeRead,
     summary="Deactivate an office",
@@ -163,7 +164,7 @@ async def deactivate_office(
     return await OfficeService.deactivate_office(db, office_id)
 
 
-@router.patch(
+@router.post(
     "/{office_id}/activate",
     response_model=sch.OfficeRead,
     summary="Activate an office",
@@ -314,8 +315,11 @@ async def get_user_offices(
 # --------------------------------------------------
 # availability
 # --------------------------------------------------
-@router.post(
-    "/hosts/{host_id}/availability",
+hostavailableroutes = APIRouter(prefix="/Availability", tags=["hostavailableroutes"])
+
+
+@hostavailableroutes.post(
+    "/hosts/{office_id}/availability",
     response_model=sch.HostAvailabilityRead,
     summary="Set host availability",
     description="Set availability schedule for a host. Accessible by hosts and secretaries.",
@@ -334,8 +338,8 @@ async def set_host_availability(
     return await AvailabilityService.set_availability(db, office_id, payload)
 
 
-@router.get(
-    "/hosts/{host_id}/availability",
+@hostavailableroutes.get(
+    "/hosts/{office_id}/availability",
     response_model=List[sch.HostAvailabilityRead],
     summary="Get host availability",
     description="Retrieve availability schedule for a host. Accessible by hosts, secretaries, and receptionists.",
@@ -351,3 +355,21 @@ async def get_host_availability(
     db: Database = Depends(get_db),
 ):
     return await AvailabilityService.get_availability(db, office_id)
+
+
+@hostavailableroutes.get("/{office_id}/slots", response_model=List[sch.Slot])
+async def get_slots(
+    office_id: UUID,
+    target_date: date = Query(..., description="Date for which to fetch slots"),
+    db: Database = Depends(get_db),
+    _user: CurrentUser = Depends(require_authentication),
+):
+    return await AvailabilityService.get_slots_for_date(db, office_id, target_date)
+
+
+@hostavailableroutes.patch("/{office_id}")
+async def edit_host_availability(): ...
+
+
+@hostavailableroutes.delete("/{office_id}")
+async def delete_host_availability(): ...
