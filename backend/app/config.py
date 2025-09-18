@@ -126,7 +126,7 @@ class Settings(BaseSettings):
     # --------------------
 
     BACKEND_CORS_ORIGINS: Annotated[list[AnyUrl] | str, BeforeValidator(parse_cors)] = [
-        "http://localhost:3000",
+        "http://localhost:3000"
     ]
     USE_CREDENTIALS: bool = True
 
