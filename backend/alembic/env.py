@@ -6,10 +6,11 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from alembic import context
+from app.appointments import models  # noqa: F401
 from app.auth import models  # noqa: F401
-from app.auth.constants import SQLALCHEMY_DATABASE_URI
 
 # Import your models here to ensure they are registered with SQLAlchemy
+from app.constants import SQLALCHEMY_DATABASE_URI
 from app.database import metadata
 from app.office_mgnt import models  # noqa: F401
 

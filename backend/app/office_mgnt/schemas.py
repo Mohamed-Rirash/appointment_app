@@ -141,7 +141,6 @@ class MembershipRead(BaseModel):
     position: str | None = None
     is_primary: bool
     membership_active: bool
-    assigned_at: datetime
 
 
 class OfficeMemberDetailRead(BaseModel):

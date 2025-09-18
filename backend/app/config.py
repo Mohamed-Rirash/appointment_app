@@ -42,7 +42,7 @@ class Settings(BaseSettings):
     # --------------------
     # SECURITY & AUTH
     # --------------------
-    SECRET_KEY: str
+    SECRET_KEY: str = "secret"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
     # Optional JWT hardening
@@ -54,23 +54,16 @@ class Settings(BaseSettings):
     # DATABASE
     # --------------------
 
-    POSTGRES_SERVER: str
+    POSTGRES_SERVER: str = "db"
     POSTGRES_PORT: int = 5432
-    POSTGRES_USER: str
-    POSTGRES_PASSWORD: str
+    POSTGRES_USER: str = "postgres"
+    POSTGRES_PASSWORD: str = "postgres"
     POSTGRES_DB: str = "appointement_app"
 
     @computed_field  # type: ignore[misc]
     @property
     def SQLALCHEMY_DATABASE_URI(self) -> PostgresDsn:
-        return MultiHostUrl.build(
-            scheme="postgresql+asyncpg",
-            username=self.POSTGRES_USER,
-            password=self.POSTGRES_PASSWORD,
-            host=self.POSTGRES_SERVER,
-            port=self.POSTGRES_PORT,
-            path=self.POSTGRES_DB,
-        )
+        return f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"  # type: ignore
 
     # --------------------
     # REDIS & CACHING
@@ -133,7 +126,7 @@ class Settings(BaseSettings):
     # --------------------
 
     BACKEND_CORS_ORIGINS: Annotated[list[AnyUrl] | str, BeforeValidator(parse_cors)] = [
-        "http://localhost:3000"
+        "http://localhost:3000",
     ]
     USE_CREDENTIALS: bool = True
 

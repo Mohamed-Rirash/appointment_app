@@ -189,7 +189,6 @@ async def activate_office(
 @router.post(
     "/{office_id}/memberships",
     status_code=status.HTTP_201_CREATED,
-    response_model=sch.MembershipRead,
     summary="Assign a user to an office",
     description="Add a user as a member of an office. Only admins are allowed.",
     responses={
@@ -367,9 +366,12 @@ async def get_slots(
     return await AvailabilityService.get_slots_for_date(db, office_id, target_date)
 
 
-@hostavailableroutes.patch("/{office_id}")
-async def edit_host_availability(): ...
-
-
-@hostavailableroutes.delete("/{office_id}")
-async def delete_host_availability(): ...
+#
+# @hostavailableroutes.patch("/{office_id}")
+# async def edit_host_availability(
+#     office_id: UUID,
+# ): ...
+#
+#
+# @hostavailableroutes.delete("/{office_id}")
+# async def delete_host_availability(office_id: UUID): ...

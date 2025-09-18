@@ -1,8 +1,8 @@
 """create view
 
-Revision ID: 63167f8d9729
-Revises: 9c9764e8b1c0
-Create Date: 2025-09-13 14:13:08.231883
+Revision ID: 25f755eb3df5
+Revises: 6ff147f13dcc
+Create Date: 2025-09-18 13:36:51.221161
 
 """
 
@@ -15,8 +15,8 @@ from alembic import op
 from app.office_mgnt.views import office_member_details, office_member_details_def
 
 # revision identifiers, used by Alembic.
-revision: str = "63167f8d9729"
-down_revision: Union[str, Sequence[str], None] = "9c9764e8b1c0"
+revision: str = "25f755eb3df5"
+down_revision: Union[str, Sequence[str], None] = "6ff147f13dcc"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
