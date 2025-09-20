@@ -40,6 +40,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           // Login → returns tokens
           const response = await client.Login(email, password);
           const data = await response.json();
+          if (!response.ok) {
+            console.log("Auuuht", data);
+          }
 
           if (!response.ok) throw new InvalidLoginError(data.detail);
 
@@ -63,7 +66,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     // Runs whenever token is created/updated
     async jwt({ token, user }) {
       // Initial login → attach tokens + user info
-      console.log("User", user);
+      console.log("Usershit", user);
       if (user) {
         return {
           ...token,
@@ -80,7 +83,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (Date.now() < (token.expires_at as number) * 1000) {
         return token;
       }
-
+      // signOut();
       // Otherwise refresh
       const refreshed = await client.refreshAccessToken();
 

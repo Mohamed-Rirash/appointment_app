@@ -267,7 +267,8 @@ async def _generate_tokens(user, session, response):
         max_age=rt_expires.total_seconds(),
         expires=expiry_time.strftime("%a, %d-%b-%Y %H:%M:%S GMT"),
         samesite=None,
-        secure=not settings.DEBUG,
+        secure=True,  
+        #   //not settings.DEBUG,
     )
 
     return {

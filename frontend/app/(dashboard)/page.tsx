@@ -18,7 +18,7 @@ export default async function Home() {
 
   return (
     <>
-      <div className="m-6">
+      <div className="ml-6">
         <h1>Hello {session?.user?.email}</h1>
         <p>
           Lorem ipsum dolor sit, amet consectetur adipisicing elit. Amet quam
@@ -27,6 +27,7 @@ export default async function Home() {
           veritatis iste sequi adipisci.
         </p>
         <form
+          className="mt-8"
           action={async () => {
             "use server";
             await signOut();

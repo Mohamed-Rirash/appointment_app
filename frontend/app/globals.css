@@ -4,8 +4,15 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --color-brand:#24C453;
+  --color-brand-primary:#E5F3E9;
+  --color-bran-secondary:#E1E1E1;
+  --color-brand-gray:#999999;
+  --color-brand-black:#2c2c2c;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  
+  --shadow-gren: 0px 2px 8px -3px rgba(36, 196, 83, 0.25);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --color-sidebar-ring: var(--sidebar-ring);
@@ -124,5 +131,7 @@
 
 
 body{
-  font-family: "Plus Jakarta Sans";
+  font-family: "satoshi";
+  
 }
+

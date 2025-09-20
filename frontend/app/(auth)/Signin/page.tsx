@@ -17,6 +17,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { authenticate } from "@/fuctions/services/action";
 import Link from "next/link";
+import Image from "next/image";
+
+import logo from "@/public/logo.png";
+import { useRouter } from "next/navigation";
 
 // define the form schema
 const formSchema = z.object({
@@ -36,6 +40,8 @@ export default function Signin() {
     },
   });
 
+  const router = useRouter();
+
   async function Submit(values: z.infer<typeof formSchema>) {
     // 1. Clear previous errors
     form.clearErrors();
@@ -45,10 +51,22 @@ export default function Signin() {
     console.log("Result", result);
     console.log("shit", result.error);
     setLoading(false);
+    if (result.message === "success") {
+      router.push("/");
+    }
     // 3. Handle authentication response
     let errorMessage;
     if (result?.error) {
-      errorMessage = result.error;
+      if (result.error !== "Failed to parse URL from undefined/users/login") {
+        console.log("shit and shiter");
+        console.log("th", result.error);
+        errorMessage = result.error;
+      }
+
+      if (result.error === "Failed to parse URL from undefined/users/login") {
+        console.log("shit and shiter");
+        errorMessage = "Network Error, Please try again";
+      }
 
       // 4. Set error on password field (common practice for login forms)
       form.setError("password", {
@@ -64,9 +82,17 @@ export default function Signin() {
 
   return (
     <div className="flex justify-center items-center h-screen">
-      <div className=" border border-[#e1e1e1] p-8 rounded-sm">
-        <h1 className="text-[#2c2c2c] text-5xl font-bold mb-2">Get Started</h1>
-        <p>provide your username/email and password to use the system</p>
+      <div className=" w-full max-w-[468px] sm:border border-[#e1e1e1] p-4 sm:p-8 rounded-[8px]">
+        <div className="flex flex-col  justify-center items-center">
+          {/* <h1 className="text-[#2c2c2c] text-4xl sm:text-5xl font-bold mb-2">
+            Get Started
+          </h1> */}
+          <Image src={logo} width={258} height={32} alt="logo" />
+          <p className="text-[#999999] text-lg font-medium">
+            welcome to the system
+          </p>
+        </div>
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(Submit)} className="mt-6">
             {/* email  */}
@@ -80,7 +106,7 @@ export default function Signin() {
                   </FormLabel>
                   <FormControl>
                     <Input
-                      className="py-6 pl-4 text-lg mb-0"
+                      className="py-7 pl-4 text-lg mb-0"
                       type="email"
                       placeholder="example@gmail.com"
                       {...field}
@@ -102,7 +128,7 @@ export default function Signin() {
                   </FormLabel>
                   <FormControl>
                     <Input
-                      className="py-6 pl-4 text-lg"
+                      className="py-7 pl-4 text-lg "
                       type="password"
                       placeholder="*********"
                       {...field}
@@ -110,7 +136,7 @@ export default function Signin() {
                   </FormControl>
                   <Link
                     href={"/forget-password"}
-                    className=" font-semibold underline cursor-pointer py-5 text-right"
+                    className=" font-semibold underline cursor-pointer py-5 text-right text-[#2c2c2c]"
                   >
                     {" "}
                     Forget Password?
@@ -122,11 +148,11 @@ export default function Signin() {
             <Button
               disabled={loading}
               type="submit"
-              className={`py-[28px] w-full text-lg mt-4 ${
+              className={`py-[28px] w-full  text-xl font-bold mt-4 bg-linear-to-r from-[#21D256] to-[#0EA73C] ${
                 loading ? "opacity-50 pointer-disabled" : ""
               }`}
             >
-              {loading ? "Sign in ..." : "Sign in"}
+              {loading ? "Login in ..." : "Login"}
             </Button>
           </form>
         </Form>

@@ -12,6 +12,7 @@ export const client = {
           "Content-Type": "application/x-www-form-urlencoded",
         },
         body: `grant_type=password&username=${email}&password=${password}&scope=&client_id=string&client_secret=********`,
+        credentials: "include",
       }
     );
     return response;
@@ -49,6 +50,7 @@ export const client = {
       if (!res.ok) throw new Error("Failed to refresh token");
 
       const refreshed = await res.json();
+      console.log("shhhhhhhhhhhhhhhhhhhh", refreshed);
 
       return {
         access_token: refreshed.access_token,
@@ -58,5 +60,28 @@ export const client = {
       console.error("Error refreshing token:", err);
       return { error: "RefreshAccessTokenError" };
     }
+  },
+
+  // ✅ Corrected version
+  async resetPassword(email: string) {
+    console.log("|Email: reset", email);
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/users/request-password-reset`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          accept: "application/json",
+        },
+        body: JSON.stringify({ email }), // 👈 Wrap in object
+      }
+    );
+
+    // 🚨 Also: Check if response is OK before parsing JSON
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
   },
 };
