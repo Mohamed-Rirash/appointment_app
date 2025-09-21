@@ -3,7 +3,7 @@ from datetime import date, datetime, time
 from typing import Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, validator
 
 from app.office_mgnt.utils import Daysofweek
 
@@ -165,16 +165,23 @@ class OfficeMemberDetailRead(BaseModel):
 
 
 class HostAvailabilityCreate(BaseModel):
-    daysofweek: Daysofweek
+    daysofweek: Optional[Daysofweek] = None
+    specific_date: Optional[date] = None
     start_time: time
     end_time: time
     is_recurring: bool = True
 
+    @field_validator("specific_date")
+    def validate_either_date_or_day(cls, v, values):
+        if not v and not values.get("daysofweek"):
+            raise ValueError("Either daysofweek or specific_date must be provided")
+        return v
+
 
 class HostAvailabilityRead(BaseModel):
     id: UUID
-    host_id: UUID
-    daysofweek: Daysofweek
+    daysofweek: Optional[Daysofweek]
+    specific_date: Optional[date]
     start_time: time
     end_time: time
     is_recurring: bool
@@ -183,6 +190,6 @@ class HostAvailabilityRead(BaseModel):
 # --- Slots (generated, not stored) ---
 class Slot(BaseModel):
     date: date
-    slot_start: datetime
-    slot_end: datetime
+    slot_start: time
+    slot_end: time
     is_booked: bool = False

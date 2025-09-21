@@ -1,4 +1,4 @@
-from datetime import datetime, time
+from datetime import date, datetime, time
 from uuid import UUID
 
 from pydantic import BaseModel, EmailStr
@@ -48,3 +48,12 @@ class AppointmentRead(AppointmentCreate):
 class AppointmentWithCitizenRead(BaseModel):
     citizen: CitizenRead
     appointment: AppointmentRead
+
+
+class Slot(BaseModel):
+    id: UUID
+    office_id: UUID
+    slot_start: time
+    slot_end: time
+    date: date
+    is_booked: bool

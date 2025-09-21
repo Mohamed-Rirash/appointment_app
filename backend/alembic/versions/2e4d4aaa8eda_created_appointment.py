@@ -90,6 +90,7 @@ def upgrade() -> None:
     op.create_table(
         "time_slots",
         sa.Column("id", sa.UUID(as_uuid=True), primary_key=True, nullable=False),
+        sa.Column("office_id", sa.UUID(as_uuid=True), nullable=False),
         sa.Column("slot_start", sa.Time(), nullable=False),
         sa.Column("slot_end", sa.Time(), nullable=False),
         sa.Column("date", sa.Date(), nullable=False),
