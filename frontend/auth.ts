@@ -5,9 +5,13 @@ import { client } from "./fuctions/api/client";
 // Extend NextAuth types
 declare module "next-auth" {
   interface User {
+    first_name: string;
+    last_name: string;
     id: string;
     email: string;
-    emailVerified?: Date | null;
+    emailVerified: Date | null;
+    is_active: boolean;
+    is_verified: boolean;
     roles: string[];
     permissions: string[];
     access_token: string;
@@ -72,7 +76,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           ...token,
           id: user.id,
           email: user.email,
+          firstName: user.first_name,
+          lastName: user.last_name,
           roles: user.roles,
+          is_active: user.is_active,
+          is_verified: user.is_verified,
           permissions: user.permissions,
           access_token: user.access_token,
           expires_at: user.expires_at,
@@ -103,7 +111,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       session.user = {
         id: token.id as string,
         email: token.email as string,
-        emailVerified: null,
+        emailVerified: (token.is_verified as boolean) ? new Date() : null,
+        first_name: token.firstName as string, // note: you stored it as 'firstName' in JWT
+        last_name: token.lastName as string,
+        is_active: token.is_active as boolean,
+        is_verified: token.is_verified as boolean,
         roles: token.roles as string[],
         permissions: token.permissions as string[],
         access_token: token.access_token as string,
@@ -115,6 +127,22 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
       return session;
     },
+    // async session({ session, token }) {
+    //   session.user = {
+    //     id: token.id as string,
+    //     email: token.email as string,
+    //     emailVerified: null,
+    //     roles: token.roles as string[],
+    //     permissions: token.permissions as string[],
+    //     access_token: token.access_token as string,
+    //     expires_at: token.expires_at as number,
+    //   };
+
+    //   session.access_token = token.access_token as string;
+    //   session.error = token.error as string | undefined;
+
+    //   return session;
+    // },
   },
 
   pages: {

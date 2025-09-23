@@ -62,7 +62,7 @@ export const client = {
     }
   },
 
-  // ✅ Corrected version
+  // resetPassword
   async resetPassword(email: string) {
     console.log("|Email: reset", email);
     const response = await fetch(
@@ -83,5 +83,34 @@ export const client = {
     }
 
     return await response.json();
+  },
+
+  // change password
+  async changePassword(
+    current_password: string,
+    new_password: string,
+    token: string
+  ) {
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/users/change-password`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ current_password, new_password }),
+        }
+      );
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.detail || "Failed to change password");
+      }
+      return data;
+    } catch (error: any) {
+      console.error("error password change", error);
+      throw error; // let caller handle
+    }
   },
 };

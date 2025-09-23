@@ -19,7 +19,7 @@ export default async function Home() {
   return (
     <>
       <div className="ml-6">
-        <h1>Hello {session?.user?.email}</h1>
+        {/* <h1>Hello {session?.user?.email}</h1> */}
         <p>
           Lorem ipsum dolor sit, amet consectetur adipisicing elit. Amet quam
           accusamus ullam dignissimos ut fugit quidem voluptates, similique

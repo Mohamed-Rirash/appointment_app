@@ -13,6 +13,8 @@
   --color-foreground: var(--foreground);
   
   --shadow-gren: 0px 2px 8px -3px rgba(36, 196, 83, 0.25);
+  /* --font-satoshi: "satoshi"; */
+  --font-family-satoshi: var(--font-satoshi), sans-serif;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --color-sidebar-ring: var(--sidebar-ring);
@@ -125,6 +127,9 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+  .sidebar-menu-button {
+    @apply gap-0 px-0;
   }
 }
 

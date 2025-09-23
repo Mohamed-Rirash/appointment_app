@@ -1,3 +1,6 @@
+import { AppSidebar } from "@/components/app-sidebar";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+
 export default function LayoutDashboard({
   children,
 }: {
@@ -5,7 +8,14 @@ export default function LayoutDashboard({
 }) {
   return (
     <>
-      <div className="sm:flex">
+      <SidebarProvider>
+        <AppSidebar />
+        <main>
+          <SidebarTrigger />
+          {children}
+        </main>
+      </SidebarProvider>
+      {/* <div className="sm:flex">
         <div className="bg-red-300 w-full max-w-[240px] hidden sm:block">
           <div className="bg-blue-400 px-4">
             {" "}
@@ -17,7 +27,7 @@ export default function LayoutDashboard({
         </div>
 
         <div className="bg-amber-300 h-screen  w-full">{children}</div>
-      </div>
+      </div> */}
     </>
   );
 }
