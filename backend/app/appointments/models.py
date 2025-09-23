@@ -72,6 +72,7 @@ time_slot = Table(
     "time_slots",
     metadata,
     Column("id", UUID(as_uuid=True), primary_key=True, default=uuid.uuid4),
+    Column("office_id", UUID(as_uuid=True), nullable=False),
     Column("slot_start", Time, nullable=False),
     Column("slot_end", Time, nullable=False),
     Column("date", Date, nullable=False),

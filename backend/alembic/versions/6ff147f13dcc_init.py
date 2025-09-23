@@ -153,6 +153,7 @@ def upgrade() -> None:
         "host_availability",
         sa.Column("id", sa.UUID(), nullable=False),
         sa.Column("office_id", sa.UUID(), nullable=False),
+        sa.Column("specific_date", sa.Date(), nullable=True),
         sa.Column("start_time", sa.Time(), nullable=False),
         sa.Column("end_time", sa.Time(), nullable=False),
         sa.Column(

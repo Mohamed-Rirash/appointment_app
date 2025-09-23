@@ -76,7 +76,7 @@ async def create_office(
 async def list_offices(
     status_filter: Optional[str] = Query(
         None,
-        regex="^(active|deactivated)$",
+        pattern="^(active|deactivated)$",
         description="Filter offices by status (active or deactivated).",
     ),
     _admin: CurrentUser = Depends(require_role(AdminLevel.ADMIN)),
@@ -313,40 +313,29 @@ async def get_user_offices(
 
 # --------------------------------------------------
 # availability
-# --------------------------------------------------
-hostavailableroutes = APIRouter(prefix="/Availability", tags=["hostavailableroutes"])
+hostavailableroutes = APIRouter(prefix="/availability", tags=["Host Availability"])
 
 
 @hostavailableroutes.post(
-    "/hosts/{office_id}/availability",
+    "/hosts/{office_id}",
     response_model=sch.HostAvailabilityRead,
     summary="Set host availability",
-    description="Set availability schedule for a host. Accessible by hosts and secretaries.",
-    responses={
-        200: {"description": "Availability set"},
-        404: {"description": "Host not found"},
-        403: {"description": "Forbidden: Only hosts/secretaries can set availability"},
-    },
+    description="Define availability for a host. Supports recurring or one-time availability.",
 )
 async def set_host_availability(
-    office_id: UUID,  # injected by service layer
+    office_id: UUID,
     payload: sch.HostAvailabilityCreate,
     _user: CurrentUser = Depends(require_any_role("host", "secretary")),
     db: Database = Depends(get_db),
 ):
-    return await AvailabilityService.set_availability(db, office_id, payload)
+    return await AvailabilityService.set_availability(db, _user.id, office_id, payload)
 
 
 @hostavailableroutes.get(
-    "/hosts/{office_id}/availability",
+    "/hosts/{office_id}",
     response_model=List[sch.HostAvailabilityRead],
     summary="Get host availability",
-    description="Retrieve availability schedule for a host. Accessible by hosts, secretaries, and receptionists.",
-    responses={
-        200: {"description": "List of availability slots"},
-        404: {"description": "Host not found"},
-        403: {"description": "Forbidden: Insufficient role permissions"},
-    },
+    description="Retrieve availability schedule for a host (recurring + one-time).",
 )
 async def get_host_availability(
     office_id: UUID,
@@ -356,22 +345,16 @@ async def get_host_availability(
     return await AvailabilityService.get_availability(db, office_id)
 
 
-@hostavailableroutes.get("/{office_id}/slots", response_model=List[sch.Slot])
+@hostavailableroutes.get(
+    "/hosts/{office_id}/slots",
+    response_model=List[sch.Slot],
+    summary="Get bookable slots",
+    description="Get generated 15-min slots for a given date.",
+)
 async def get_slots(
     office_id: UUID,
-    target_date: date = Query(..., description="Date for which to fetch slots"),
+    target_date: date = Query(..., description="Date to fetch slots for"),
     db: Database = Depends(get_db),
     _user: CurrentUser = Depends(require_authentication),
 ):
     return await AvailabilityService.get_slots_for_date(db, office_id, target_date)
-
-
-#
-# @hostavailableroutes.patch("/{office_id}")
-# async def edit_host_availability(
-#     office_id: UUID,
-# ): ...
-#
-#
-# @hostavailableroutes.delete("/{office_id}")
-# async def delete_host_availability(office_id: UUID): ...

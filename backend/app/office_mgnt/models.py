@@ -4,6 +4,7 @@ from sqlalchemy import (  # only so we can keep the original column order / labe
     UUID,
     Boolean,
     Column,
+    Date,
     DateTime,
     Enum,
     ForeignKey,
@@ -81,21 +82,16 @@ office_memberships = Table(
 # -[] Client → requests available slots for given date → backend: fetch host availability → generate slots → filter booked → return.
 #
 # -[] Client picks slot → create appointment record.
-
 host_availability = Table(
     "host_availability",
     metadata,
     Column("id", UUID(as_uuid=True), primary_key=True, default=uuid.uuid4),
-    Column(
-        "office_id", UUID(as_uuid=True), ForeignKey("offices.id"), nullable=False
-    ),  # who is this belonging to?
-    Column(
-        "daysofweek",
-        Enum(Daysofweek, name="dayofweek"),
-        nullable=False,
-    ),
-    Column("start_time", Time, nullable=False),  # in hours
-    Column("end_time", Time, nullable=False),  # in hours
+    Column("office_id", UUID(as_uuid=True), ForeignKey("offices.id"), nullable=False),
+    # Recurring OR one-time
+    Column("daysofweek", Enum(Daysofweek, name="dayofweek"), nullable=True),
+    Column("specific_date", Date, nullable=True),
+    Column("start_time", Time, nullable=False),
+    Column("end_time", Time, nullable=False),
     Column("is_recurring", Boolean, nullable=False, server_default=text("false")),
     Column("created_at", DateTime(timezone=True), server_default=func.now()),
 )
