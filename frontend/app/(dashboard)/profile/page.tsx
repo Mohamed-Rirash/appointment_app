@@ -12,6 +12,7 @@ import {
   Dialog,
   DialogClose,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -23,15 +24,34 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { client } from "@/fuctions/api/client";
 import { z } from "zod";
 
-// Zod schema for password
-const passwordSchema = z
-  .string()
-  .min(6, "Password must be at least 6 characters")
-  .regex(/[A-Z]/, "Password must have at least one uppercase letter")
-  .regex(/[0-9]/, "Password must have at least one number")
-  .regex(/[^a-zA-Z0-9]/, "Password must have at least one special character");
+// Define individual rule checkers with their error messages
+const passwordRules = [
+  {
+    test: (pwd: string) => pwd.length >= 6,
+    message: "Password must be at least 6 characters",
+  },
+  {
+    test: (pwd: string) => /[A-Z]/.test(pwd),
+    message: "Password must have at least one uppercase letter",
+  },
+  {
+    test: (pwd: string) => /[0-9]/.test(pwd),
+    message: "Password must have at least one number",
+  },
+  {
+    test: (pwd: string) => /[^a-zA-Z0-9]/.test(pwd),
+    message: "Password must have at least one special character",
+  },
+];
 
-// Password strength function
+// Helper to get all failing rule messages
+function validatePasswordRules(password: string): string[] {
+  return passwordRules
+    .filter((rule) => !rule.test(password))
+    .map((rule) => rule.message);
+}
+
+// Password strength function (unchanged)
 function getPasswordStrength(password: string) {
   let score = 0;
   if (password.length >= 6) score++;
@@ -83,8 +103,19 @@ export default function Profile() {
       return;
     }
 
+    // Validate all rules before submission
+    const errors = validatePasswordRules(newPassword);
+    if (errors.length > 0) {
+      setError(errors.join("\n"));
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
-      passwordSchema.parse(newPassword); // Validate password
+      // Optional: Re-enable Zod if needed for backend sync
+      // const passwordSchema = z.string().min(6)... etc.
+      // passwordSchema.parse(newPassword);
+
       const result = await client.changePassword(
         current_password,
         newPassword,
@@ -94,11 +125,7 @@ export default function Profile() {
       setNewPassword("");
       e.currentTarget.reset();
     } catch (err: any) {
-      if (err.errors) {
-        setError(err.errors[0].message);
-      } else {
-        setError(err.message || "Failed to change password");
-      }
+      setError(err.message || "Failed to change password");
     } finally {
       setIsSubmitting(false);
     }
@@ -194,6 +221,7 @@ export default function Profile() {
           </Button>
         </DialogTrigger>
         <DialogContent className="sm:max-w-[425px]">
+          <DialogDescription></DialogDescription>
           <form onSubmit={handleSubmit}>
             <DialogHeader>
               <DialogTitle className="text-2xl font-bold text-brand-black">
@@ -201,7 +229,16 @@ export default function Profile() {
               </DialogTitle>
             </DialogHeader>
 
-            {error && <p className="text-red-500 text-sm mb-2">{error}</p>}
+            {/* General form errors (e.g., on submit) */}
+            {error && (
+              <ul className="text-red-500 text-sm mb-2 list-disc list-inside space-y-1">
+                {error.split("\n").map((msg, i) => (
+                  <li key={i}>{msg}</li>
+                ))}
+              </ul>
+            )}
+
+            {/* Success message */}
             {success && (
               <p className="text-green-500 text-sm mb-2">{success}</p>
             )}
@@ -240,17 +277,40 @@ export default function Profile() {
                   value={newPassword}
                   onChange={(e) => {
                     setNewPassword(e.target.value);
-                    try {
-                      passwordSchema.parse(e.target.value);
-                      setPasswordError(null);
-                    } catch (err: any) {
-                      setPasswordError(err.errors[0].message);
-                    }
+                    const errors = validatePasswordRules(e.target.value);
+                    setPasswordError(
+                      errors.length > 0 ? errors.join("\n") : null
+                    );
                   }}
                   required
                 />
 
-                {/* strength indicator */}
+                {/* Password Rules Checklist */}
+                <div className="mt-3 space-y-1">
+                  {passwordRules.map((rule, index) => {
+                    const isValid = rule.test(newPassword);
+                    return (
+                      <div key={index} className="flex items-center text-sm">
+                        <span
+                          className={`mr-2 w-4 h-4 rounded-full flex items-center justify-center text-white text-xs ${
+                            isValid ? "bg-green-500" : "bg-gray-300"
+                          }`}
+                        >
+                          {isValid ? "✓" : ""}
+                        </span>
+                        <span
+                          className={
+                            isValid ? "text-green-600" : "text-gray-500"
+                          }
+                        >
+                          {rule.message}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Strength indicator */}
                 <p
                   className={`mt-2 text-sm font-medium ${
                     strength.score <= 1
@@ -265,8 +325,13 @@ export default function Profile() {
                   Strength: {strength.label}
                 </p>
 
+                {/* Live password field errors */}
                 {passwordError && (
-                  <p className="text-red-500 text-sm mt-1">{passwordError}</p>
+                  <ul className="text-red-500 text-sm mt-1 list-disc list-inside space-y-1">
+                    {passwordError.split("\n").map((msg, i) => (
+                      <li key={i}>{msg}</li>
+                    ))}
+                  </ul>
                 )}
               </div>
             </div>
