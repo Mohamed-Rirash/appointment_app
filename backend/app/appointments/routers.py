@@ -1,10 +1,17 @@
 import asyncio
+from uuid import UUID
 
 from databases import Database
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 
 from app.appointments import schemas as sch
+from app.appointments.constants import AppointmentStatus
+from app.appointments.exceptions import (
+    AppointmentAlreadyApproved,
+    AppointmentDecisionNotAllowed,
+    AppointmentNotFound,
+)
 from app.appointments.services import AppointmentService
 from app.appointments.utils import office_connections
 from app.auth.dependencies import CurrentUser, require_any_role
@@ -49,22 +56,31 @@ async def sse_endpoint(request: Request, office_id: str = Query(...)):
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 
-#
-# @appointment_router.post("/{appointment_id}/decision")
-# async def decide_appointment(appointment_id: UUID, decision: str, db: Database):
-#     query = (
-#         update(appointments)
-#         .where(appointments.c.id == appointment_id)
-#         .values(status=decision, updated_at=datetime.utcnow())
-#         .returning(appointments)
-#     )
-#     record = await db.fetch_one(query)
-#
-#     # Notify all office listeners
-#     office_id = record["office_id"]
-#     if office_id in office_queues:
-#         await office_queues[office_id].put(
-#             json.dumps({"event": "appointment_update", "data": dict(record)})
-#         )
-#
-#     return dict(record)
+@appointment_router.post("/{appointment_id}/decision")
+async def decide_appointment(
+    appointment_id: UUID,
+    decision: AppointmentStatus = Query(AppointmentStatus.APPROVED),
+    db: Database = Depends(get_db),
+    _current_user: CurrentUser = Depends(require_any_role("host", "secretary")),
+):
+    try:
+        updated_appointment = await AppointmentService.decide_appointment(
+            db, appointment_id, decision
+        )
+    except AppointmentNotFound:
+        raise HTTPException(status_code=404, detail="Appointment not found")
+    except AppointmentAlreadyApproved:
+        raise HTTPException(status_code=400, detail="Appointment already approved")
+    except AppointmentDecisionNotAllowed:
+        raise HTTPException(
+            status_code=400, detail="Appointment decision can be approved or denied"
+        )
+
+
+@appointment_router.post("/{appointment_id}/postpone")
+async def postpone_appointment(
+    appointment_id: UUID,
+    decision: AppointmentStatus = Query(AppointmentStatus.POSTPONED),
+    db: Database = Depends(get_db),
+    _current_user: CurrentUser = Depends(require_any_role("host", "secretary")),
+): ...

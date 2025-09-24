@@ -1,7 +1,7 @@
 from datetime import date, datetime, time
 from uuid import UUID
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
 from app.appointments.constants import AppointmentStatus
 
@@ -57,3 +57,7 @@ class Slot(BaseModel):
     slot_end: time
     date: date
     is_booked: bool
+
+
+class AppointmentDecision(BaseModel):
+    status: AppointmentStatus = Field(default=AppointmentStatus.APPROVED)

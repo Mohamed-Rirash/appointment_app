@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from fastapi.responses import Response
 
 from app.admin.router import router as admin_router
 
@@ -18,6 +19,7 @@ from app.core.cache import cache_manager
 from app.core.middleware.caching import ResponseCachingMiddleware
 
 # Middleware imports
+# from app.core.middleware.cors import setup_cors
 from app.core.middleware.cors import setup_cors
 from app.core.middleware.error_handling import (
     AuthenticationError,
@@ -160,8 +162,6 @@ def create_application() -> FastAPI:
         openapi_url="/openapi.json" if settings.is_development else None,
         lifespan=lifespan,
     )
-
-    # Setup CORS
     setup_cors(app)
 
     # Add trusted host middleware (should be first)
@@ -195,6 +195,10 @@ def create_application() -> FastAPI:
 
     # Add error handling middleware (should be last)
     app.add_middleware(ErrorHandlingMiddleware)
+
+    # Setup CORS LAST so it becomes the outermost middleware and handles
+    # preflight OPTIONS requests before other middleware can reject them
+    # TODO: Add CORS middleware
 
     # Add exception handlers
     app.add_exception_handler(
@@ -258,3 +262,9 @@ app.include_router(admin_router, prefix=settings.API_V1_STR)
 app.include_router(office_mgnt_router, prefix=settings.API_V1_STR)
 app.include_router(hostavailableroutes, prefix=settings.API_V1_STR)
 app.include_router(appointment_router, prefix=settings.API_V1_STR)
+
+
+# Explicit global OPTIONS handler to always succeed preflight
+@app.options("/{rest_of_path:path}")
+async def preflight_handler() -> Response:
+    return Response(status_code=200)

@@ -31,3 +31,18 @@ class AppointmentCrud:
             update(time_slot).where(time_slot.c.id == slot_id).values(is_booked=True)
         )
         await db.execute(query)
+
+    @staticmethod
+    async def update_appointment(db, appointment_id, appointment_data):
+        query = (
+            update(appointments)
+            .where(appointments.c.id == appointment_id)
+            .values(**appointment_data)
+        )
+        await db.execute(query)
+        return await db.fetch_one(query)
+
+    @staticmethod
+    async def get_appointment_by_id(db, appointment_id):
+        query = select(appointments).where(appointments.c.id == appointment_id)
+        return await db.fetch_one(query)

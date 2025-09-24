@@ -13,24 +13,64 @@ settings = get_settings()
 def setup_cors(app: FastAPI) -> None:
     """Setup CORS middleware with proper configuration"""
 
-    # Use list of allowed origins from settings
-    allowed_origins = settings.BACKEND_CORS_ORIGINS
+    # Ensure list of allowed origins are plain strings
+    configured_origins = settings.BACKEND_CORS_ORIGINS
+    allowed_origins = [str(o) for o in (configured_origins or [])]
 
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],
-        allow_credentials=settings.USE_CREDENTIALS,
-        allow_methods=["*"],  # allow all methods
-        allow_headers=["*"],  # allow all headers
-        expose_headers=[
-            "X-Request-ID",
-            "X-RateLimit-Limit",
-            "X-RateLimit-Remaining",
-            "X-RateLimit-Window",
-            "Retry-After",
-        ],
-        max_age=86400,  # 24 hours
-    )
+    # If no origins configured (e.g., env var set to empty), default to local dev
+    if not allowed_origins:
+        allowed_origins = [
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+        ]
+
+    # Add common local dev aliases if applicable
+    if (
+        "http://localhost:3000" in allowed_origins
+        and "http://127.0.0.1:3000" not in allowed_origins
+    ):
+        allowed_origins.append("http://127.0.0.1:3000")
+    if (
+        "http://127.0.0.1:3000" in allowed_origins
+        and "http://localhost:3000" not in allowed_origins
+    ):
+        allowed_origins.append("http://localhost:3000")
+
+    # In local/dev, be maximally permissive to avoid CORS blockers
+    if settings.is_development:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=allowed_origins,
+            allow_origin_regex=".*",
+            allow_credentials=False,  # disable for wildcard compatibility
+            allow_methods=["*"],
+            allow_headers=["*"],
+            expose_headers=[
+                "X-Request-ID",
+                "X-RateLimit-Limit",
+                "X-RateLimit-Remaining",
+                "X-RateLimit-Window",
+                "Retry-After",
+            ],
+            max_age=86400,
+        )
+    else:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=allowed_origins,
+            allow_credentials=settings.USE_CREDENTIALS,
+            # Explicitly list common methods including OPTIONS for preflight
+            allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+            allow_headers=["*"],  # allow all headers
+            expose_headers=[
+                "X-Request-ID",
+                "X-RateLimit-Limit",
+                "X-RateLimit-Remaining",
+                "X-RateLimit-Window",
+                "Retry-After",
+            ],
+            max_age=86400,  # 24 hours
+        )
 
 
 def get_cors_config():
