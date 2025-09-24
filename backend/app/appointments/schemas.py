@@ -3,7 +3,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, EmailStr
 
-from app.appointments.utils import AppointmentStatus
+from app.appointments.constants import AppointmentStatus
 
 
 # --- Citizen Input ---

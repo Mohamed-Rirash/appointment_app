@@ -11,7 +11,7 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from app.admin.router import router as admin_router
 
 # Router imports
-from app.appointments.roters import appointment_router
+from app.appointments.routers import appointment_router
 from app.auth.router import router as auth_router
 from app.config import get_settings
 from app.core.cache import cache_manager

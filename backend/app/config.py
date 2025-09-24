@@ -13,7 +13,6 @@ from pydantic import (
     computed_field,
     model_validator,
 )
-from pydantic_core import MultiHostUrl
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -125,9 +124,9 @@ class Settings(BaseSettings):
     # CORS
     # --------------------
 
-    BACKEND_CORS_ORIGINS: Annotated[list[AnyUrl] | str, BeforeValidator(parse_cors)] = [
-        "http://localhost:3000"
-    ]
+    BACKEND_CORS_ORIGINS: Annotated[
+        list[AnyUrl] | str, BeforeValidator(parse_cors)
+    ] = []
     USE_CREDENTIALS: bool = True
 
     # --------------------

@@ -2,6 +2,7 @@
 CORS middleware configuration for FastAPI application
 """
 
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
@@ -9,29 +10,18 @@ from app.config import get_settings
 settings = get_settings()
 
 
-def setup_cors(app):
+def setup_cors(app: FastAPI) -> None:
     """Setup CORS middleware with proper configuration"""
 
-    # Get allowed origins
+    # Use list of allowed origins from settings
     allowed_origins = settings.BACKEND_CORS_ORIGINS
 
-    # Add CORS middleware
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=allowed_origins,
+        allow_origins=["*"],
         allow_credentials=settings.USE_CREDENTIALS,
-        allow_methods=["DELETE", "GET", "POST", "PUT", "PATCH", "OPTIONS"],
-        allow_headers=[
-            "Accept",
-            "Accept-Language",
-            "Content-Language",
-            "Content-Type",
-            "Authorization",
-            "X-Requested-With",
-            "X-Request-ID",
-            "Cache-Control",
-            "Pragma",
-        ],
+        allow_methods=["*"],  # allow all methods
+        allow_headers=["*"],  # allow all headers
         expose_headers=[
             "X-Request-ID",
             "X-RateLimit-Limit",
@@ -46,7 +36,7 @@ def setup_cors(app):
 def get_cors_config():
     """Get CORS configuration for manual setup"""
     return {
-        "allow_origins": settings.all_cors_origins,
+        "allow_origins": settings.BACKEND_CORS_ORIGINS,
         "allow_credentials": settings.USE_CREDENTIALS,
         "allow_methods": ["DELETE", "GET", "POST", "PUT", "PATCH", "OPTIONS"],
         "allow_headers": [
