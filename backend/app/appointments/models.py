@@ -16,7 +16,7 @@ from sqlalchemy import (
     text,
 )
 
-from app.appointments.utils import AppointmentStatus
+from app.appointments.constants import AppointmentStatus
 from app.database import metadata
 
 # --- Citizens Table ---
