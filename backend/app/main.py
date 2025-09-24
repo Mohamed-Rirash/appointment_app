@@ -20,6 +20,7 @@ from app.core.middleware.caching import ResponseCachingMiddleware
 
 # Middleware imports
 # from app.core.middleware.cors import setup_cors
+from app.core.middleware.cors import setup_cors
 from app.core.middleware.error_handling import (
     AuthenticationError,
     AuthorizationError,
@@ -161,6 +162,7 @@ def create_application() -> FastAPI:
         openapi_url="/openapi.json" if settings.is_development else None,
         lifespan=lifespan,
     )
+    setup_cors(app)
 
     # Add trusted host middleware (should be first)
     if settings.ALLOWED_HOSTS and "*" not in settings.ALLOWED_HOSTS:
@@ -196,7 +198,7 @@ def create_application() -> FastAPI:
 
     # Setup CORS LAST so it becomes the outermost middleware and handles
     # preflight OPTIONS requests before other middleware can reject them
-    # setup_cors(app)
+    # TODO: Add CORS middleware
 
     # Add exception handlers
     app.add_exception_handler(
