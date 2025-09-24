@@ -16,12 +16,24 @@ from pydantic import (
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-def parse_cors(v: Any) -> list[str] | str:
-    if isinstance(v, str) and not v.startswith("["):
-        return [i.strip() for i in v.split(",")]
-    elif isinstance(v, list | str):
-        return v
-    raise ValueError(v)
+def parse_cors(v: Any) -> list[str]:
+    """
+    Parse CORS origins from environment variable.
+    Handles:
+      - Comma-separated strings: "http://a,http://b"
+      - Empty values: "" or unset → []
+      - Lists (for programmatic use)
+    Always returns list[str].
+    """
+    if v is None:
+        return []
+    if isinstance(v, str):
+        # Split by comma and clean whitespace; ignore empty parts
+        return [origin.strip() for origin in v.split(",") if origin.strip()]
+    elif isinstance(v, (list, tuple)):
+        return [str(origin).strip() for origin in v if origin]
+    else:
+        raise ValueError(f"Invalid CORS origin format: {v}")
 
 
 class Settings(BaseSettings):
@@ -126,7 +138,8 @@ class Settings(BaseSettings):
 
     BACKEND_CORS_ORIGINS: Annotated[
         list[AnyUrl] | str, BeforeValidator(parse_cors)
-    ] = []
+    ] = ["http://localhost:3000"]
+
     USE_CREDENTIALS: bool = True
 
     # --------------------

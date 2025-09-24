@@ -6,5 +6,6 @@ class AppointmentStatus(str, Enum):
     CANCELLED = "cancelled"
     COMPLETED = "completed"
     NO_SHOW = "no_show"
-    Approved = "approved"
+    APPROVED = "approved"
     DENIED = "denied"
+    POSTPONED = "postponed"

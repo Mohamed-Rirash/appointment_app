@@ -1,7 +1,17 @@
 import uuid
 
+from databases import Database
+from fastapi import HTTPException, status
+from sqlalchemy import Transaction
+
 from app.appointments import schemas as sch
+from app.appointments.constants import AppointmentStatus
 from app.appointments.crud import AppointmentCrud
+from app.appointments.exceptions import (
+    AppointmentAlreadyApproved,
+    AppointmentDecisionNotAllowed,
+    AppointmentNotFound,
+)
 from app.appointments.utils import broadcast_event
 
 
@@ -40,3 +50,34 @@ class AppointmentService:
             citizen=sch.CitizenRead.model_validate(citizen_dict),
             appointment=sch.AppointmentRead.model_validate(appointment_dict),
         )
+
+
+@staticmethod
+async def decide_appointment(
+    db: Database, appointment_id: uuid.UUID, decision: AppointmentStatus
+):
+    async with db.transaction():
+        # 1. Fetch appointment
+        appointment = await AppointmentCrud.get_appointment_by_id(db, appointment_id)
+        if not appointment:
+            raise AppointmentNotFound()
+
+        # 2. Validate state
+        if appointment.status == AppointmentStatus.APPROVED:
+            raise AppointmentAlreadyApproved()
+
+        # 3. Apply business logic
+        if decision == AppointmentStatus.APPROVED:
+            await AppointmentCrud.update_appointment(
+                db, appointment_id, {"status": decision}
+            )
+            await AppointmentCrud.mark_slot_booked(db, appointment.slot_id)
+        elif decision == AppointmentStatus.DENIED:
+            await AppointmentCrud.update_appointment(
+                db, appointment_id, {"status": decision}
+            )
+        else:
+            raise AppointmentDecisionNotAllowed()
+
+        # Return updated appointment
+        return await AppointmentCrud.get_appointment_by_id(db, appointment_id)

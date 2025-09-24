@@ -73,6 +73,7 @@ def upgrade() -> None:
         "NO_SHOW",
         "APPROVED",
         "DENIED",
+        "POSTPONED",
         name="appointmentstatus",
     )
     appointment_status_enum.create(op.get_bind(), checkfirst=True)
