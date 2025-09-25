@@ -1,9 +1,8 @@
 "use client";
 
-// Lucide Icons
 import {
   LayoutDashboard,
-  Users,
+  Users as UsersIcon,
   Building,
   PlusCircle,
   Eye,
@@ -15,109 +14,159 @@ import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
+  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
 } from "./ui/sidebar";
 import Link from "next/link";
 import Image from "next/image";
-
 import logo from "@/public/logo.png";
 import { Separator } from "./ui/separator";
 import { usePathname } from "next/navigation";
+import { useSidebar } from "@/components/ui/sidebar";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
-// Define your navigation items
 const items = [
-  {
-    title: "Dashboard",
-    url: "/",
-    icon: LayoutDashboard,
-  },
-  {
-    title: "User management",
-    url: "/users",
-    icon: Users,
-  },
-  {
-    title: "Office management",
-    url: "/offices",
-    icon: Building,
-  },
-  {
-    title: "Add appointment",
-    url: "/appointments/add",
-    icon: PlusCircle,
-  },
-  {
-    title: "View appointment",
-    url: "/appointments",
-    icon: Eye,
-  },
-  {
-    title: "Profile",
-    url: "/profile",
-    icon: Settings,
-  },
+  { title: "Dashboard", url: "/", icon: LayoutDashboard },
+  { title: "User management", url: "/users", icon: UsersIcon },
+  { title: "Office management", url: "/offices", icon: Building },
+  { title: "Add appointment", url: "/appointments/add", icon: PlusCircle },
+  { title: "View appointment", url: "/appointments", icon: Eye },
+  { title: "Profile", url: "/profile", icon: Settings },
 ];
 
 export function AppSidebar() {
   const pathname = usePathname();
-  console.log("path", pathname);
+  const { open } = useSidebar();
 
   return (
-    <Sidebar>
-      <SidebarContent className="bg-white w-full px- mt-0 pt-0">
-        <SidebarGroup>
-          <SidebarGroupLabel className=" mt-8">
-            {" "}
+    <TooltipProvider>
+      <Sidebar
+        collapsible="icon"
+        className="bg-white border-r border-[#eeeeee]"
+      >
+        <SidebarHeader className="bg-white py-8 px-2">
+          {open && (
             <Image
               src={logo}
-              width={232}
-              height={232}
+              width={332}
+              height={332}
               alt="logo"
               className=""
             />
-          </SidebarGroupLabel>
-          <Separator className=" bg-bran-secondary my-8" />
-          <div className="px-2 ">
-            <SidebarGroupContent className="bg-">
-              <SidebarMenu className="">
+          )}{" "}
+          {/* PEOPLE ICON - only when collapsed */}
+          {!open && (
+            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-brand">
+              <UsersIcon size={16} className="text-white" />
+            </div>
+          )}
+        </SidebarHeader>
+        <Separator className="" />
+        <SidebarContent className="flex flex-col h-full bg-white px-2">
+          {/* Top Section */}
+          {/* <SidebarGroup className="mb-4">
+            <SidebarGroupLabel className="flex items-center justify-between px-4 py-3 my-8"> */}
+          {/* FULL LOGO - only when open */}
+
+          {/* Optional: Keep toggle if you want it in header */}
+          {/* <SidebarTrigger className="ml-auto" /> */}
+          {/* </SidebarGroupLabel>
+            <Separator className="my-2" />
+          </SidebarGroup> */}
+
+          {/* Main Menu */}
+          <SidebarGroup className="flex-grow">
+            <SidebarGroupContent>
+              <SidebarMenu>
                 {items.map((item) => {
                   const isActive = pathname === item.url;
                   const Icon = item.icon;
                   return (
                     <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton
-                        asChild
-                        className="rounded-[2px] hover:bg-brand-primary hover:font-medium"
-                      >
-                        <Link
-                          href={item.url}
-                          className={`flex  gap-x-4 pl-4 py-6 text-[15px] font-satoshi transition-colors
-                          ${
-                            isActive
-                              ? "bg-brand-primary text-brand-black font-semibold"
-                              : "text-brand-gray hover:bg-bran-secondary  hover:text-brand-black"
-                          }`}
-                        >
-                          <span className="grid place-content-center w-[32px] h-[32px]">
-                            <Icon
-                              size={24}
-                              className="w-full h-full"
-                              color={isActive ? "#2C2C2C" : "#999999"}
-                            />
-                          </span>
-                          <span>{item.title}</span>
-                        </Link>
-                      </SidebarMenuButton>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <SidebarMenuButton
+                            asChild
+                            className={`rounded-[4px] py-6 hover:bg-brand-primary transition-all duration-200 font-medium ${
+                              isActive
+                                ? "bg-brand-primary text-brand-black font-bold"
+                                : "text-brand-gray hover:bg-brand-primary hover:text-brand-black"
+                            }`}
+                          >
+                            <Link
+                              href={item.url}
+                              className="flex  pl-4 text-[16px] font-satoshi"
+                            >
+                              <span className=" w-[24px] h-[24px] rounded-md">
+                                <Icon
+                                  className={`w-full h-full ${
+                                    isActive
+                                      ? "text-brand-black"
+                                      : "text-brand-gray"
+                                  }`}
+                                />
+                              </span>
+                              {open && (
+                                <span className="pl-[5px]">{item.title}</span>
+                              )}
+                            </Link>
+                          </SidebarMenuButton>
+                        </TooltipTrigger>
+                        {/* {!open && (
+                          <TooltipContent
+                            side="right"
+                            className="bg-brand-primary text-brand-black"
+                          >
+                            {item.title}
+                          </TooltipContent>
+                        )} */}
+                        {open ? (
+                          ""
+                        ) : (
+                          <TooltipContent
+                            side="right"
+                            className="bg-brand-black text-brand-primary"
+                          >
+                            {item.title}
+                          </TooltipContent>
+                        )}
+                      </Tooltip>
                     </SidebarMenuItem>
                   );
                 })}
               </SidebarMenu>
             </SidebarGroupContent>
-          </div>
-        </SidebarGroup>
-      </SidebarContent>
-    </Sidebar>
+          </SidebarGroup>
+
+          {/* Bottom: Sign Out */}
+          {/* <SidebarGroup className="">
+            <SidebarGroupContent>
+              <div className=" flex ">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-red-500 cursor-pointer">
+                      <span className="text-white text-lg font-medium">N</span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent
+                    side="right"
+                    className="bg-brand-black text-white"
+                  >
+                    Sign Out
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+            </SidebarGroupContent>
+          </SidebarGroup> */}
+        </SidebarContent>
+      </Sidebar>
+    </TooltipProvider>
   );
 }

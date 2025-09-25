@@ -7,6 +7,8 @@ import { useState, useEffect } from "react";
 import arrow from "@/public/back_arrow.png";
 import Image from "next/image";
 import { client } from "@/fuctions/api/client";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
 export default function ForgetPassword() {
   const [email, setEmail] = useState("");
@@ -14,6 +16,7 @@ export default function ForgetPassword() {
   const [error, setError] = useState<string | null>(null);
   const [countdown, setCountdown] = useState(30);
   const [isCounting, setIsCounting] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   // Countdown effect
   useEffect(() => {
@@ -31,49 +34,103 @@ export default function ForgetPassword() {
   }, [isCounting, countdown]);
 
   // function for reset
+  // const handleSubmit = async (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   setError(null);
+
+  //   // Basic validation
+  //   if (!email.trim()) {
+  //     setError("Please enter a valid email address.");
+  //     return;
+  //   }
+
+  //   // setSubmitted(true);
+  //   // setIsCounting(true);
+  //   // setCountdown(30);
+  //   setLoading(true);
+  //   console.log("Email", email);
+  //   const result = await client.resetPassword(email);
+  //   console.log("Result", result);
+  //   // const data = await fetch(
+  //   //   "http://localhost:8000/api/v1/users/request-password-reset",
+  //   //   {
+  //   //     method: "POST",
+  //   //     headers: {
+  //   //       accept: " application/json",
+  //   //       "Content-Type": "application/json",
+  //   //     },
+  //   //     body: JSON.stringify({ email }),
+  //   //   }
+  //   // );
+
+  //   // const re = await data.json();
+  //   console.log("REEE", result);
+  //   setLoading(false);
+  //   // // Simulate success/error after 1.5s
+  //   // setTimeout(() => {
+  //   //   // Simulate 20% chance of error for demo
+  //   //   if (Math.random() > 0.8) {
+  //   //     setError("Failed to send reset email. Please try again.");
+  //   //     setSubmitted(false);
+  //   //     setIsCounting(false);
+  //   //   } else {
+  //   //     // Success — keep submitted state and countdown
+  //   //   }
+  //   // }, 1500);
+  // };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setLoading(true);
 
-    // Basic validation
+    // Basic validation: check if email is empty
     if (!email.trim()) {
       setError("Please enter a valid email address.");
+      setLoading(false);
       return;
     }
 
-    // Simulate API call
-    // setSubmitted(true);
-    // setIsCounting(true);
-    // setCountdown(30);
-    // console.log("Email", email);
-    // const result = client.resetPassword(email);
-    // console.log("Result", result);
-    const data = await fetch(
-      "http://localhost:8000/api/v1/users/request-password-reset",
-      {
-        method: "POST",
-        headers: {
-          accept: " application/json",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email }),
+    // Domain validation
+    const allowedDomains = ["gmail.com", "amoud.org"];
+    const domain = email.split("@")[1]?.toLowerCase();
+    if (!domain || !allowedDomains.includes(domain)) {
+      setError(
+        "Only email addresses from @gmail.com or @amoud.org are allowed."
+      );
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const result = await client.resetPassword(email);
+      console.log("Result", result);
+
+      // ✅ On success: show confirmation screen
+      if (result?.message) {
+        setSubmitted(true); // Show "Check your inbox!" UI
+        setIsCounting(true); // Start resend countdown
+        setCountdown(30);
       }
-    );
+    } catch (err: any) {
+      console.error("Reset password error:", err);
 
-    const re = await data.json();
-    console.log("REEE", re);
+      let errorMessage = "Failed to send reset email. Please try again.";
 
-    // // Simulate success/error after 1.5s
-    // setTimeout(() => {
-    //   // Simulate 20% chance of error for demo
-    //   if (Math.random() > 0.8) {
-    //     setError("Failed to send reset email. Please try again.");
-    //     setSubmitted(false);
-    //     setIsCounting(false);
-    //   } else {
-    //     // Success — keep submitted state and countdown
-    //   }
-    // }, 1500);
+      // Handle specific backend validation errors
+      if (err?.response?.data?.detail?.[0]?.msg) {
+        const msg = err.response.data.detail[0].msg;
+        if (
+          msg.includes("Only email addresses from these domains are allowed")
+        ) {
+          errorMessage =
+            "Only email addresses from @gmail.com or @amoud.org are allowed.";
+        }
+      }
+
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleResend = () => {
@@ -85,8 +142,8 @@ export default function ForgetPassword() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center">
       <Button
-        className="text-xl py-6 rounded-[4px] absolute top-6 left-6 transition-colors
-        border border-e-bran-secondary bg-white text-brand-gray hover:bg-brand-primary "
+        className="text-xl py-6 rounded-[4px] shodow-gren absolute top-6 left-6 transition-colors
+        border border-[#eeeeee] bg-white text-brand-gray hover:bg-brand-primary/40 "
         onClick={() => window.history.back()}
       >
         <Image
@@ -101,14 +158,6 @@ export default function ForgetPassword() {
 
       <div className="w-full max-w-sm">
         <div className="bg-white p-6 rounded-[8px]  border border-brand-primary">
-          {/* {true && (
-            <Alert variant="destructive" className="mb-6 animate-in fade-in-0">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Error</AlertTitle>
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )} */}
-
           {!submitted ? (
             <>
               <div className="">
@@ -134,6 +183,21 @@ export default function ForgetPassword() {
                     className="py-6 pl-4 text-base"
                     required
                   />
+                  {/* {error && (
+                    <p className="text-red-500 text-sm p-4 bg-red-50/10 rounded mt-2">
+                      {error}
+                    </p>
+                  )} */}
+                  {error && (
+                    <Alert
+                      variant="destructive"
+                      className="mb-6 animate-in fade-in-0"
+                    >
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertTitle>Error</AlertTitle>
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                  )}
                 </div>
 
                 <Button
@@ -145,7 +209,7 @@ export default function ForgetPassword() {
                   } `}
                   disabled={!email}
                 >
-                  Reset my Password
+                  {loading ? "Reseting password..." : " Reset my Password"}
                 </Button>
               </form>
             </>
