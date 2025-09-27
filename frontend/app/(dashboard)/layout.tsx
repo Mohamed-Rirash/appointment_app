@@ -1,4 +1,5 @@
 import { AppSidebar } from "@/components/app-sidebar";
+import Navbar from "@/components/Navbar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 
 export default function LayoutDashboard({
@@ -11,7 +12,7 @@ export default function LayoutDashboard({
       <SidebarProvider>
         <AppSidebar />
         <main>
-          <SidebarTrigger />
+          <Navbar />
           {children}
         </main>
       </SidebarProvider>

@@ -70,7 +70,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     // Runs whenever token is created/updated
     async jwt({ token, user }) {
       // Initial login → attach tokens + user info
-      console.log("Usershit", user);
+
       if (user) {
         return {
           ...token,

@@ -73,13 +73,14 @@ export const client = {
           "Content-Type": "application/json",
           accept: "application/json",
         },
-        body: JSON.stringify({ email }), // 👈 Wrap in object
+        body: JSON.stringify({ email }),
       }
     );
 
     // 🚨 Also: Check if response is OK before parsing JSON
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
+      // return await response.json();
     }
 
     return await response.json();
@@ -105,6 +106,7 @@ export const client = {
       );
       const data = await res.json();
       if (!res.ok) {
+        console.log("whateeeeeeeeeeee");
         throw new Error(data.detail || "Failed to change password");
       }
       return data;
