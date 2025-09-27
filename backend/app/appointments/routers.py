@@ -1,4 +1,6 @@
 import asyncio
+from datetime import date, time
+from typing import Optional
 from uuid import UUID
 
 from databases import Database
@@ -28,9 +30,9 @@ appointment_router = APIRouter(prefix="/appointments", tags=["Appointments"])
 async def create_with_citizen(
     payload: sch.AppointmentWithCitizenCreate,
     db: Database = Depends(get_db),
-    _user: CurrentUser = Depends(require_any_role("host", "secretary", "reception")),
+    user: CurrentUser = Depends(require_any_role("host", "secretary", "reception")),
 ):
-    return await AppointmentService.create_with_citizen(db, payload)
+    return await AppointmentService.create_with_citizen(db, payload, user.id)
     # TODO: Add SSE endpoint
 
 
@@ -77,10 +79,67 @@ async def decide_appointment(
         )
 
 
-@appointment_router.post("/{appointment_id}/postpone")
-async def postpone_appointment(
-    appointment_id: UUID,
-    decision: AppointmentStatus = Query(AppointmentStatus.POSTPONED),
+# @appointment_router.post("/{appointment_id}/postpone")
+# async def postpone_appointment(
+#     appointment_id: UUID,
+#     decision: AppointmentStatus = Query(AppointmentStatus.POSTPONED),
+#     db: Database = Depends(get_db),
+#     _current_user: CurrentUser = Depends(require_any_role("host", "secretary")),
+# ): ...
+
+
+@appointment_router.get(
+    "/all",
+    response_model=list[sch.AppointmentRead],
+    summary="Get all appointments",
+    description="""
+    Get all appointments with support for:
+    - Filtering by decision (approved, denied, etc.)
+    - Filtering by date/time
+    - Searching by citizen info (name, phone, email)
+    - Ordered by date/time
+    """,
+)
+async def get_all_appointments(
+    by_decision: Optional[AppointmentStatus] = Query(None),
+    by_time_slot: Optional[time] = Query(None),
+    by_date: Optional[date] = Query(None),
+    search: Optional[str] = Query(None),
+    completed: Optional[bool] = Query(
+        None, description="Filter only completed appointments"
+    ),
     db: Database = Depends(get_db),
-    _current_user: CurrentUser = Depends(require_any_role("host", "secretary")),
-): ...
+    _current_user: CurrentUser = Depends(
+        require_any_role("host", "secretary", "reception")
+    ),
+):
+    filters = sch.AppointmentFilters(
+        by_decision=by_decision,
+        by_time_slot=by_time_slot,
+        by_date=by_date,
+        search=search,
+        completed=completed,
+    )
+    try:
+        return await AppointmentService.get_appointments(db, filters)
+    except AppointmentNotFound:
+        raise HTTPException(
+            status_code=404, detail="No appointments found matching the criteria."
+        )
+
+
+@appointment_router.get(
+    "/all/me",
+    response_model=list[sch.AppointmentRead],
+    summary="Get all appointments",
+    description="Get all appointments",
+)
+async def get_all_me_appointments(
+    db: Database = Depends(get_db),
+    user: CurrentUser = Depends(require_any_role("host", "secretary", "reception")),
+    when: date = Query(...),  # FIX: make it to days date by default
+):
+    return AppointmentService.get_my_appointments(db, user.id, when)
+
+
+# TODO: add complete appointment endpoint and make the status complete and deactivate it

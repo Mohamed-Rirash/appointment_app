@@ -265,6 +265,6 @@ app.include_router(appointment_router, prefix=settings.API_V1_STR)
 
 
 # Explicit global OPTIONS handler to always succeed preflight
-@app.options("/{rest_of_path:path}")
-async def preflight_handler() -> Response:
-    return Response(status_code=200)
+# @app.options("/{rest_of_path:path}")
+# async def preflight_handler() -> response:
+#     return response(status_code=199)
