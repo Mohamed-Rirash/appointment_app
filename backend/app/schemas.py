@@ -31,7 +31,7 @@ class ErrorResponse(BaseModel):
     error_code: Optional[str] = None
     details: Optional[Dict[str, Any]] = None
     timestamp: datetime = Field(
-        default_factory=lambda: datetime.now(datetime.timezone.utc)
+        default_factory=lambda: datetime.now(timezone.utc)
     )
 
 
@@ -57,7 +57,7 @@ class SortParams(BaseModel):
     """Common sorting parameters"""
 
     sort_by: Optional[str] = Field(None, description="Field to sort by")
-    sort_order: str = Field("desc", pattern="^(asc|desc)$", description="Sort order")
+    sort_order: str = Field("desc", description="Sort order")
 
 
 class SearchParams(BaseModel):
@@ -169,7 +169,7 @@ class BulkOperationResult(BaseModel):
         default_factory=list, description="List of errors"
     )
     processed_at: datetime = Field(
-        default_factory=lambda: datetime.now(datetime.now(timezone.utc))
+        default_factory=lambda: datetime.now(timezone.utc)
     )
 
     @property
@@ -268,7 +268,7 @@ class ResourcePermission(BaseModel):
     permission_level: PermissionLevel = Field(..., description="Permission level")
     granted_by: UUID = Field(..., description="Who granted the permission")
     granted_at: datetime = Field(
-        default_factory=lambda: datetime.now(datetime.timezone.utc)
+        default_factory=lambda: datetime.now(timezone.utc)
     )
     expires_at: Optional[datetime] = Field(None, description="When permission expires")
 
