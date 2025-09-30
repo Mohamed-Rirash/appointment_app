@@ -115,8 +115,7 @@ class OfficeMembershipMgmtCRUD:
     async def get_membership(db, membership_id):
         query = select(office_memberships).where(
             # office_memberships.c.office_id == office_id,
-            office_memberships.c.user_id
-            == membership_id,
+            office_memberships.c.user_id == membership_id,
         )
         result = await db.fetch_one(query)
         return dict(result) if result else None
@@ -144,11 +143,11 @@ class OfficeMembershipMgmtCRUD:
         return [dict(row) for row in result]
 
     @staticmethod
-    async def update_membership(db, office_id, membership_id, data):
+    async def update_membership(db, office_id, user_id, data):
         query = (
             update(office_memberships)
             .where(
-                office_memberships.c.id == membership_id,
+                office_memberships.c.user_id == user_id,
                 office_memberships.c.office_id == office_id,
             )
             .values(**data)
