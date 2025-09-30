@@ -57,6 +57,26 @@ services:
     volumes:
       - mailpit-data:/data
 
+  # SMSCatcher - SMS testing service
+  smscatcher:
+    build:
+      context: ./mock-sms
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "3001:3001" # API port
+      - "3000:3000" # Web UI port (optional)
+    environment:
+      - PORT=3001
+      - WEB_PORT=3000
+    volumes:
+      - smscatcher-data:/data
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   backend:
     build:
       context: ./backend
@@ -96,6 +116,10 @@ services:
       - ENVIRONMENT=local
       - PYTHONPATH=/app
       - PYTHONUNBUFFERED=1
+      # SMS Configuration
+      - SMS_HOST=smscatcher
+      - SMS_PORT=3001
+      - SMS_FROM=+1234567890
     volumes:
       - ./backend:/app
       - ./backend/alembic/versions:/app/alembic/versions # <── persist migrations
@@ -110,6 +134,7 @@ volumes:
   app-db-data:
   redis-data:
   mailpit-data:
+  smscatcher-data:
 
 networks:
   default:
