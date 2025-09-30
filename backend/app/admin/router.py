@@ -70,6 +70,10 @@ def _normalize_admin_user(enriched: dict) -> dict:
     return data
 
 
+# =============================================================================
+# USER MANAGEMENT ENDPOINTS
+# =============================================================================
+
 @router.post(
     "/users", response_model=AdminUserResponse, status_code=status.HTTP_201_CREATED
 )
@@ -297,3 +301,10 @@ async def admin_revoke_role_by_name(
             status_code=400, detail="Role removal failed or role not assigned"
         )
     return AdminBaseResponse(message="Role revoked successfully")
+
+
+# =============================================================================
+# NOTE: Office management endpoints have been moved to /offices module
+# All office, host assignment, and stats endpoints are now in:
+# app/office_mgnt/router.py
+# =============================================================================

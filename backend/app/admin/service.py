@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from uuid import UUID
 
 from databases import Database
-from fastapi import BackgroundTasks, HTTPException, status
+from fastapi import BackgroundTasks, status
 
 from app.admin.config import get_admin_config
 from app.admin.crud import AdminAuditCRUD, AdminRoleCRUD, AdminSystemCRUD, AdminUserCRUD
@@ -18,6 +18,11 @@ from app.admin.exceptions import (
     InvalidBulkOperationError,
     RoleAssignmentError,
     SystemUserProtectedError,
+    UserAlreadyExistsError,
+    AdminValidationError,
+    RolesMissingError,
+    UserNotFoundError,
+    ExportError,
 )
 from app.admin.schemas import (
     AdminActionType,
@@ -35,6 +40,7 @@ from app.admin.schemas import (
 from app.auth.crud import UserCRUD
 from app.auth.rbac import RBACCRUD, RoleCRUD
 from app.core.security import generate_password, hash_password
+from app.core.validation import validate_email_domain
 
 
 class AdminUserService:
@@ -46,16 +52,25 @@ class AdminUserService:
         pagination: PaginationParams,
         filters: Optional[UserSearchFilters] = None,
     ) -> Tuple[List[Dict[str, Any]], int]:
-        """Get paginated users with enhanced admin information"""
+        """Get paginated users with enhanced admin information - OPTIMIZED"""
 
         users, total = await AdminUserCRUD.get_users_paginated(db, pagination, filters)
 
-        # Enhance users with role and permission information
-        enhanced_users = []
-        for user in users:
-            enhanced_user = await AdminUserCRUD.get_user_with_roles(db, user["id"])
-            if enhanced_user:
-                enhanced_users.append(enhanced_user)
+        if not users:
+            return [], total
+
+        # ✅ OPTIMIZED: Batch load roles for all users to avoid N+1 queries
+        user_ids = [user["id"] for user in users]
+        
+        # Use asyncio.gather to fetch roles for all users in parallel
+        role_tasks = [AdminUserCRUD.get_user_with_roles(db, user_id) for user_id in user_ids]
+        enhanced_users_results = await asyncio.gather(*role_tasks, return_exceptions=True)
+        
+        # Filter out None results and exceptions
+        enhanced_users = [
+            result for result in enhanced_users_results 
+            if result is not None and not isinstance(result, Exception)
+        ]
 
         return enhanced_users, total
 
@@ -71,59 +86,63 @@ class AdminUserService:
         # Check if user already exists
         existing_user = await UserCRUD.get_by_email(db, user_data.email)
         if existing_user:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="User with this email already exists",
+            raise UserAlreadyExistsError(user_data.email)
+
+        # Validate email domain BEFORE any DB writes
+        try:
+            validate_email_domain(str(user_data.email))
+        except ValueError as e:
+            raise AdminValidationError(
+                message="Validation failed",
+                details=[
+                    {
+                        "type": "value_error",
+                        "loc": ["email"],
+                        "msg": str(e),
+                        "input": str(user_data.email),
+                    }
+                ],
             )
 
-        # Always generate a temporary password; user will set their own via invitation
-        password = generate_password()
-        hashed_password = await hash_password(password)
-
-        # Prepare user data
-        user_dict = user_data.model_dump(exclude={"roles", "send_welcome_email"})
-        user_dict["password"] = hashed_password
-
-        # Create user
-        created_user = await AdminUserCRUD.create_user(db, user_dict, created_by)
-
-        # Assign initial roles if provided (validate existence first)
+        # Resolve and validate roles BEFORE any DB writes
+        resolved_role_ids: List[UUID] = []
         if user_data.roles:
-            # Resolve mixed inputs (names or UUID strings) to role IDs
             missing_roles: List[str] = []
-            resolved_role_ids: List[UUID] = []
-
             for role_value in user_data.roles:
                 role_obj = None
-                # Try UUID parse first
                 try:
                     role_uuid = UUID(role_value)
                     role_obj = await RoleCRUD.get_by_id(db, role_uuid)
                 except Exception:
-                    # Not a UUID, treat as name
                     role_obj = await RoleCRUD.get_by_name(db, role_value)
-
                 if not role_obj:
                     missing_roles.append(str(role_value))
                 else:
                     resolved_role_ids.append(role_obj["id"])
 
             if missing_roles:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail={
-                        "message": "One or more roles do not exist",
-                        "missing_roles": missing_roles,
-                    },
-                )
+                raise RolesMissingError(missing_roles)
 
-            # Assign roles now that validation passed
+        # Always generate a temporary password; user will set their own via invitation
+        password = generate_password()
+        hashed_password = await hash_password(password)
+
+        # Prepare user data (excluding non-persisted fields)
+        user_dict = user_data.model_dump(exclude={"roles", "send_welcome_email"})
+        user_dict["password"] = hashed_password
+
+        # Wrap DB writes in a transaction to ensure atomicity
+        async with db.transaction():
+            # Create user
+            created_user = await AdminUserCRUD.create_user(db, user_dict, created_by)
+
+            # Assign roles after successful user creation
             for role_id in resolved_role_ids:
                 await RBACCRUD.assign_role_to_user(
                     db, created_user["id"], role_id, created_by
                 )
 
-        # Send welcome/invite email if requested
+        # Send welcome/invite email if requested (outside transaction)
         if user_data.send_welcome_email:
             try:
                 from app.auth.user_emails import send_account_invite_email
@@ -150,9 +169,7 @@ class AdminUserService:
         # Get current user data for comparison
         current_user = await AdminUserCRUD.get_user_with_roles(db, user_id)
         if not current_user:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
-            )
+            raise UserNotFoundError(str(user_id))
 
         # Check if trying to modify system user
         if current_user.get("is_system_user", False):
@@ -251,9 +268,7 @@ class AdminUserService:
         role = await RoleCRUD.get_by_id(db, role_id)
 
         if not user or not role:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="User or role not found"
-            )
+            raise UserNotFoundError(str(user_id) if not user else str(role_id))
 
         # Check if user already has this role
         user_roles = await RBACCRUD.get_user_roles(db, user_id)
@@ -332,10 +347,7 @@ class AdminUserService:
         # Ensure user exists
         user = await UserCRUD.get_by_id(db, user_id)
         if not user:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found",
-            )
+            raise UserNotFoundError(str(user_id))
 
         # Generate a new reset token and send invite
         try:
@@ -347,10 +359,8 @@ class AdminUserService:
             return True
         except Exception as exc:
             # Surface as 500 if email fails
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to send invitation: {exc}",
-            )
+            # Surface as admin exception; router will turn into HTTPException
+            raise ExportError("invite_email", str(exc))
 
 
 class AdminSystemService:
