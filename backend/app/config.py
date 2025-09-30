@@ -164,6 +164,17 @@ class Settings(BaseSettings):
     SUPPRESS_SEND: bool = False
 
     # --------------------
+    # SMS SETTINGS
+    # --------------------
+    SMS_ENABLED: bool = True
+    SMS_PROVIDER: str = "smscatcher"  # smscatcher, twilio, etc.
+    SMS_HOST: str = "smscatcher"
+    SMS_PORT: int = 3001
+    SMS_FROM: str = "+1234567890"
+    SMS_API_KEY: Optional[str] = None
+    SMS_API_SECRET: Optional[str] = None
+
+    # --------------------
     # THIRD-PARTY & EXTERNAL
     # --------------------
     SENTRY_DSN: HttpUrl | None = None
@@ -177,11 +188,20 @@ class Settings(BaseSettings):
     FIRST_SUPERUSER_PASSWORD: str = "changethis"
 
     def _check_default_secret(self, var_name: str, value: str | None) -> None:
-        if value == "changethis":
-            message = (
-                f'The value of {var_name} is "changethis", '
-                "for security, please change it, at least for deployments."
-            )
+        """Validate secret values are strong and not defaults.
+
+        - Disallow known weak placeholders like 'secret' and 'changethis'
+        - Enforce minimum length of 32 characters for cryptographic keys
+        - In local env, warn; in non-local envs, raise to fail-fast
+        """
+        weak_values = {"secret", "changethis", "", None}
+        message = None
+        if value in weak_values:
+            message = f"The value of {var_name} is a weak default. Please set a strong secret."
+        elif isinstance(value, str) and len(value) < 32:
+            message = f"The value of {var_name} is too short (min 32 chars)."
+
+        if message:
             if self.ENVIRONMENT == "local":
                 print(message)
             else:
@@ -190,8 +210,11 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def _enforce_non_default_secrets(self) -> "Settings":
         self._check_default_secret("SECRET_KEY", self.SECRET_KEY)
-
         self._check_default_secret("POSTGRES_PASSWORD", self.POSTGRES_PASSWORD)
+        self._check_default_secret("SMS_API_KEY", self.SMS_API_KEY)
+        self._check_default_secret("SMS_API_SECRET", self.SMS_API_SECRET)
+        self._check_default_secret("MAIL_PASSWORD", self.MAIL_PASSWORD)
+        self._check_default_secret("FIRST_SUPERUSER_PASSWORD", self.FIRST_SUPERUSER_PASSWORD)
 
         return self
 
