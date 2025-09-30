@@ -7,9 +7,10 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
-from fastapi.responses import Response
+from fastapi.responses import Response, JSONResponse
 
 from app.admin.router import router as admin_router
+from app.admin.exceptions import AdminException
 
 # Router imports
 from app.appointments.routers import appointment_router
@@ -201,6 +202,20 @@ def create_application() -> FastAPI:
     # TODO: Add CORS middleware
 
     # Add exception handlers
+    # Admin module exceptions
+    async def admin_exception_handler(request, exc: AdminException):
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={
+                "error": {
+                    "type": exc.error_code or "admin_error",
+                    "message": exc.detail,
+                    "context": exc.context,
+                }
+            },
+        )
+
+    app.add_exception_handler(AdminException, admin_exception_handler)
     app.add_exception_handler(
         BusinessLogicError,
         business_logic_error_handler,  # pyright: ignore[reportArgumentType]

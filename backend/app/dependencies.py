@@ -355,7 +355,7 @@ async def get_search_params(
     ),
     sort_by: Optional[str] = Query(None, description="Sort field"),
     sort_order: Optional[str] = Query(
-        "desc", pattern="^(asc|desc)$", description="Sort order"
+        "desc", regex="^(asc|desc)$", description="Sort order"
     ),
 ) -> Dict[str, Any]:
     """Get common search and sorting parameters"""
