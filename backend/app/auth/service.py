@@ -4,8 +4,10 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException, status
+import secrets
 
 from app.auth.config import get_auth_settings
+from app.config import get_settings
 from app.auth.constants import USER_VERIFY_ACCOUNT
 from app.auth.crud import UserCRUD
 from app.auth.rbac import RBACCRUD
@@ -28,6 +30,7 @@ from app.core.security import (
 )
 
 settings = get_auth_settings()
+app_settings = get_settings()
 
 
 async def create_user_service(session, user):
@@ -133,8 +136,10 @@ async def logout_user_service(session, request, response, current_user) -> None:
         except Exception:
             pass
 
-    # Clear refresh token cookie
-    response.delete_cookie("refresh_token")
+    # Clear refresh and CSRF cookies (match set-cookie attributes)
+    refresh_path = f"{app_settings.API_V1_STR}/users/refresh"
+    response.delete_cookie("refresh_token", path=refresh_path)
+    response.delete_cookie("csrf_token", path="/")
 
 
 async def get_current_user_profile_service(session, current_user):
@@ -259,22 +264,38 @@ async def _generate_tokens(user, session, response):
     # Persist/rotate refresh token in DB (single active token per user)
     expiry_time = datetime.now(timezone.utc) + rt_expires
 
-    # Set refresh token as httpOnly cookie
+    # Set refresh token as httpOnly cookie, scoped to refresh endpoint only
+    refresh_path = f"{app_settings.API_V1_STR}/users/refresh"
     response.set_cookie(
         key="refresh_token",
         value=refresh_token,
         httponly=True,
-        max_age=rt_expires.total_seconds(),
+        max_age=int(rt_expires.total_seconds()),
         expires=expiry_time.strftime("%a, %d-%b-%Y %H:%M:%S GMT"),
-        samesite=None,
-        secure=True,  
-        #   //not settings.DEBUG,
+        samesite="none",
+        secure=True,
+        path=refresh_path,
+    )
+
+    # Issue CSRF token cookie (readable by JS) for double submit protection
+    csrf_token = secrets.token_urlsafe(32)
+    response.set_cookie(
+        key="csrf_token",
+        value=csrf_token,
+        httponly=False,
+        max_age=int(rt_expires.total_seconds()),
+        expires=expiry_time.strftime("%a, %d-%b-%Y %H:%M:%S GMT"),
+        samesite="none",
+        secure=True,
+        path="/",
     )
 
     return {
         "access_token": access_token,
         "expires_in": int(at_expires.total_seconds()),
         "token_type": "bearer",
+        # Optionally return CSRF token so SPA can store header immediately (also available via cookie)
+        "csrf_token": csrf_token,
     }
 
 
