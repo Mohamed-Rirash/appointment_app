@@ -26,15 +26,6 @@ export default async function Home() {
           labore, sit adipisci assumenda excepturi temporibus? Esse nam
           veritatis iste sequi adipisci.
         </p>
-        <form
-          className="mt-8"
-          action={async () => {
-            "use server";
-            await signOut();
-          }}
-        >
-          <Button type="submit">Sign Out</Button>
-        </form>
       </div>
     </>
   );

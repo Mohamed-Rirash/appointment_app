@@ -122,7 +122,7 @@ export default function UserProfileClient({ user }: { user: any }) {
   };
 
   return (
-    <div className="border border-[#eeeeee] max-w-[388px] w-full ml-[122px] mt-[60px] mb-16 p-6 rounded-[4px]">
+    <div className="border border-[#eeeeee] max-w-[388px] w-full mx-auto mt-[32px] mb-16 p-6 rounded-[4px]">
       {/* avatar */}
       <div className="relative">
         <Avatar className="w-[64px] h-[64px]">
@@ -165,7 +165,7 @@ export default function UserProfileClient({ user }: { user: any }) {
       </div>
 
       {/* personal info */}
-      <h1 className="text-2xl font-bold text-brand-black my-8">
+      <h1 className="text-2xl font-bold text-brand-black my-6">
         Personal Information
       </h1>
       <div>

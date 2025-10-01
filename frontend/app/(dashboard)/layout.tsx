@@ -16,7 +16,7 @@ export default function LayoutDashboard({
       <SidebarProvider>
         <AppSidebar />
         <SidebarInset>
-          <main className="bg-amber-200 ">
+          <main className="">
             <Navbar />
             {children}
           </main>

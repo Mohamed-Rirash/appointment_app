@@ -12,7 +12,7 @@ export default async function ProfilePage() {
 
   return (
     <>
-      <div className="w-full bg-amber-900">
+      <div className="">
         <UserProfileClient user={session.user} />
       </div>
     </>

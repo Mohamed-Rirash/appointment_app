@@ -70,17 +70,6 @@ export function AppSidebar() {
         </SidebarHeader>
         <Separator className="" />
         <SidebarContent className="flex flex-col h-full bg-white px-2">
-          {/* Top Section */}
-          {/* <SidebarGroup className="mb-4">
-            <SidebarGroupLabel className="flex items-center justify-between px-4 py-3 my-8"> */}
-          {/* FULL LOGO - only when open */}
-
-          {/* Optional: Keep toggle if you want it in header */}
-          {/* <SidebarTrigger className="ml-auto" /> */}
-          {/* </SidebarGroupLabel>
-            <Separator className="my-2" />
-          </SidebarGroup> */}
-
           {/* Main Menu */}
           <SidebarGroup className="flex-grow">
             <SidebarGroupContent>

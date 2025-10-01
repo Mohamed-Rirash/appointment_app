@@ -1,5 +1,5 @@
-import { User } from "lucide-react";
-import { Avatar, AvatarFallback } from "./ui/avatar";
+import { LogOut, User } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Button } from "./ui/button";
 import {
   DropdownMenu,
@@ -10,14 +10,19 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { SidebarTrigger } from "./ui/sidebar";
+import { auth, signOut } from "@/auth";
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { requireAuth } from "@/fuctions/auth-guard";
 
-export default function Navbar() {
+export default async function Navbar() {
+  const user = await requireAuth();
   return (
     <>
-      <div className="bg-black h-16 flex">
+      <div className="h-16 border-b border-bran-secondary flex justify-between items-center px-4">
         <div className="bg-  flex justify-center items-center">
           {" "}
-          <SidebarTrigger className="ml-4 text-white" />
+          <SidebarTrigger className="ml-" />
         </div>
         <div className="">
           {" "}
@@ -25,6 +30,7 @@ export default function Navbar() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                 <Avatar className="h-8 w-8">
+                  <AvatarImage src={"/avatar.png"} />
                   <AvatarFallback className="bg-primary text-primary-foreground">
                     A
                   </AvatarFallback>
@@ -32,29 +38,45 @@ export default function Navbar() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
-              className="w-56 bg-popover border-border"
+              className="w-56 bg-popover border-bran-secondary p-2"
               align="end"
               forceMount
             >
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">Admin User</p>
+                  <p className="text-sm font-medium leading-none">
+                    {user!.first_name}
+                  </p>
                   <p className="text-xs leading-none text-muted-foreground">
-                    admin@company.com
+                    {user!.email}
                   </p>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <User className="mr-2 h-4 w-4" />
-                <span>Profile</span>
+              <DropdownMenuItem
+                className="hover:to-brand-primary font-medium py-3"
+                asChild
+              >
+                <Link className="pl-6" href={"/profile"}>
+                  Profile
+                </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <span>Settings</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <span>Log out</span>
+              <DropdownMenuItem className="">
+                <form
+                  action={async () => {
+                    "use server";
+                    await signOut();
+                  }}
+                >
+                  <Button
+                    className="hover:to-brand-primary hover:font-medium py-2"
+                    variant={"ghost"}
+                    type="submit"
+                  >
+                    <LogOut />
+                    Sign Out
+                  </Button>
+                </form>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
