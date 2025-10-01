@@ -10,5 +10,11 @@ export default async function ProfilePage() {
     redirect("/login");
   }
 
-  return <UserProfileClient user={session.user} />;
+  return (
+    <>
+      <div className="w-full bg-amber-900">
+        <UserProfileClient user={session.user} />
+      </div>
+    </>
+  );
 }

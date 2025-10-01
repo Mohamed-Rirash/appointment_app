@@ -33,51 +33,6 @@ export default function ForgetPassword() {
     };
   }, [isCounting, countdown]);
 
-  // function for reset
-  // const handleSubmit = async (e: React.FormEvent) => {
-  //   e.preventDefault();
-  //   setError(null);
-
-  //   // Basic validation
-  //   if (!email.trim()) {
-  //     setError("Please enter a valid email address.");
-  //     return;
-  //   }
-
-  //   // setSubmitted(true);
-  //   // setIsCounting(true);
-  //   // setCountdown(30);
-  //   setLoading(true);
-  //   console.log("Email", email);
-  //   const result = await client.resetPassword(email);
-  //   console.log("Result", result);
-  //   // const data = await fetch(
-  //   //   "http://localhost:8000/api/v1/users/request-password-reset",
-  //   //   {
-  //   //     method: "POST",
-  //   //     headers: {
-  //   //       accept: " application/json",
-  //   //       "Content-Type": "application/json",
-  //   //     },
-  //   //     body: JSON.stringify({ email }),
-  //   //   }
-  //   // );
-
-  //   // const re = await data.json();
-  //   console.log("REEE", result);
-  //   setLoading(false);
-  //   // // Simulate success/error after 1.5s
-  //   // setTimeout(() => {
-  //   //   // Simulate 20% chance of error for demo
-  //   //   if (Math.random() > 0.8) {
-  //   //     setError("Failed to send reset email. Please try again.");
-  //   //     setSubmitted(false);
-  //   //     setIsCounting(false);
-  //   //   } else {
-  //   //     // Success — keep submitted state and countdown
-  //   //   }
-  //   // }, 1500);
-  // };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -93,6 +48,7 @@ export default function ForgetPassword() {
     // Domain validation
     const allowedDomains = ["gmail.com", "amoud.org"];
     const domain = email.split("@")[1]?.toLowerCase();
+    console.log("DDD", domain);
     if (!domain || !allowedDomains.includes(domain)) {
       setError(
         "Only email addresses from @gmail.com or @amoud.org are allowed."

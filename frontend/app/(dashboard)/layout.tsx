@@ -1,6 +1,10 @@
 import { AppSidebar } from "@/components/app-sidebar";
 import Navbar from "@/components/Navbar";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
 
 export default function LayoutDashboard({
   children,
@@ -11,24 +15,13 @@ export default function LayoutDashboard({
     <>
       <SidebarProvider>
         <AppSidebar />
-        <main>
-          <Navbar />
-          {children}
-        </main>
+        <SidebarInset>
+          <main className="bg-amber-200 ">
+            <Navbar />
+            {children}
+          </main>
+        </SidebarInset>
       </SidebarProvider>
-      {/* <div className="sm:flex">
-        <div className="bg-red-300 w-full max-w-[240px] hidden sm:block">
-          <div className="bg-blue-400 px-4">
-            {" "}
-            <div className="bg-white">
-              {" "}
-              <p>How are you doing</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-amber-300 h-screen  w-full">{children}</div>
-      </div> */}
     </>
   );
 }
