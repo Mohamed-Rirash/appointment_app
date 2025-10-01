@@ -1,7 +1,8 @@
 from datetime import date, datetime, time
+from typing import Optional
 from uuid import UUID
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, FutureDate
 
 from app.appointments.constants import AppointmentStatus
 
@@ -61,3 +62,19 @@ class Slot(BaseModel):
 
 class AppointmentDecision(BaseModel):
     status: AppointmentStatus = Field(default=AppointmentStatus.APPROVED)
+
+
+class AppointmentFilters(BaseModel):
+    by_decision: Optional[AppointmentStatus] = Field(
+        None,
+        description="Filter by appointment status (approved, denied, pending, etc.)",
+    )
+    by_time_slot: Optional[time] = Field(None, description="Filter by appointment time")
+    by_date: Optional[date] = Field(None, description="Filter by appointment date")
+    search: Optional[str] = Field(
+        None,
+        description="Search by citizen name, email, or phone number",
+    )
+    completed: Optional[bool] = Field(
+        None, description="Filter only completed appointments"
+    )

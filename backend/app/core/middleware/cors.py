@@ -16,6 +16,11 @@ def setup_cors(app: FastAPI) -> None:
     # Ensure list of allowed origins are plain strings
     configured_origins = settings.BACKEND_CORS_ORIGINS
     allowed_origins = [str(o) for o in (configured_origins or [])]
+    # Always include explicit frontend host if provided
+    if getattr(settings, "FRONTEND_HOST", None):
+        fh = str(settings.FRONTEND_HOST)
+        if fh and fh not in allowed_origins:
+            allowed_origins.append(fh)
 
     # If no origins configured (e.g., env var set to empty), default to local dev
     if not allowed_origins:
@@ -36,13 +41,12 @@ def setup_cors(app: FastAPI) -> None:
     ):
         allowed_origins.append("http://localhost:3000")
 
-    # In local/dev, be maximally permissive to avoid CORS blockers
+    # In local/dev, allow credentials for cross-site cookie refresh flow
     if settings.is_development:
         app.add_middleware(
             CORSMiddleware,
             allow_origins=allowed_origins,
-            allow_origin_regex=".*",
-            allow_credentials=False,  # disable for wildcard compatibility
+            allow_credentials=True,
             allow_methods=["*"],
             allow_headers=["*"],
             expose_headers=[

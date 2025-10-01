@@ -65,6 +65,8 @@ appointments = Table(
     # Cancellation tracking
     Column("canceled_at", DateTime(timezone=True), nullable=True),
     Column("canceled_by", UUID(as_uuid=True), ForeignKey("users.id"), nullable=True),
+    Column("canceled_reason", String(length=255), nullable=True),
+    Column("issued_by", UUID(as_uuid=True), ForeignKey("users.id"), nullable=False),
 )
 
 

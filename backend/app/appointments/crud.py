@@ -1,7 +1,8 @@
 from databases import Database
-from sqlalchemy import insert, select, update
+from sqlalchemy import and_, func, insert, or_, select, update
 
 from app.appointments.models import appointments, citizen_info, time_slot
+from app.appointments.view import appointment_details
 
 
 class AppointmentCrud:
@@ -46,3 +47,33 @@ class AppointmentCrud:
     async def get_appointment_by_id(db, appointment_id):
         query = select(appointments).where(appointments.c.id == appointment_id)
         return await db.fetch_one(query)
+
+    @staticmethod
+    async def get_all_appointments(db, conditions=None):
+        query = select(appointment_details)
+
+        if conditions:
+            query = query.where(and_(*conditions))
+
+        # Always order by appointment_date and time
+        query = query.order_by(
+            appointment_details.c.appointment_date.asc(),
+            appointment_details.c.time_slotted.asc(),
+        )
+
+        result = await db.fetch_all(query)
+        return [dict(row) for row in result]
+
+    @staticmethod
+    async def get_appointment_me(db, user_id, when):
+        query = (
+            select(appointment_details)
+            .where(appointment_details.c.issued_by == user_id)
+            .where(func.date(appointment_details.c.appointment_date) == when)
+            .order_by(
+                appointment_details.c.appointment_date.asc(),
+                appointment_details.c.time_slotted.asc(),
+            )
+        )
+        result = await db.fetch_all(query)
+        return [dict(row) for row in result]

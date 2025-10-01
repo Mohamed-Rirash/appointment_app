@@ -2,7 +2,7 @@
 
 
 from databases import Database
-from fastapi import APIRouter, BackgroundTasks, Depends, Request, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Request, status, HTTPException
 from fastapi.responses import Response
 from fastapi.security import OAuth2PasswordRequestForm
 
@@ -58,8 +58,21 @@ async def refresh_token(
     Reads the refresh token primarily from the httpOnly cookie, falling back to the JSON body when provided.
     Rotates the refresh token and resets the cookie for security.
     """
+    # CSRF double-submit check: require X-CSRF-Token header to match csrf_token cookie
+    csrf_cookie = request.cookies.get("csrf_token")
+    csrf_header = request.headers.get("x-csrf-token") or request.headers.get("X-CSRF-Token")
+    if not csrf_cookie or not csrf_header or csrf_cookie != csrf_header:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="CSRF token invalid or missing")
+
+    # Prefer cookie refresh token, allow JSON body fallback if provided by non-cookie clients
     cookie_token = request.cookies.get("refresh_token")
     token = cookie_token
+    if not token:
+        try:
+            body = await request.json()
+            token = body.get("refresh_token")
+        except Exception:
+            token = None
     return await refresh_access_token_service(session, token, response)
 
 

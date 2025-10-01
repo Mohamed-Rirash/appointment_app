@@ -1,219 +1,418 @@
-# Appointment Booking App
+# 🏢 Office Appointment Management System
 
-A production-ready FastAPI backend for an appointment booking application. It includes robust authentication, RBAC (roles and permissions), request/response caching, rate limiting, structured logging, email sending via SMTP, and a complete local development environment using Docker (Postgres, Redis, Mailpit, Adminer/pgAdmin).
+A comprehensive, production-ready FastAPI application for managing office appointments, host scheduling, and user access control. Built with modern Python technologies and enterprise-grade features for scalability and reliability.
 
+## 🌟 Overview
 
-## Tech Stack
+This application provides a complete solution for managing office-based appointment systems with sophisticated user management, host scheduling, and comprehensive administrative controls. It features multi-office support, role-based access control, real-time availability management, and integrated notification systems.
 
-- Python 3.12
-- FastAPI + Uvicorn
-- Pydantic v2 + pydantic-settings
-- SQLAlchemy 2.x + Alembic (asyncpg)
-- PostgreSQL (via Docker)
-- Redis (caching + rate limiting)
-- FastAPI-Mail (SMTP via Mailpit in dev)
-- Pytest for tests
-- Docker Compose for local infra
+## 🛠️ Tech Stack
 
+### Backend Framework
+- **Python 3.12** - Modern Python runtime
+- **FastAPI** - High-performance async web framework
+- **SQLAlchemy 2.x** - Async ORM with PostgreSQL support
+- **Pydantic v2** - Data validation and serialization
 
-## Features
+### Database & Caching
+- **PostgreSQL** - Primary database with async support (`asyncpg`)
+- **Redis** - Caching, rate limiting, and session storage
+- **Alembic** - Database migration management
 
-- JWT authentication with access tokens
-- Role-based access control (RBAC) with bootstrap seeding
-- CORS, security headers, size/time limits, and proxy headers
-- Request logging and structured logs
-- Response caching and Redis-backed rate limiting
-- Healthcheck endpoint and optional OpenAPI docs in dev
-- Email domain restrictions and SMTP integration (Mailpit in dev)
+### External Integrations
+- **SMTP Email** - Email notifications (configurable provider)
+- **SMS Service** - SMS notifications (configurable provider)
+- **Docker** - Complete containerized deployment
 
+### Development & Testing
+- **Pytest** - Comprehensive test suite
+- **Docker Compose** - Local development environment
+- **Uvicorn** - ASGI server with auto-reload
 
-## Repository Structure (backend)
+## 🎯 Core Features
 
-- `backend/app/main.py` – FastAPI app factory and middleware
-- `backend/app/config.py` – App settings and environment variables
-- `backend/app/database.py` – DB connection (async)
-- `backend/app/auth/*` – Auth models, routes, utilities
-- `backend/app/admin/*` – Admin routes (user/role management)
-- `backend/app/core/*` – Middleware (caching, logging, security, errors)
-- `backend/app/role_perm_seed.py` – RBAC bootstrap helpers
-- `backend/alembic/*` – Database migrations setup
-- `backend/tests/*` – Pytest suite
-- `compose.yml` – Local infra (Postgres, Redis, Mailpit, Adminer, pgAdmin, Backend)
+### 🔐 Authentication & Authorization
+- **JWT-based Authentication** - Secure token-based user sessions
+- **Role-Based Access Control (RBAC)** - Granular permission system
+- **Multi-level User Roles** - Admin, Host, Secretary, Reception, User roles
+- **Email Domain Restrictions** - Configurable access control
 
+### 🏢 Office Management
+- **Multi-Office Support** - Manage multiple office locations
+- **Office Membership System** - User-office relationship management
+- **Host Assignment** - Assign users as appointment hosts
+- **Office Statistics** - Comprehensive reporting and analytics
 
-## Quickstart (Docker)
+### 📅 Appointment System
+- **Time Slot Management** - Automated slot generation from host availability
+- **Appointment Booking** - Citizen appointment scheduling
+- **Status Tracking** - Complete appointment lifecycle management
+- **Conflict Prevention** - Automated double-booking prevention
 
-Prerequisites:
+### ⏰ Host Availability
+- **Recurring Schedules** - Weekly availability patterns
+- **One-time Availability** - Special date availability
+- **15-minute Slots** - Automated time slot generation
+- **Real-time Updates** - Dynamic availability management
 
-- Docker and Docker Compose installed
+### 📧 Communication
+- **Email Notifications** - Automated email alerts
+- **SMS Notifications** - SMS-based alerts and reminders
+- **Template System** - Customizable notification templates
+- **Multi-provider Support** - Configurable SMS and email providers
 
-1) Create an `.env` file in the project root (same folder as `compose.yml`). You can start from the example below.
-2) Start the stack:
+### 🔧 Enterprise Features
+- **Response Caching** - Redis-backed response caching
+- **Rate Limiting** - Configurable request throttling
+- **Security Headers** - Comprehensive security middleware
+- **Request Logging** - Structured logging with correlation IDs
+- **Health Monitoring** - Application health endpoints
+- **CORS Support** - Cross-origin resource sharing
 
-   ```bash
-docker compose up --build
+## 🏗️ Architecture
+
+### Application Structure
+```
+backend/
+├── app/
+│   ├── main.py              # FastAPI application factory
+│   ├── config.py            # Configuration management
+│   ├── database.py          # Database connection management
+│   ├── auth/                # Authentication system
+│   │   ├── models.py        # User and auth models
+│   │   ├── router.py        # Authentication endpoints
+│   │   └── dependencies.py  # Auth middleware
+│   ├── appointments/        # Appointment management
+│   │   ├── models.py        # Appointment database models
+│   │   ├── routers.py       # Appointment API endpoints
+│   │   ├── services.py      # Business logic
+│   │   └── schemas.py       # Request/response schemas
+│   ├── office_mgnt/         # Office management system
+│   │   ├── models.py        # Office and membership models
+│   │   ├── router.py        # Office management endpoints
+│   │   ├── services.py      # Office business logic
+│   │   └── schemas.py       # Office data schemas
+│   ├── admin/               # Administrative functions
+│   ├── core/                # Core middleware and utilities
+│   │   ├── cache.py         # Redis caching system
+│   │   ├── middleware/      # Security and performance middleware
+│   │   └── exceptions.py    # Custom exception handlers
+│   ├── notifications/       # SMS and email notifications
+│   ├── emails/              # Email service
+│   ├── sms/                 # SMS service
+│   └── templates/           # Email templates
+├── tests/                   # Test suite
+├── alembic/                 # Database migrations
+└── compose.yml              # Docker orchestration
 ```
 
-3) Once running:
+### Database Schema
+```sql
+-- Core entities
+users (id, email, roles, permissions)
+offices (id, name, location, status)
+office_memberships (user_id, office_id, position, is_primary)
 
-   - API: <http://localhost:8000/>
-   - Docs (dev only): <http://localhost:8000/docs>
-   - Health: <http://localhost:8000/health>
-   - Adminer (DB UI): <http://localhost:8080/>
-   - pgAdmin: <http://localhost:5050/>
-   - Mailpit (SMTP UI): <http://localhost:8025/>
+-- Appointment system
+appointments (id, citizen_id, host_id, office_id, appointment_date, status)
+time_slots (id, office_id, slot_start, slot_end, date, is_booked)
 
-Note: The backend service automatically waits for the database, autogenerates an initial Alembic migration if none exist, upgrades to head, and starts Uvicorn with auto-reload.
+-- Availability management
+host_availability (id, office_id, daysofweek, start_time, end_time, is_recurring)
+```
 
+## 🚀 Quick Start
 
-## Example .env (root)
+### Prerequisites
+- **Docker & Docker Compose** (recommended)
+- **Python 3.12+** (for local development)
 
-These values are read by both Docker Compose and the backend settings. Adjust as needed.
+### Docker Deployment (Recommended)
 
+1. **Clone and navigate to the project:**
+   ```bash
+   git clone <repository-url>
+   cd appointment-app
+   ```
+
+2. **Configure environment:**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your configuration
+   ```
+
+3. **Start the application:**
+   ```bash
+   docker compose up --build
+   ```
+
+4. **Access the application:**
+   - **API**: http://localhost:8000
+   - **API Documentation**: http://localhost:8000/docs (development only)
+   - **Database Admin**: http://localhost:8080 (Adminer)
+   - **Email Testing**: http://localhost:8025 (Mailpit)
+
+### Local Development Setup
+
+1. **Create virtual environment:**
+   ```bash
+   cd backend
+   python -m venv .venv
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+   ```
+
+2. **Install dependencies:**
+   ```bash
+   pip install -e .
+   ```
+
+3. **Configure environment variables in `.env`:**
+   ```env
+   SECRET_KEY=your-secret-key-here
+   ENVIRONMENT=local
+   POSTGRES_SERVER=localhost
+   POSTGRES_USER=appuser
+   POSTGRES_PASSWORD=your-password
+   POSTGRES_DB=appointment_app
+   REDIS_HOST=localhost
+   REDIS_PORT=6379
+   ```
+
+4. **Initialize database:**
+   ```bash
+   alembic upgrade head
+   ```
+
+5. **Start the application:**
+   ```bash
+   uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+   ```
+
+## 🔧 Configuration
+
+### Environment Variables
+
+#### Core Application
 ```env
-SECRET_KEY=changethis
-ENVIRONMENT=local
-
-# Postgres
-POSTGRES_USER=appuser
-POSTGRES_PASSWORD=changethis
-POSTGRES_DB=appointement_app
-
-# Optional for pgAdmin
-PGADMIN_DEFAULT_EMAIL=admin@example.com
-PGADMIN_DEFAULT_PASSWORD=changethis
-
-# Backend
-FRONTEND_HOST=http://localhost:3000
+SECRET_KEY=your-secret-key-min-32-chars
+ENVIRONMENT=local|development|staging|production
 API_V1_STR=/api/v1
+FRONTEND_HOST=http://localhost:3000
+```
 
-# Redis (Docker service name)
-REDIS_HOST=redis
+#### Database
+```env
+POSTGRES_SERVER=localhost
+POSTGRES_PORT=5432
+POSTGRES_USER=appuser
+POSTGRES_PASSWORD=your-password
+POSTGRES_DB=appointment_app
+```
+
+#### Redis (Caching & Rate Limiting)
+```env
+REDIS_HOST=localhost
 REDIS_PORT=6379
-
-# Email (Mailpit defaults)
-MAIL_SERVER=mailpit
-MAIL_PORT=1025
-MAIL_FROM=noreply@test.com
-MAIL_FROM_NAME=App
-MAIL_USERNAME=
-MAIL_PASSWORD=
-MAIL_STARTTLS=false
-MAIL_SSL_TLS=false
-MAIL_DEBUG=true
-SUPPRESS_SEND=false
-
-# RBAC bootstrap on startup (safe/idempotent)
-INIT_RBAC_ON_STARTUP=true
-
-# First superuser (only used when bootstrapping)
-FIRST_SUPERUSER=admin@example.com
-FIRST_SUPERUSER_PASSWORD=changethis
+REDIS_PASSWORD=your-redis-password
+CACHE_TTL=300
 ```
 
-## Running Locally Without Docker (advanced)
-
-Prerequisites:
-
-- Python 3.12
-- PostgreSQL running locally
-- Redis running locally
-
-1) Create and activate a virtual environment in `backend/` and install deps:
-
-   ```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -e .
+#### Email Configuration
+```env
+MAIL_SERVER=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=your-email@gmail.com
+MAIL_PASSWORD=your-app-password
+MAIL_FROM=noreply@yourdomain.com
 ```
 
-2) Create a `.env` file in the project root or `backend/` with your DB and Redis settings (ensure `POSTGRES_SERVER=localhost`, etc.).
-
-3) Initialize DB and run migrations from `backend/`:
-
-   ```bash
-alembic upgrade head
+#### SMS Configuration
+```env
+SMS_ENABLED=true
+SMS_PROVIDER=twilio|smscatcher
+SMS_API_KEY=your-sms-api-key
+SMS_API_SECRET=your-sms-secret
 ```
 
-4) Start the app from `backend/`:
-
-   ```bash
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+#### Security & Performance
+```env
+RATE_LIMIT_ENABLED=true
+RATE_LIMIT_REQUESTS=100
+RATE_LIMIT_WINDOW=60
+CORS_ORIGINS=["http://localhost:3000"]
+ALLOWED_HOSTS=["localhost", "127.0.0.1"]
 ```
 
-## Common URLs
+## 📚 API Endpoints
 
-- API Root: <http://localhost:8000/>
-- API Docs (dev): <http://localhost:8000/docs>
-- Health: <http://localhost:8000/health>
-- Adminer: <http://localhost:8080/>
-- pgAdmin: <http://localhost:5050/>
-- Mailpit UI: <http://localhost:8025/> (SMTP on 1025)
+### Authentication
+- `POST /api/v1/auth/login` - User authentication
+- `POST /api/v1/auth/register` - User registration
+- `GET /api/v1/auth/me` - Current user profile
 
+### Office Management
+- `GET /api/v1/offices` - List all offices
+- `POST /api/v1/offices` - Create new office
+- `GET /api/v1/offices/{office_id}` - Get office details
+- `PATCH /api/v1/offices/{office_id}` - Update office
+- `DELETE /api/v1/offices/{office_id}` - Delete office
 
-## Environment Variables (selected)
+### Membership Management
+- `POST /api/v1/offices/{office_id}/memberships` - Assign user to office
+- `GET /api/v1/offices/{office_id}/memberships` - List office members
+- `PATCH /api/v1/offices/{office_id}/memberships/{user_id}` - Update membership
+- `DELETE /api/v1/offices/{office_id}/memberships/{user_id}` - Remove membership
 
-Defined in `backend/app/config.py`. Key ones include:
+### Host Management
+- `POST /api/v1/offices/hosts/assign` - Assign host to office
+- `GET /api/v1/offices/hosts` - List host assignments
+- `PUT /api/v1/offices/hosts/{host_id}/office/{office_id}` - Update host assignment
+- `DELETE /api/v1/offices/hosts/{host_id}/office/{office_id}` - Remove host
 
-- PROJECT_NAME, ENVIRONMENT, API_V1_STR, FRONTEND_HOST
-- SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
-- POSTGRES_SERVER, POSTGRES_PORT, POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB
-- SQLALCHEMY_DATABASE_URI (computed)
-- REDIS_HOST, REDIS_PORT, REDIS_PASSWORD, REDIS_DB, REDIS_SSL, CACHE_TTL, CACHE_PREFIX
-- RATE_LIMIT_ENABLED, RATE_LIMIT_REQUESTS, RATE_LIMIT_WINDOW, RATE_LIMIT_STORAGE_URL
-- LOG_LEVEL, LOG_FORMAT, LOG_FILE, LOG_ROTATION, LOG_RETENTION, REQUEST_LOGGING
-- ENABLE_METRICS
-- API_KEYS_ENABLED
-- INIT_RBAC_ON_STARTUP
-- ENABLE_SECURITY_HEADERS, ALLOWED_HOSTS, TRUSTED_PROXIES, MAX_REQUEST_SIZE, REQUEST_TIMEOUT
-- BACKEND_CORS_ORIGINS, USE_CREDENTIALS
-- ALLOWED_EMAIL_DOMAINS, ENFORCE_EMAIL_DOMAIN
-- MAIL_* settings (see example above)
-- SENTRY_DSN, SENTRY_TRACES_Sample_Rate, SENTRY_ENVIRONMENT
-- FIRST_SUPERUSER, FIRST_SUPERUSER_PASSWORD
+### Availability Management
+- `POST /api/v1/availability/hosts/{office_id}` - Set host availability
+- `GET /api/v1/availability/hosts/{office_id}` - Get host availability
+- `GET /api/v1/availability/hosts/{office_id}/slots` - Get available time slots
 
-Note: In non-local environments, defaults like SECRET_KEY/POSTGRES_PASSWORD value "changethis" are rejected for security.
+### Appointment Management
+- `GET /api/v1/appointments` - List appointments
+- `POST /api/v1/appointments` - Create appointment
+- `GET /api/v1/appointments/{appointment_id}` - Get appointment details
+- `PATCH /api/v1/appointments/{appointment_id}` - Update appointment
+- `DELETE /api/v1/appointments/{appointment_id}` - Cancel appointment
 
+## 🔐 Security Features
 
-## Migrations
+### Authentication & Authorization
+- JWT tokens with configurable expiration
+- Password hashing with bcrypt
+- Email verification system
+- Account lockout protection
 
-Alembic is configured under `backend/alembic/`.
+### Access Control
+- Role-based permissions (RBAC)
+- Office-level access control
+- API endpoint protection
+- Admin-only operations
 
-- Docker flow will auto-generate an initial revision if none exist, then apply `alembic upgrade head`.
-- Manually create a revision: `alembic revision --autogenerate -m "your message"`
-- Apply: `alembic upgrade head`
+### Security Middleware
+- CORS configuration
+- Security headers
+- Request size limits
+- Rate limiting per endpoint
+- SQL injection prevention
 
+## 📊 Monitoring & Logging
 
-## Testing
+### Health Checks
+- Application health endpoint (`/health`)
+- Database connectivity monitoring
+- Redis connectivity monitoring
+- Service dependency checks
 
-Run from the `backend/` directory:
+### Logging
+- Structured JSON logging
+- Request/response logging
+- Error tracking and reporting
+- Performance metrics
 
+### Metrics Collection
+- Response time tracking
+- Error rate monitoring
+- Cache hit/miss ratios
+- Database query performance
+
+## 🧪 Testing
+
+### Running Tests
 ```bash
-pytest -q
+# Run all tests
+pytest
+
+# Run with coverage
+pytest --cov=app
+
+# Run specific test module
+pytest tests/test_appointments.py
+
+# Run with verbose output
+pytest -v
 ```
 
+### Test Coverage
+- Unit tests for all services
+- Integration tests for API endpoints
+- Database operation tests
+- Authentication flow tests
 
-## API Overview
+## 🚀 Deployment
 
-- Root: GET `/` – basic metadata
-- Health: GET `/health`
-- Auth: routes under `/api/v1/auth/*`
-- Admin: routes under `/api/v1/admin/*` (minimal admin router for user/role management)
+### Production Considerations
 
-Docs are available at `/docs` and `/redoc` in local/dev environments.
+#### Environment Setup
+```env
+ENVIRONMENT=production
+SECRET_KEY=your-production-secret-key
+POSTGRES_SERVER=your-prod-db-host
+REDIS_HOST=your-redis-host
+ALLOWED_HOSTS=["yourdomain.com", "www.yourdomain.com"]
+```
 
+#### Security Enhancements
+- Enable HTTPS/SSL
+- Configure proper CORS origins
+- Set up monitoring and alerting
+- Implement backup strategies
+- Configure log aggregation
 
-## Production Notes
+#### Performance Optimization
+- Enable response caching
+- Configure appropriate rate limits
+- Set up database connection pooling
+- Implement background job processing
 
-- Set `ENVIRONMENT=production` and provide strong values for `SECRET_KEY`, DB creds, and mail settings.
-- Set proper `ALLOWED_HOSTS` and CORS (`BACKEND_CORS_ORIGINS`).
-- Consider turning off `INIT_RBAC_ON_STARTUP` after bootstrap.
-- Ensure Redis is reachable and secured if used across networks.
-- Configure logging outputs and retention as needed.
+### Docker Production Deployment
+```yaml
+# docker-compose.prod.yml
+version: '3.8'
+services:
+  backend:
+    image: your-registry/appointment-app:latest
+    environment:
+      - ENVIRONMENT=production
+    deploy:
+      replicas: 3
+```
 
+## 🤝 Contributing
 
-## Troubleshooting
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes
+4. Add tests for new functionality
+5. Run the test suite (`pytest`)
+6. Commit your changes (`git commit -m 'Add amazing feature'`)
+7. Push to the branch (`git push origin feature/amazing-feature`)
+8. Open a Pull Request
 
-- If backend cannot reach DB/Redis, verify the service names and ports in `.env` and `compose.yml`.
-- If Swagger docs do not appear, ensure `ENVIRONMENT` is `local` or `development`.
-- Email not received? Check Mailpit UI at <http://localhost:8025/> and ensure SMTP points to `mailpit:1025` in dev.
+### Development Guidelines
+- Follow PEP 8 style guidelines
+- Write comprehensive docstrings
+- Add type hints to all functions
+- Include tests for new features
+- Update documentation as needed
+
+## 📝 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🆘 Support
+
+For support and questions:
+- 📧 Email: support@yourdomain.com
+- 💬 Slack: [#appointment-app](https://your-slack-workspace.slack.com)
+- 📖 Documentation: [Internal Wiki](https://wiki.yourdomain.com)
+
+---
+
+**Built with ❤️ using FastAPI, Python, and modern web technologies.**

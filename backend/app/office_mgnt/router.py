@@ -17,8 +17,11 @@ from app.database import get_db
 from app.office_mgnt import schemas as sch
 from app.office_mgnt.services import (
     AvailabilityService,
+    EnhancedOfficeService,
+    HostAssignmentService,
     OfficeMembershipService,
     OfficeService,
+    OfficeStatsService,
 )
 
 router = APIRouter(
@@ -76,7 +79,7 @@ async def create_office(
 async def list_offices(
     status_filter: Optional[str] = Query(
         None,
-        pattern="^(active|deactivated)$",
+        regex="^(active|deactivated)$",
         description="Filter offices by status (active or deactivated).",
     ),
     _admin: CurrentUser = Depends(require_role(AdminLevel.ADMIN)),
@@ -246,8 +249,8 @@ async def get_office_hosts(
     return await OfficeMembershipService.list_office_hosts(db, office_id)
 
 
-@router.put(
-    "/{office_id}/memberships/{membership_id}",
+@router.patch(
+    "/{office_id}/memberships/{user_id}",
     response_model=sch.MembershipRead,
     summary="Update office membership",
     description="Update membership details (e.g., role). Only admins can perform this action.",
@@ -259,18 +262,18 @@ async def get_office_hosts(
 )
 async def update_office_membership(
     office_id: UUID,
-    membership_id: UUID,
+    user_id: UUID,
     payload: sch.MembershipUpdate,
     _admin: CurrentUser = Depends(require_role(AdminLevel.ADMIN)),
     db: Database = Depends(get_db),
 ):
     return await OfficeMembershipService.update_office_member(
-        db, office_id, membership_id, payload
+        db, office_id, user_id, payload
     )
 
 
 @router.delete(
-    "/{office_id}/memberships/{membership_id}",
+    "/{office_id}/memberships/{user_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Remove a member from an office",
     description="Remove a user from an office membership. Only admins can perform this action.",
@@ -282,11 +285,11 @@ async def update_office_membership(
 )
 async def remove_office_member(
     office_id: UUID,
-    membership_id: UUID,
+    user_id: UUID,
     _admin: CurrentUser = Depends(require_role(AdminLevel.ADMIN)),
     db: Database = Depends(get_db),
 ):
-    await OfficeMembershipService.remove_office_member(db, office_id, membership_id)
+    await OfficeMembershipService.remove_office_member(db, office_id, user_id)
 
 
 # --------------------------------------------------
@@ -309,6 +312,164 @@ async def get_user_offices(
     db: Database = Depends(get_db),
 ):
     return await OfficeMembershipService.list_user_offices(db, user_id)
+
+
+# =============================================================================
+# HOST ASSIGNMENT ENDPOINTS
+# =============================================================================
+
+
+@router.post(
+    "/hosts/assign",
+    response_model=sch.HostAssignmentRead,
+    summary="Assign a host to an office",
+    description="Assign a host to an office with comprehensive validation",
+    status_code=status.HTTP_201_CREATED,
+)
+async def assign_host_to_office(
+    payload: sch.HostAssignmentCreate,
+    db: Database = Depends(get_db),
+    admin: CurrentUser = Depends(require_role(AdminLevel.ADMIN)),
+):
+    """Assign a host to an office"""
+    return await HostAssignmentService.assign_host_to_office(db, payload, admin.id)
+
+
+@router.post(
+    "/hosts/bulk-assign",
+    response_model=List[sch.HostAssignmentRead],
+    summary="Bulk assign multiple hosts to offices",
+)
+async def bulk_assign_hosts(
+    payload: sch.BulkHostAssignment,
+    db: Database = Depends(get_db),
+    admin: CurrentUser = Depends(require_role(AdminLevel.ADMIN)),
+):
+    """Bulk assign multiple hosts to offices"""
+    return await HostAssignmentService.bulk_assign_hosts(
+        db, payload.assignments, payload.assigned_by
+    )
+
+
+@router.get(
+    "/hosts",
+    response_model=List[sch.HostAssignmentRead],
+    summary="List host assignments",
+    description="List host assignments with optional filtering by office or host",
+)
+async def list_host_assignments(
+    office_id: Optional[UUID] = Query(None),
+    host_id: Optional[UUID] = Query(None),
+    db: Database = Depends(get_db),
+    admin: CurrentUser = Depends(require_role(AdminLevel.ADMIN)),
+):
+    """List host assignments with optional filtering"""
+    return await HostAssignmentService.get_host_assignments(
+        db, office_id=office_id, host_id=host_id
+    )
+
+
+@router.put(
+    "/hosts/{host_id}/office/{office_id}",
+    response_model=sch.HostAssignmentRead,
+    summary="Update host assignment",
+)
+async def update_host_assignment(
+    host_id: UUID,
+    office_id: UUID,
+    payload: sch.HostAssignmentUpdate,
+    db: Database = Depends(get_db),
+    admin: CurrentUser = Depends(require_role(AdminLevel.ADMIN)),
+):
+    """Update host assignment (primary status, active status)"""
+    return await HostAssignmentService.update_host_assignment(
+        db, host_id, office_id, payload
+    )
+
+
+@router.delete(
+    "/hosts/{host_id}/office/{office_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Remove host from office",
+)
+async def remove_host_from_office(
+    host_id: UUID,
+    office_id: UUID,
+    db: Database = Depends(get_db),
+    admin: CurrentUser = Depends(require_role(AdminLevel.ADMIN)),
+):
+    """Remove host from office"""
+    await HostAssignmentService.remove_host_from_office(db, host_id, office_id)
+
+
+# =============================================================================
+# STATISTICS AND REPORTS
+# =============================================================================
+
+
+@router.get(
+    "/{office_id}/stats",
+    response_model=sch.OfficeStats,
+    summary="Get office statistics",
+    description="Get comprehensive statistics for an office",
+)
+async def get_office_stats(
+    office_id: UUID,
+    db: Database = Depends(get_db),
+    admin: CurrentUser = Depends(require_role(AdminLevel.ADMIN)),
+):
+    """Get comprehensive statistics for an office"""
+    return await OfficeStatsService.get_office_stats(db, office_id)
+
+
+@router.get(
+    "/stats/all",
+    response_model=List[sch.OfficeStats],
+    summary="Get all office statistics",
+    description="Get statistics for all offices",
+)
+async def get_all_office_stats(
+    db: Database = Depends(get_db),
+    admin: CurrentUser = Depends(require_role(AdminLevel.ADMIN)),
+):
+    """Get statistics for all offices"""
+    return await OfficeStatsService.get_all_office_stats(db)
+
+
+# =============================================================================
+# USER HOST STATUS ENDPOINTS
+# =============================================================================
+
+
+@router.get(
+    "/users/{user_id}/host-status",
+    response_model=sch.UserHostStatus,
+    summary="Get user's host status",
+    description="Get user's host status and available offices",
+)
+async def get_user_host_status(
+    user_id: UUID,
+    db: Database = Depends(get_db),
+    admin: CurrentUser = Depends(require_role(AdminLevel.ADMIN)),
+):
+    """Get user's host status and available offices"""
+    # Get user's current host assignments
+    assignments = await HostAssignmentService.get_host_assignments(db, host_id=user_id)
+
+    # Get all active offices for reference
+    offices = await EnhancedOfficeService.get_all_offices(db)
+    active_offices = [o for o in offices if o.is_active]
+
+    # Filter out offices where user is already assigned
+    assigned_office_ids = {a.office_id for a in assignments}
+    available_offices = [o for o in active_offices if o.id not in assigned_office_ids]
+
+    return sch.UserHostStatus(
+        user_id=user_id,
+        is_host=len(assignments) > 0,
+        assigned_offices=assignments,
+        available_offices=available_offices,
+    )
 
 
 # --------------------------------------------------
