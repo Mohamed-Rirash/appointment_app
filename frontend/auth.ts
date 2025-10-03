@@ -42,17 +42,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         try {
           // Login → returns tokens
-          const response = await client.Login(email, password);
-          const data = await response.json();
-          if (!response.ok) {
-            console.log("Auuuht", data);
-          }
-
-          if (!response.ok) throw new InvalidLoginError(data.detail);
+          const data = await client.Login(email, password);
 
           // Fetch user profile with access_token
-          const userRes = await client.GetUser(data.access_token);
-          const user = await userRes.json();
+          const user = await client.GetUser(data.access_token);
+
           console.log("User", user);
           return {
             ...user,

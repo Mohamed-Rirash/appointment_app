@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { SessionProvider } from "next-auth/react";
+import Provider from "@/fuctions/Provider";
 
 const satoshi = localFont({
   src: [
@@ -26,7 +27,7 @@ const satoshi = localFont({
 
 export const metadata: Metadata = {
   title: "Kullan Desk",
-  description: "Using Satoshi font",
+  description: "full appointment booking system",
 };
 
 export default function RootLayout({
@@ -37,7 +38,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={satoshi.variable}>
       <body>
-        <SessionProvider>{children} </SessionProvider>
+        <Provider>
+          <SessionProvider>{children} </SessionProvider>
+        </Provider>
       </body>
     </html>
   );

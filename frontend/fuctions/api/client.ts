@@ -1,118 +1,160 @@
+// fuctions/api/client.ts
+import axios from "axios";
+
+// Create an axios instance with base URL and default config
+const apiClient = axios.create({
+  baseURL: process.env.NEXT_PUBLIC_API_URL,
+  headers: {
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  },
+  withCredentials: true, // equivalent to fetch's credentials: "include"
+});
+
+// Define types
+interface Userdata {
+  email: string;
+  first_name: string;
+  is_active: boolean;
+  is_verified: boolean;
+  last_name: string;
+  role: string;
+  send_welcome_email: boolean;
+}
+
+interface LoginResponse {
+  access_token: string;
+  token_type: string;
+  expires_in: number;
+}
+
+interface RefreshResponse {
+  access_token: string;
+  expires_in: number;
+}
+
 export const client = {
-  // login
-  async Login(email: string, password: string) {
+  // Login
+  async Login(email: string, password: string): Promise<LoginResponse> {
     console.log("Email client", email);
     console.log("Password", password);
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/users/login`,
-      {
-        method: "POST",
-        headers: {
-          accept: "application/json",
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: `grant_type=password&username=${email}&password=${password}&scope=&client_id=string&client_secret=********`,
-        credentials: "include",
+
+    try {
+      const response = await apiClient.post<LoginResponse>(
+        "/users/login",
+        new URLSearchParams({
+          grant_type: "password",
+          username: email,
+          password: password,
+          scope: "",
+          client_id: "string",
+          client_secret: "********",
+        }).toString(),
+        {
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+        }
+      );
+      console.log("ssss", response.data);
+      return response.data;
+    } catch (error: any) {
+      if (error.response) {
+        // Server responded with error status
+        throw new Error(
+          error.response.data?.detail ||
+            `Login failed: ${error.response.status}`
+        );
+      } else if (error.request) {
+        throw new Error("No response from server");
+      } else {
+        throw new Error("Login request setup failed");
       }
-    );
-    return response;
+    }
   },
 
-  // get user
+  // Get User
   async GetUser(token: string) {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/users/me`,
-      {
+    try {
+      const response = await apiClient.get("/users/me", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      }
-    );
-    return response;
+      });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.detail || "Failed to fetch user");
+    }
   },
 
-  // refresh token
+  // Refresh Token
   async refreshAccessToken() {
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/users/refresh`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          // If your API already reads refresh_token from cookie, body may not be required
-          // body: JSON.stringify({ refresh_token: token.refresh_token }),
-          credentials: "include", // send cookies!
-        }
-      );
-
-      if (!res.ok) throw new Error("Failed to refresh token");
-
-      const refreshed = await res.json();
-      console.log("shhhhhhhhhhhhhhhhhhhh", refreshed);
-
+      const response = await apiClient.post<RefreshResponse>("/users/refresh");
       return {
-        access_token: refreshed.access_token,
-        expires_at: Math.floor(Date.now() / 1000 + refreshed.expires_in),
+        access_token: response.data.access_token,
+        expires_at: Math.floor(Date.now() / 1000 + response.data.expires_in),
       };
-    } catch (err) {
-      console.error("Error refreshing token:", err);
-      return { error: "RefreshAccessTokenError" };
+    } catch (error: any) {
+      console.error("Error refreshing token:", error);
+      throw new Error("RefreshAccessTokenError");
     }
   },
 
-  // resetPassword
+  // Reset Password
   async resetPassword(email: string) {
     console.log("|Email: reset", email);
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/users/request-password-reset`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          accept: "application/json",
-        },
-        body: JSON.stringify({ email }),
-      }
-    );
-
-    // 🚨 Also: Check if response is OK before parsing JSON
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-      // return await response.json();
+    try {
+      const response = await apiClient.post("/users/request-password-reset", {
+        email,
+      });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(
+        error.response?.data?.detail ||
+          `Failed to send reset email: ${
+            error.response?.status || "network error"
+          }`
+      );
     }
-
-    return await response.json();
   },
 
-  // change password
+  // Change Password
   async changePassword(
     current_password: string,
     new_password: string,
     token: string
   ) {
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/users/change-password`,
+      const response = await apiClient.post(
+        "/users/change-password",
+        { current_password, new_password },
         {
-          method: "POST",
           headers: {
-            "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ current_password, new_password }),
         }
       );
-      const data = await res.json();
-      if (!res.ok) {
-        console.log("whateeeeeeeeeeee");
-        throw new Error(data.detail || "Failed to change password");
-      }
-      return data;
+      return response.data;
     } catch (error: any) {
-      console.error("error password change", error);
-      throw error; // let caller handle
+      console.error("Error changing password:", error);
+      throw new Error(
+        error.response?.data?.detail || "Failed to change password"
+      );
+    }
+  },
+
+  // Create User (Admin)
+  async createUser(data: Userdata, token: string) {
+    try {
+      const response = await apiClient.post("/admin/users", data, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.detail || "Failed to create user");
     }
   },
 };

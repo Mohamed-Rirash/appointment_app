@@ -38,7 +38,6 @@ const items = [
   { title: "Office management", url: "/offices", icon: Building },
   { title: "Add appointment", url: "/appointments/add", icon: PlusCircle },
   { title: "View appointment", url: "/appointments", icon: Eye },
-  { title: "Profile", url: "/profile", icon: Settings },
 ];
 
 export function AppSidebar() {

@@ -1,5 +1,6 @@
 import { AppSidebar } from "@/components/app-sidebar";
 import Navbar from "@/components/Navbar";
+import { Toaster } from "react-hot-toast";
 import {
   SidebarInset,
   SidebarProvider,
@@ -19,6 +20,7 @@ export default function LayoutDashboard({
           <main className="">
             <Navbar />
             {children}
+            <Toaster />
           </main>
         </SidebarInset>
       </SidebarProvider>
