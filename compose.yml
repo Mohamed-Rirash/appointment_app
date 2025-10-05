@@ -65,10 +65,10 @@ services:
     restart: always
     ports:
       - "3001:3001" # API port
-      - "3000:3000" # Web UI port (optional)
+      - "3002:3002" # Web UI port (optional)
     environment:
       - PORT=3001
-      - WEB_PORT=3000
+      - WEB_PORT=3002
     volumes:
       - smscatcher-data:/data
     healthcheck:
@@ -129,6 +129,28 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+ 
+  # frontend:
+  #  build:
+  #   context: ./frontend
+  #   dockerfile: Dockerfile
+  #   target: dev           
+  #  restart: always
+  #  command: pnpm dev         # 👈 Use pnpm, not yarn
+  #  environment:
+  #   - NODE_ENV=development
+  #   - NEXT_PUBLIC_API_BASE_URL=http://backend:8000
+  #  depends_on:
+  #   backend:
+  #     condition: service_healthy
+  #  volumes:
+  #   - ./frontend:/app
+  #   - /app/node_modules
+  #   - /app/.next
+  #  ports:
+  #   - "3000:3000"
+  #  stdin_open: true
+  #  tty: true
 
 volumes:
   app-db-data:

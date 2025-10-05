@@ -1,4 +1,3 @@
-// app/profile/_components/UserProfileClient.tsx
 "use client";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -7,7 +6,7 @@ import active_icon from "@/public/active.png";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { BadgeCheckIcon } from "lucide-react";
+import { AlertCircle, BadgeCheckIcon } from "lucide-react";
 import {
   Dialog,
   DialogClose,
@@ -21,7 +20,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { client } from "@/fuctions/api/client";
+import { client } from "@/helpers/api/client";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import toast from "react-hot-toast";
 
 // Define individual rule checkers with their error messages
 const passwordRules = [
@@ -62,15 +63,14 @@ function getPasswordStrength(password: string) {
   return { score, label: levels[score - 1] || "Too short" };
 }
 
-// ✅ Accept user as prop — no useSession!
 export default function UserProfileClient({ user }: { user: any }) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
 
-  // ✅ No loading state needed — user is guaranteed to exist
   const {
     email,
     first_name,
@@ -98,6 +98,8 @@ export default function UserProfileClient({ user }: { user: any }) {
       return;
     }
 
+    const form = e.currentTarget;
+
     const errors = validatePasswordRules(newPassword);
     if (errors.length > 0) {
       setError(errors.join("\n"));
@@ -111,9 +113,14 @@ export default function UserProfileClient({ user }: { user: any }) {
         newPassword,
         token
       );
-      setSuccess("Password changed successfully!");
+      console.log("Result", result);
+      if (result.message === "Password changed successfully") {
+        toast.success(result.message);
+      }
+
       setNewPassword("");
-      e.currentTarget.reset();
+      form.reset();
+      setIsOpen(false);
     } catch (err: any) {
       setError(err.message || "Failed to change password");
     } finally {
@@ -204,7 +211,14 @@ export default function UserProfileClient({ user }: { user: any }) {
       </div>
 
       {/* change password dialog */}
-      <Dialog>
+      <Dialog
+        open={isOpen}
+        onOpenChange={() => {
+          setIsOpen(!isOpen);
+          setError(null);
+          setNewPassword("");
+        }}
+      >
         <DialogTrigger asChild>
           <Button className="mt-8  text-lg rounded-[4px] text-brand-primary py-6 hover:bg-brand/90 font-bold max-w-[180px] w-full">
             Change Password
@@ -220,15 +234,19 @@ export default function UserProfileClient({ user }: { user: any }) {
             </DialogHeader>
 
             {error && (
-              <ul className="text-red-500 text-sm mb-2 list-disc list-inside space-y-1">
-                {error.split("\n").map((msg, i) => (
-                  <li key={i}>{msg}</li>
-                ))}
-              </ul>
-            )}
-
-            {success && (
-              <p className="text-green-500 text-sm mb-2">{success}</p>
+              <Alert
+                variant="destructive"
+                className="mb-6 animate-in fade-in-0"
+              >
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>
+                  {" "}
+                  {error.split("\n").map((msg, i) => (
+                    <p key={i}>{msg}</p>
+                  ))}
+                </AlertDescription>
+              </Alert>
             )}
 
             <div className="grid mt-2">
@@ -309,16 +327,24 @@ export default function UserProfileClient({ user }: { user: any }) {
                       : "text-green-500"
                   }`}
                 >
-                  Strength: {strength.label}
+                  {newPassword && <span>Strength: {strength.label}</span>}
                 </p>
 
-                {passwordError && (
-                  <ul className="text-red-500 text-sm mt-1 list-disc list-inside space-y-1">
-                    {passwordError.split("\n").map((msg, i) => (
-                      <li key={i}>{msg}</li>
-                    ))}
-                  </ul>
-                )}
+                {/* {passwordError && (
+                  <Alert
+                    variant="destructive"
+                    className="mb-6 animate-in fade-in-0"
+                  >
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Error</AlertTitle>
+                    <AlertDescription>
+                      {" "}
+                      {passwordError.split("\n").map((msg, i) => (
+                        <li key={i}>{msg}</li>
+                      ))}
+                    </AlertDescription>
+                  </Alert>
+                )} */}
               </div>
             </div>
 

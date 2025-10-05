@@ -18,27 +18,29 @@ import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { client } from "@/fuctions/api/client";
+import { client } from "@/helpers/api/client";
 import toast from "react-hot-toast";
-import { auth } from "@/auth";
+import { Spinner } from "@/components/ui/spinner";
 
 // Validation schema
 const userSchema = z.object({
   first_name: z.string().min(1, "First name is required"),
   last_name: z.string().min(1, "Last name is required"),
   email: z.string().email("Invalid email address"),
-  role: z.enum(["admin", "host", "reception", "secretary"], {
-    errorMap: () => ({ message: "Please select a role" }),
-  }),
+  role: z
+    .enum(["admin", "host", "reception", "secretary", ""])
+    .refine((val) => val !== undefined, { message: "Please select a role" }),
 });
 
 type UserFormData = z.infer<typeof userSchema>;
 
-export default function UserForm() {
+export default function UserForm({ token }: { token?: string }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<UserFormData>({
@@ -47,44 +49,40 @@ export default function UserForm() {
       first_name: "",
       last_name: "",
       email: "",
-      role: "reception",
+      role: "",
     },
   });
 
-  const token = async () => {
-    const token = await auth();
-    return token;
-  };
-
   async function onSubmit(data: UserFormData) {
-    // setIsSubmitting(true);
-    console.log("Tok", token);
+    setIsSubmitting(true);
+    if (data.role === "") {
+      toast.error("Please select a role");
+      setIsSubmitting(false);
+      return;
+    }
     const userdata = {
       ...data,
       is_active: true,
       is_verified: false,
       send_welcome_email: true,
     };
-    toast.success(`User ${data.first_name} ${data.last_name} has been added.`);
-    // try {
-    //   await client.createUser(userdata);
 
-    //   toast.success("User created successfully!", {
-    //     description: `User ${data.first_name} ${data.last_name} has been added.`,
-    //   });
+    try {
+      await client.createUser(userdata, token);
+      toast.success(
+        `User ${data.first_name} ${data.last_name} has been added.`
+      );
 
-    //   form.reset();
-    // } catch (err: any) {
-    //   const errorMessage =
-    //     err.message ||
-    //     "Failed to create user. Please check the email and try again.";
+      form.reset();
+    } catch (err: any) {
+      const errorMessage =
+        err.message ||
+        "Failed to create user. Please check the email and try again.";
 
-    //   toast.error("Error creating user", {
-    //     description: errorMessage,
-    //   });
-    // } finally {
-    //   setIsSubmitting(false);
-    // }
+      toast.error(`Error creating user ${errorMessage}`);
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -174,10 +172,15 @@ export default function UserForm() {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="admin">Admin</SelectItem>
-                    <SelectItem value="host">Host</SelectItem>
-                    <SelectItem value="reception">Reception</SelectItem>
-                    <SelectItem value="secretary">Secretary</SelectItem>
+                    <SelectGroup>
+                      <SelectLabel className="font-medium text-[14px] text-brand-black">
+                        user roles
+                      </SelectLabel>
+                      <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="host">Host</SelectItem>
+                      <SelectItem value="reception">Reception</SelectItem>
+                      <SelectItem value="secretary">Secretary</SelectItem>
+                    </SelectGroup>
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -191,7 +194,13 @@ export default function UserForm() {
             disabled={isSubmitting}
             className="w-full mt-6 py-7 bg-gradient-to-r from-[#24C453] to-[#24C453] text-lg font-bold text-white hover:from-[#1fb048] hover:to-[#1fb048]"
           >
-            {isSubmitting ? "Creating..." : "Create User"}
+            {isSubmitting ? (
+              <>
+                Creating <Spinner className="ml-2 h-4 w-4 text-white" />
+              </>
+            ) : (
+              "Create User"
+            )}
           </Button>
         </form>
       </Form>

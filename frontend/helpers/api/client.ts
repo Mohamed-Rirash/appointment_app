@@ -8,7 +8,7 @@ const apiClient = axios.create({
     "Content-Type": "application/json",
     Accept: "application/json",
   },
-  withCredentials: true, // equivalent to fetch's credentials: "include"
+  withCredentials: true,
 });
 
 // Define types
@@ -145,7 +145,7 @@ export const client = {
   },
 
   // Create User (Admin)
-  async createUser(data: Userdata, token: string) {
+  async createUser(data: Userdata, token?: string) {
     try {
       const response = await apiClient.post("/admin/users", data, {
         headers: {
@@ -156,5 +156,41 @@ export const client = {
     } catch (error: any) {
       throw new Error(error.response?.data?.detail || "Failed to create user");
     }
+  },
+
+  // Get Users (Admin)
+  async getUsers(token: string, params: Record<string, any>) {
+    console.log("Get");
+    try {
+      const response = await apiClient.get("/admin/users", {
+        params,
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.detail || "Failed to fetch users");
+    }
+  },
+
+  // Delete users (Admin)
+  async deleteUser(userId: string, token?: string) {
+    const response = await apiClient.delete(`/admin/users/${userId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.data.success) {
+      throw new Error(response.data.message);
+    }
+    return response.data;
+  },
+
+  // Update user (Admin)
+  async updateUser(userId: string, userData: Partial<Userdata>, token: string) {
+    const response = await apiClient.put(`/admin/users/${userId}`, userData, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    return response.data;
   },
 };

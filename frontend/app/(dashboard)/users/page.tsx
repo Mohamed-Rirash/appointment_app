@@ -10,11 +10,12 @@ import {
 } from "@/components/ui/dialog";
 import UserForm from "./_components/userForm";
 import { auth } from "@/auth";
+import UsersTableClient from "./_components/UsersTableClient";
 
 export default async function Users() {
   const session = await auth();
   const token = session?.access_token;
-  console.log("Tok", token);
+  // console.log("Tok", token);
   return (
     <>
       <section className="mx-6 mt-8 flex justify-between items-center">
@@ -41,11 +42,13 @@ export default async function Users() {
               Create new user
             </DialogTitle>
             <DialogDescription></DialogDescription>
-            <UserForm />
+            <UserForm token={token} />
           </DialogContent>
         </Dialog>
       </section>
-      <section></section>
+      <section className="mx-6 mt-6 ">
+        <UsersTableClient token={token} />
+      </section>
     </>
   );
 }

@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { useState, useEffect } from "react";
 import arrow from "@/public/back_arrow.png";
 import Image from "next/image";
-import { client } from "@/fuctions/api/client";
+import { client } from "@/helpers/api/client";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 

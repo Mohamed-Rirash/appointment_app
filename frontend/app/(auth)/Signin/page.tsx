@@ -15,12 +15,13 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 // import { signIn } from "next-auth/react";
 import { useState } from "react";
-import { authenticate } from "@/fuctions/services/action";
+import { authenticate } from "@/helpers/services/action";
 import Link from "next/link";
 import Image from "next/image";
 
 import logo from "@/public/logo.png";
 import { useRouter } from "next/navigation";
+import { Spinner } from "@/components/ui/spinner";
 
 // define the form schema
 const formSchema = z.object({
@@ -152,7 +153,13 @@ export default function Signin() {
                 loading ? "opacity-50 pointer-disabled" : ""
               }`}
             >
-              {loading ? "Login in ..." : "Login"}
+              {loading ? (
+                <>
+                  Login in ... <Spinner className="ml-2 h-4 w-4 text-white" />
+                </>
+              ) : (
+                "Login"
+              )}
             </Button>
           </form>
         </Form>
