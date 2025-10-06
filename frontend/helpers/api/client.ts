@@ -193,4 +193,75 @@ export const client = {
 
     return response.data;
   },
+
+  // Resend Invite
+  async resendInvite(userId: string, token?: string) {
+    const response = await apiClient.post(
+      `/admin/users/${userId}/resend-invite`,
+      {},
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+    return response.data;
+  },
+
+  // Activate User
+  async activateUser(userId: string, token: string) {
+    const response = await apiClient.patch(
+      `/admin/users/${userId}/activate`,
+      {},
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+    return response.data;
+  },
+
+  // Deactivate User
+  async deactivateUser(userId: string, token: string) {
+    const response = await apiClient.patch(
+      `/admin/users/${userId}/deactivate`,
+      {},
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+    return response.data;
+  },
+
+  // Suspend User
+  async suspendUser(userId: string, token: string) {
+    const response = await apiClient.patch(
+      `/admin/users/${userId}/suspend`,
+      {},
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+    return response.data;
+  },
+
+  // Assign Role
+  async assignRole(userId: string, roleName: string, token: string) {
+    const response = await apiClient.post(
+      `/admin/users/${userId}/roles/${roleName}`,
+      {},
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+    return response.data;
+  },
+
+  // Revoke Role
+  async revokeRole(userId: string, roleName: string, token: string) {
+    const response = await apiClient.delete(
+      `/admin/users/${userId}/roles/${roleName}`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+    return response.data;
+  },
 };

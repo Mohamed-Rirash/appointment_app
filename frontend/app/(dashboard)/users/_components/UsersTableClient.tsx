@@ -30,6 +30,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DeleteUserButton } from "./DeleteUserButton";
 import { EditUserModal } from "./EditUserModal";
+import { UserActionsDropdown } from "./UserActionsDropdown";
 
 interface User {
   id: string;
@@ -262,13 +263,6 @@ export default function UsersTableClient({ token }: { token?: string }) {
                     </TableCell>
                     <TableCell className="px-4 py-3">
                       <div className="flex gap-2 items-center">
-                        {/* <button
-                          onClick={() => handleEdit(user.id, user.roles[0])}
-                          className="text-brand text-sm flex items-center gap-1 hover:text-green-600 hover:bg-green-50 px-2 py-1 rounded"
-                        >
-                          <Pencil className="h-4 w-4 text-green-500" />
-                          Edit
-                        </button> */}
                         <EditUserModal
                           userId={user.id}
                           token={token!}
@@ -279,8 +273,15 @@ export default function UsersTableClient({ token }: { token?: string }) {
                           }}
                         />
                         <DeleteUserButton userId={user.id} token={token} />
+                        {/* admin actions */}
+                        <UserActionsDropdown
+                          userId={user.id}
+                          email={user.email}
+                          token={token!}
+                          currentRole={user.roles[0]}
+                        />
 
-                        <DropdownMenu>
+                        {/* <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" className="h-8 w-8 p-0">
                               <MoreHorizontal className="h-4 w-4" />
@@ -297,7 +298,7 @@ export default function UsersTableClient({ token }: { token?: string }) {
                             <DropdownMenuItem>Assign Role</DropdownMenuItem>
                             <DropdownMenuItem>Revoke Role</DropdownMenuItem>
                           </DropdownMenuContent>
-                        </DropdownMenu>
+                        </DropdownMenu> */}
                       </div>
                     </TableCell>
                   </TableRow>

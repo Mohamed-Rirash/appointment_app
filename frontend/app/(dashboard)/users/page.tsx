@@ -15,7 +15,7 @@ import UsersTableClient from "./_components/UsersTableClient";
 export default async function Users() {
   const session = await auth();
   const token = session?.access_token;
-  // console.log("Tok", token);
+
   return (
     <>
       <section className="mx-6 mt-8 flex justify-between items-center">

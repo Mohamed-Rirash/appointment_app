@@ -19,17 +19,13 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+
 import { Button } from "@/components/ui/button";
-import { Pencil } from "lucide-react";
+import { AlertCircle, Pencil } from "lucide-react";
 import { useEditUser } from "@/hooks/useEditUser";
 import { useState } from "react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Spinner } from "@/components/ui/spinner";
 
 const editUserSchema = z.object({
   first_name: z.string().min(1, "First name is required"),
@@ -50,6 +46,7 @@ export function EditUserModal({
 }) {
   const { updateUser, isUpdating } = useEditUser(token);
   const [open, setOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const form = useForm<EditUserFormData>({
     resolver: zodResolver(editUserSchema),
@@ -57,6 +54,19 @@ export function EditUserModal({
   });
 
   async function onSubmit(data: EditUserFormData) {
+    // Domain validation
+
+    const allowedDomains = ["gmail.com", "amoud.org"];
+    const domain = data.email.split("@")[1]?.toLowerCase();
+    console.log("DDD", domain);
+    if (!domain || !allowedDomains.includes(domain)) {
+      setError(
+        "Only email addresses from @gmail.com or @amoud.org are allowed."
+      );
+
+      return;
+    }
+
     const success = await updateUser(userId, data);
     if (success) {
       setOpen(false);
@@ -80,6 +90,13 @@ export function EditUserModal({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Edit User</DialogTitle>
+          {error && (
+            <Alert variant="destructive" className="mb-6 animate-in fade-in-0">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
         </DialogHeader>
 
         <Form {...form}>
@@ -94,7 +111,10 @@ export function EditUserModal({
                 <FormItem>
                   <FormLabel>First Name</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Input
+                      className="py-6 text-[16px] rounded-[4px]"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -108,7 +128,10 @@ export function EditUserModal({
                 <FormItem>
                   <FormLabel>Last Name</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Input
+                      className="py-6 text-[16px]  rounded-[4px]"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -122,7 +145,11 @@ export function EditUserModal({
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input type="email" {...field} />
+                    <Input
+                      className="py-6 text-[16px]  rounded-[4px]"
+                      type="email"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -133,13 +160,24 @@ export function EditUserModal({
               <Button
                 type="button"
                 variant="outline"
+                className=" py-6 px-6 text-lg font-bold]"
                 onClick={() => setOpen(false)}
                 disabled={isUpdating}
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isUpdating}>
-                {isUpdating ? "Saving..." : "Save Changes"}
+              <Button
+                className="py-6 bg-gradient-to-r from-[#24C453] to-[#24C453] text-lg font-bold text-white hover:from-[#1fb048] hover:to-[#1fb048]"
+                type="submit"
+                disabled={isUpdating}
+              >
+                {isUpdating ? (
+                  <>
+                    Saving... <Spinner className="ml-2 h-4 w-4 text-white" />
+                  </>
+                ) : (
+                  "Save Changes"
+                )}
               </Button>
             </div>
           </form>
