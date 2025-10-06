@@ -11,13 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Pencil, Search, Trash2 } from "lucide-react";
+import { Search } from "lucide-react";
 import { client } from "@/helpers/api/client";
 import {
   Select,
@@ -32,7 +26,7 @@ import { DeleteUserButton } from "./DeleteUserButton";
 import { EditUserModal } from "./EditUserModal";
 import { UserActionsDropdown } from "./UserActionsDropdown";
 
-interface User {
+export interface User {
   id: string;
   first_name: string;
   last_name: string;
@@ -102,14 +96,10 @@ export default function UsersTableClient({ token }: { token?: string }) {
     return user.roles.includes(roleFilter);
   });
 
-  const handleEdit = (id: string, role: string) => {
-    console.log("Edit", id, "Role:", role);
-  };
-
   return (
-    <div className="">
+    <div className=" mb-6">
       {/* Search bar and filters */}
-      <div className="flex justify-between items-center my-3">
+      <div className="flex justify-between items-center mt-3 mb-6">
         <div className="relative w-full mr-4">
           <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-brand-gray" />
           <Input
@@ -119,7 +109,7 @@ export default function UsersTableClient({ token }: { token?: string }) {
             }}
             disabled={isFetching}
             placeholder="Search by name, email"
-            className="pl-10 py-5 rounded-[4px] text-[16px]"
+            className="pl-10 py-5 rounded-[4px] text-[16px] border-[#F7F7F7]"
           />
         </div>
 
@@ -132,52 +122,107 @@ export default function UsersTableClient({ token }: { token?: string }) {
             }}
             disabled={isFetching}
           >
-            <SelectTrigger className="w-[180px] text-[16px] py-4 rounded-[4px] shadow-gren">
+            <SelectTrigger className="w-[180px] text-[16px] py-5 rounded-[4px] shadow-gren border-[#F7F7F7]">
               <SelectValue placeholder="All Roles" />
             </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All</SelectItem>
-              <SelectItem value="admin">admin</SelectItem>
-              <SelectItem value="host">host</SelectItem>
-              <SelectItem value="reception">reception</SelectItem>
-              <SelectItem value="secretary">secretary</SelectItem>
+            <SelectContent className="font-medium text-brand-black p-2">
+              <SelectItem
+                className="rounded-[4px] data-[highlighted]:bg-brand-primary"
+                value="all"
+              >
+                All
+              </SelectItem>
+              <SelectItem
+                className="rounded-[4px] data-[highlighted]:bg-brand-primary"
+                value="admin"
+              >
+                admin
+              </SelectItem>
+              <SelectItem
+                className="rounded-[4px] data-[highlighted]:bg-brand-primary"
+                value="host"
+              >
+                host
+              </SelectItem>
+              <SelectItem
+                className="rounded-[4px] data-[highlighted]:bg-brand-primary"
+                value="reception"
+              >
+                reception
+              </SelectItem>
+              <SelectItem
+                className="rounded-[4px] data-[highlighted]:bg-brand-primary"
+                value="secretary"
+              >
+                secretary
+              </SelectItem>
             </SelectContent>
           </Select>
 
           {/* Status */}
           <Select
-            value={statusFilter || "all"}
+            value={statusFilter || undefined}
             onValueChange={(v) => {
               setStatusFilter(v === "all" ? null : v);
               setPage(1);
             }}
             disabled={isFetching}
           >
-            <SelectTrigger className="w-[180px] text-[16px] py-4 rounded-[4px] shadow-gren">
-              <SelectValue placeholder="All Status" />
+            <SelectTrigger className="w-[180px] text-[16px] py-5 rounded-[4px] shadow-gren border-[#F7F7F7]">
+              <SelectValue placeholder="Filter by Status" />
             </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="inactive">Inactive</SelectItem>
+            <SelectContent className="font-medium text-brand-black p-2">
+              <SelectItem
+                className="rounded-[4px] data-[highlighted]:bg-brand-primary"
+                value="all"
+              >
+                All Status
+              </SelectItem>
+              <SelectItem
+                className="rounded-[4px] data-[highlighted]:bg-brand-primary"
+                value="active"
+              >
+                Active
+              </SelectItem>
+              <SelectItem
+                className="rounded-[4px] data-[highlighted]:bg-brand-primary"
+                value="inactive"
+              >
+                Inactive
+              </SelectItem>
             </SelectContent>
           </Select>
 
           <Select
-            value={verifiedFilter || "all"}
+            value={verifiedFilter || undefined}
             onValueChange={(v) => {
               setVerifiedFilter(v === "all" ? null : v);
               setPage(1);
             }}
             disabled={isFetching}
           >
-            <SelectTrigger className="w-[180px] text-[16px] py-4 rounded-[4px]">
-              <SelectValue placeholder="Verified" />
+            <SelectTrigger className="w-[180px] text-[16px] py-5 rounded-[4px] shadow-gren border-[#F7F7F7]">
+              <SelectValue placeholder="Verification Status" />
             </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All</SelectItem>
-              <SelectItem value="verified">Verified</SelectItem>
-              <SelectItem value="unverified">Unverified</SelectItem>
+            <SelectContent className="font-medium text-brand-black p-2">
+              <SelectItem
+                className="rounded-[4px] data-[highlighted]:bg-brand-primary"
+                value="all"
+              >
+                All
+              </SelectItem>
+              <SelectItem
+                className="rounded-[4px] data-[highlighted]:bg-brand-primary"
+                value="verified"
+              >
+                Verified
+              </SelectItem>
+              <SelectItem
+                className="rounded-[4px] data-[highlighted]:bg-brand-primary"
+                value="unverified"
+              >
+                Unverified
+              </SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -236,29 +281,37 @@ export default function UsersTableClient({ token }: { token?: string }) {
               : filteredUsers.map((user) => (
                   <TableRow
                     key={user.id}
-                    className="border-t border-[#eeeeee] hover:bg-gray-50"
+                    className="border-t border-[#eeeeee] hover:bg-brand-primary"
                   >
-                    <TableCell className="px-4 py-3 font-medium">
+                    <TableCell className="px-4 py-3 text-[14px] font-medium text-brand-black">
                       {user.first_name} {user.last_name}
                     </TableCell>
-                    <TableCell className="px-4 py-3">{user.email}</TableCell>
+                    <TableCell className="px-4 py-3  text-[14px] font-medium text-brand-black">
+                      {user.email}
+                    </TableCell>
                     <TableCell className="px-4 py-3">
-                      <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
-                        active
+                      <span
+                        className={`px-4 py-1  text-[14px] font-medium rounded-full ${
+                          user.is_active
+                            ? "bg-[#E7FEEE] text-brand-black"
+                            : "bg-[#FEE7E7] text-red-500"
+                        }`}
+                      >
+                        {user.is_active ? "active" : "inActive"}
                       </span>
                     </TableCell>
                     <TableCell className="px-4 py-3">
                       <span
                         className={`px-2 py-1 text-xs font-medium rounded-full ${
                           user.is_verified
-                            ? "bg-blue-100 text-blue-800"
-                            : "bg-red-100 text-red-800"
+                            ? "bg-[#E7FEEE] text-brand-black"
+                            : "bg-[#FEE7E7] text-red-500"
                         }`}
                       >
                         {user.is_verified ? "verified" : "unverified"}
                       </span>
                     </TableCell>
-                    <TableCell className="px-4 py-3 lowercase">
+                    <TableCell className="px-4 py-3 lowercase font-medium text-brand-black text-[14px]">
                       {user.roles[0]}
                     </TableCell>
                     <TableCell className="px-4 py-3">
@@ -280,25 +333,6 @@ export default function UsersTableClient({ token }: { token?: string }) {
                           token={token!}
                           currentRole={user.roles[0]}
                         />
-
-                        {/* <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent
-                            align="end"
-                            className="w-40 p-0 border border-[#eeeeee] rounded-md shadow-lg"
-                          >
-                            <DropdownMenuItem>Resend invite</DropdownMenuItem>
-                            <DropdownMenuItem>Activate user</DropdownMenuItem>
-                            <DropdownMenuItem>Deactivate user</DropdownMenuItem>
-                            <DropdownMenuItem>Suspend user</DropdownMenuItem>
-                            <DropdownMenuItem>Assign Role</DropdownMenuItem>
-                            <DropdownMenuItem>Revoke Role</DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu> */}
                       </div>
                     </TableCell>
                   </TableRow>

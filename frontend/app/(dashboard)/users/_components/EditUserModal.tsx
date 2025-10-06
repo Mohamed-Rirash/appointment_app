@@ -66,7 +66,7 @@ export function EditUserModal({
 
       return;
     }
-
+    console.log("dtaaa", data);
     const success = await updateUser(userId, data);
     if (success) {
       setOpen(false);
@@ -89,7 +89,9 @@ export function EditUserModal({
 
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Edit User</DialogTitle>
+          <DialogTitle className="text-2xl text-brand-black">
+            Edit User
+          </DialogTitle>
           {error && (
             <Alert variant="destructive" className="mb-6 animate-in fade-in-0">
               <AlertCircle className="h-4 w-4" />
@@ -112,7 +114,7 @@ export function EditUserModal({
                   <FormLabel>First Name</FormLabel>
                   <FormControl>
                     <Input
-                      className="py-6 text-[16px] rounded-[4px]"
+                      className="py-6 text-[16px] text-brand-gray rounded-[4px]"
                       {...field}
                     />
                   </FormControl>
@@ -129,7 +131,7 @@ export function EditUserModal({
                   <FormLabel>Last Name</FormLabel>
                   <FormControl>
                     <Input
-                      className="py-6 text-[16px]  rounded-[4px]"
+                      className="py-6 text-[16px] text-brand-gray   rounded-[4px]"
                       {...field}
                     />
                   </FormControl>
@@ -146,7 +148,7 @@ export function EditUserModal({
                   <FormLabel>Email</FormLabel>
                   <FormControl>
                     <Input
-                      className="py-6 text-[16px]  rounded-[4px]"
+                      className="py-6 text-[16px] text-brand-gray   rounded-[4px]"
                       type="email"
                       {...field}
                     />
@@ -156,18 +158,18 @@ export function EditUserModal({
               )}
             />
 
-            <div className="flex justify-end gap-2 pt-2">
+            <div className="flex justify-end gap-4 pt-2">
               <Button
                 type="button"
                 variant="outline"
-                className=" py-6 px-6 text-lg font-bold]"
+                className=" py-6 px-6 rounded-[4px] text-brand-gray hover:text-brand-gray text-lg font-bold]"
                 onClick={() => setOpen(false)}
                 disabled={isUpdating}
               >
                 Cancel
               </Button>
               <Button
-                className="py-6 bg-gradient-to-r from-[#24C453] to-[#24C453] text-lg font-bold text-white hover:from-[#1fb048] hover:to-[#1fb048]"
+                className="py-6 rounded-[4px] bg-gradient-to-r from-[#24C453] to-[#24C453] text-lg font-bold text-white hover:from-[#1fb048] hover:to-[#1fb048]"
                 type="submit"
                 disabled={isUpdating}
               >

@@ -46,7 +46,7 @@ export default async function Users() {
           </DialogContent>
         </Dialog>
       </section>
-      <section className="mx-6 mt-6 ">
+      <section className="mx-6 mt-8 ">
         <UsersTableClient token={token} />
       </section>
     </>

@@ -215,6 +215,7 @@ export const client = {
         headers: { Authorization: `Bearer ${token}` },
       }
     );
+    console.log("activ:::", response.data);
     return response.data;
   },
 
@@ -244,6 +245,7 @@ export const client = {
 
   // Assign Role
   async assignRole(userId: string, roleName: string, token: string) {
+    console.log("ID", userId);
     const response = await apiClient.post(
       `/admin/users/${userId}/roles/${roleName}`,
       {},
@@ -251,17 +253,19 @@ export const client = {
         headers: { Authorization: `Bearer ${token}` },
       }
     );
+    console.log("Role:::", response.data);
     return response.data;
   },
 
   // Revoke Role
   async revokeRole(userId: string, roleName: string, token: string) {
-    const response = await apiClient.delete(
+    const response = await apiClient.post(
       `/admin/users/${userId}/roles/${roleName}`,
       {
         headers: { Authorization: `Bearer ${token}` },
       }
     );
+    console.log("revoke", response.data);
     return response.data;
   },
 };

@@ -1,4 +1,3 @@
-// components/UserActionsDropdown.tsx
 "use client";
 
 import {
@@ -9,11 +8,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal } from "lucide-react";
 import { ResendInviteMenuItem } from "./ResendInviteMenuItem";
-
-// import { ActivateUserMenuItem } from "./ActivateUserMenuItem";
-// import { DeactivateUserMenuItem } from "./DeactivateUserMenuItem";
-// import { SuspendUserMenuItem } from "./SuspendUserMenuItem";
-// import Assign/Revoke if needed
+import { ActivateUserMenuItem } from "./ActivateUserMenuItem";
+import { DeactivateUserMenuItem } from "./DeactivateUserMenuItem";
+import { AssignRoleModal } from "./AssignRoleModal";
+import { RevokeRoleMenuItem } from "./RevokeRoleMenuItem";
 
 export function UserActionsDropdown({
   userId,
@@ -35,16 +33,22 @@ export function UserActionsDropdown({
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
-        className="w-48 p-0 border border-[#eeeeee] rounded-md shadow-lg"
+        className="w-48 p-2 font-medium border border-[#eeeeee] rounded-md shadow-lg"
       >
         <ResendInviteMenuItem userId={userId} token={token} />
-        {/* <ActivateUserMenuItem userId={userId} token={token} />
+        <ActivateUserMenuItem userId={userId} token={token} />
         <DeactivateUserMenuItem userId={userId} token={token} />
-        <SuspendUserMenuItem userId={userId} token={token} /> */}
-        {/* 
-        <AssignRoleMenuItem userId={userId} token={token} currentRole={currentRole} />
-        <RevokeRoleMenuItem userId={userId} token={token} roleName={currentRole} />
-        */}
+        {/* <SuspendUserMenuItem userId={userId} token={token} /> */}
+        <AssignRoleModal
+          userId={userId}
+          currentRole={currentRole}
+          token={token}
+        />
+        <RevokeRoleMenuItem
+          userId={userId}
+          roleName={currentRole}
+          token={token}
+        />
       </DropdownMenuContent>
     </DropdownMenu>
   );
