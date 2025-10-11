@@ -44,6 +44,11 @@ class AppointmentRead(AppointmentCreate):
     updated_at: datetime
     canceled_at: datetime | None = None
     canceled_by: UUID | None = None
+    canceled_reason: str | None = None
+    decision_reason: str | None = None
+    decided_at: datetime | None = None
+    decided_by: UUID | None = None
+    new_appointment_date: datetime | None = None
 
 
 class AppointmentWithCitizenRead(BaseModel):
@@ -62,6 +67,30 @@ class Slot(BaseModel):
 
 class AppointmentDecision(BaseModel):
     status: AppointmentStatus = Field(default=AppointmentStatus.APPROVED)
+    reason: Optional[str] = Field(None, description="Reason for the decision")
+    new_appointment_date: Optional[datetime] = Field(None, description="New date for postponed appointments")
+
+
+class AppointmentCancel(BaseModel):
+    reason: str = Field(..., description="Reason for cancellation")
+
+
+class AppointmentUpdate(BaseModel):
+    purpose: Optional[str] = Field(None, description="Updated purpose of visit")
+    appointment_date: Optional[datetime] = Field(None, description="Updated appointment date")
+    time_slotted: Optional[time] = Field(None, description="Updated time slot")
+
+
+class AppointmentComplete(BaseModel):
+    notes: Optional[str] = Field(None, description="Optional notes for completion")
+
+
+class AppointmentHistoryFilters(BaseModel):
+    status: Optional[AppointmentStatus] = Field(None, description="Filter by appointment status")
+    start_date: Optional[date] = Field(None, description="Start date for history range")
+    end_date: Optional[date] = Field(None, description="End date for history range")
+    citizen_id: Optional[UUID] = Field(None, description="Filter by specific citizen")
+    host_id: Optional[UUID] = Field(None, description="Filter by specific host")
 
 
 class AppointmentFilters(BaseModel):

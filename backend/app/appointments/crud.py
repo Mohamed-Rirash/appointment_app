@@ -45,7 +45,7 @@ class AppointmentCrud:
 
     @staticmethod
     async def get_appointment_by_id(db, appointment_id):
-        query = select(appointments).where(appointments.c.id == appointment_id)
+        query = select(appointment_details).where(appointment_details.c.appointment_id == appointment_id)
         return await db.fetch_one(query)
 
     @staticmethod
