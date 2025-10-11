@@ -14,15 +14,16 @@ from fastapi import BackgroundTasks, status
 from app.admin.config import get_admin_config
 from app.admin.crud import AdminAuditCRUD, AdminRoleCRUD, AdminSystemCRUD, AdminUserCRUD
 from app.admin.exceptions import (
+    AdminValidationError,
     BulkOperationError,
+    EmailDomainNotAllowedError,
+    ExportError,
     InvalidBulkOperationError,
     RoleAssignmentError,
+    RolesMissingError,
     SystemUserProtectedError,
     UserAlreadyExistsError,
-    AdminValidationError,
-    RolesMissingError,
     UserNotFoundError,
-    ExportError,
 )
 from app.admin.schemas import (
     AdminActionType,
@@ -61,14 +62,19 @@ class AdminUserService:
 
         # ✅ OPTIMIZED: Batch load roles for all users to avoid N+1 queries
         user_ids = [user["id"] for user in users]
-        
+
         # Use asyncio.gather to fetch roles for all users in parallel
-        role_tasks = [AdminUserCRUD.get_user_with_roles(db, user_id) for user_id in user_ids]
-        enhanced_users_results = await asyncio.gather(*role_tasks, return_exceptions=True)
-        
+        role_tasks = [
+            AdminUserCRUD.get_user_with_roles(db, user_id) for user_id in user_ids
+        ]
+        enhanced_users_results = await asyncio.gather(
+            *role_tasks, return_exceptions=True
+        )
+
         # Filter out None results and exceptions
         enhanced_users = [
-            result for result in enhanced_users_results 
+            result
+            for result in enhanced_users_results
             if result is not None and not isinstance(result, Exception)
         ]
 
@@ -80,8 +86,11 @@ class AdminUserService:
         user_data: AdminUserCreate,
         created_by: UUID,
         background_tasks: Optional[BackgroundTasks] = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Create new user with admin capabilities"""
+        # validate email domain
+        if not validate_email_domain(str(user_data.email)):
+            raise EmailDomainNotAllowedError()
 
         # Check if user already exists
         existing_user = await UserCRUD.get_by_email(db, user_data.email)

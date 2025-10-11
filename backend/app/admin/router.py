@@ -114,14 +114,14 @@ async def admin_list_users(
         is_verified=is_verified,
         is_system_user=None,
     )
-    appointments, total = await AdminUserService.get_users_paginated(
+    users, total = await AdminUserService.get_users_paginated(
         db, pagination, filters
     )
     # Normalize each item and convert to Pydantic models for safe serialization
-    appointments = [AdminUserResponse(**_normalize_admin_user(u)) for u in appointments]
+    users = [AdminUserResponse(**_normalize_admin_user(u)) for u in users]
     pages = (total + size - 1) // size
     return PaginatedResponse(
-        appointments=appointments,
+        users=users,
         total=total,
         page=page,
         size=size,

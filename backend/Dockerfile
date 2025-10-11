@@ -1,31 +1,46 @@
-# Use the official Python image as the base image
-FROM python:3.13-slim
+FROM python:3.10
 
-# Set environment variables
-ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONPATH=/app
+ENV PYTHONUNBUFFERED=1
 
-# Set the working directory to /app
-WORKDIR /app
+WORKDIR /app/
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
-    python3-dev \
-    netcat-openbsd \
-    && rm -rf /var/lib/apt/lists/*
+# Install uv
+# Ref: https://docs.astral.sh/uv/guides/integration/docker/#installing-uv
+COPY --from=ghcr.io/astral-sh/uv:0.5.11 /uv /uvx /bin/
 
-# Copy the pyproject.toml first to leverage Docker cache
-COPY ./pyproject.toml ./
+# Place executables in the environment at the front of the path
+# Ref: https://docs.astral.sh/uv/guides/integration/docker/#using-the-environment
+ENV PATH="/app/.venv/bin:$PATH"
 
-# Install the package in development mode
-RUN pip install --upgrade pip && \
-    pip install -e .
+# Compile bytecode
+# Ref: https://docs.astral.sh/uv/guides/integration/docker/#compiling-bytecode
+ENV UV_COMPILE_BYTECODE=1
 
-# Copy the rest of the application code
-COPY . .
+# uv Cache
+# Ref: https://docs.astral.sh/uv/guides/integration/docker/#caching
+ENV UV_LINK_MODE=copy
 
-# The main application
-#CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
-CMD ["fastapi", "dev", "app/main.py"]
+# Install dependencies
+# Ref: https://docs.astral.sh/uv/guides/integration/docker/#intermediate-layers
+RUN --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=bind,source=uv.lock,target=uv.lock \
+    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+    uv sync --frozen --no-install-project
+
+ENV PYTHONPATH=/app
+
+COPY ./scripts /app/scripts
+
+COPY ./pyproject.toml ./uv.lock ./alembic.ini /app/
+
+COPY ./app /app/app
+COPY ./README.md /app/
+
+COPY ./tests /app/tests
+
+# Sync the project
+# Ref: https://docs.astral.sh/uv/guides/integration/docker/#intermediate-layers
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync
+
+CMD ["fastapi", "run", "--workers", "4", "app/main.py"]
