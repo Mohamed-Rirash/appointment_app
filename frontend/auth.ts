@@ -89,7 +89,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       // Otherwise refresh
       const refreshed = await client.refreshAccessToken();
 
-      if (refreshed.error) {
+      // Check if refresh was successful (no error property means success)
+      if (!refreshed || !refreshed.access_token) {
         return { ...token, error: "RefreshAccessTokenError" };
       }
 
