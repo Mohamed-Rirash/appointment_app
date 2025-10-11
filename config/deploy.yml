@@ -1,0 +1,89 @@
+# Name of your app
+service: appointment_app
+
+# Docker image base names
+image: rirash/appointment_app
+
+# Remote servers for deployment
+servers:
+  web:
+    - your.server.ip.here
+
+# Where Traefik will handle HTTPS
+proxy:
+  ssl: true
+  host: dashboard.yourdomain.com
+  app_port: 80
+
+# Docker registry credentials (Docker Hub in this case)
+registry:
+  username: rirash
+  password:
+    - KAMAL_REGISTRY_PASSWORD
+
+# ENV variables passed into your containers
+env:
+  clear:
+    DOMAIN: yourdomain.com
+    ENVIRONMENT: production
+    FRONTEND_HOST: https://dashboard.yourdomain.com
+    BACKEND_CORS_ORIGINS: https://dashboard.yourdomain.com
+    POSTGRES_SERVER: db
+    POSTGRES_PORT: 5432
+    POSTGRES_DB: appdb
+    REDIS_URL: redis://redis:6379
+  secret:
+    - SECRET_KEY
+    - FIRST_SUPERUSER
+    - FIRST_SUPERUSER_PASSWORD
+    - SMTP_HOST
+    - SMTP_USER
+    - SMTP_PASSWORD
+    - EMAILS_FROM_EMAIL
+    - POSTGRES_USER
+    - POSTGRES_PASSWORD
+    - SENTRY_DSN
+
+builder:
+  arch: amd64
+  args:
+    NODE_ENV: production
+    NEXT_PUBLIC_API_URL: https://api.yourdomain.com
+
+# Optional aliases for quick debugging
+aliases:
+  logs: app logs -r web
+  bash: app exec --interactive --reuse "bash"
+
+# SSH configuration (if not root)
+ssh:
+  user: root
+
+# Volumes for persistent data
+volumes:
+  - "app-db-data:/var/lib/postgresql/data"
+  - "redis-data:/data"
+  - "mailpit-data:/data"
+  - "smscatcher-data:/data"
+
+# Accessories (Databases and Redis)
+accessories:
+  db:
+    image: postgres:17
+    host: your.server.ip.here
+    port: 5432
+    env:
+      clear:
+        POSTGRES_DB: appdb
+      secret:
+        - POSTGRES_USER
+        - POSTGRES_PASSWORD
+    directories:
+      - data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:alpine
+    host: your.server.ip.here
+    port: 6379
+    directories:
+      - data:/data
