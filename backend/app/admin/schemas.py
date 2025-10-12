@@ -4,10 +4,10 @@ Admin module Pydantic schemas
 
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel, EmailStr, Field, validator
+from pydantic import BaseModel, EmailStr, Field
 
 from app.auth.schemas import UserRead
 
@@ -59,14 +59,14 @@ class PaginationParams(BaseModel):
 
     page: int = Field(1, ge=1, description="Page number")
     size: int = Field(20, ge=1, le=100, description="Page size")
-    sort_by: Optional[str] = Field(None, description="Field to sort by")
+    sort_by: str | None = Field(None, description="Field to sort by")
     sort_order: SortOrder = Field(SortOrder.DESC, description="Sort order")
 
 
 class PaginatedResponse(BaseModel):
     """Paginated response wrapper"""
 
-    appointments: List[Any]
+    users: list[Any]
     total: int
     page: int
     size: int
@@ -86,7 +86,7 @@ class AdminUserCreate(BaseModel):
     is_verified: bool = Field(False, description="User verification status")
     send_welcome_email: bool = Field(True, description="Send welcome email to user")
     # Accept role names or IDs; backend will resolve names to IDs
-    roles: Optional[List[str]] = Field(
+    roles: list[str] | None = Field(
         None, description="Initial roles to assign (names or IDs)"
     )
 
@@ -94,34 +94,32 @@ class AdminUserCreate(BaseModel):
 class AdminUserUpdate(BaseModel):
     """Schema for admin user updates"""
 
-    first_name: Optional[str] = Field(None, min_length=1, max_length=100)
-    last_name: Optional[str] = Field(None, min_length=1, max_length=100)
-    email: Optional[EmailStr] = Field(None, description="User email address")
-    is_active: Optional[bool] = Field(None, description="User active status")
-    is_verified: Optional[bool] = Field(None, description="User verification status")
+    first_name: str | None = Field(None, min_length=1, max_length=100)
+    last_name: str | None = Field(None, min_length=1, max_length=100)
+    email: EmailStr | None = Field(None, description="User email address")
+    is_active: bool | None = Field(None, description="User active status")
+    is_verified: bool | None = Field(None, description="User verification status")
 
 
 class AdminUserResponse(UserRead):
     """Extended user response for admin operations"""
 
-    roles: List[str] = Field(default_factory=list, description="User roles")
-    permissions: List[str] = Field(default_factory=list, description="User permissions")
-    last_login: Optional[datetime] = Field(None, description="Last login timestamp")
+    roles: list[str] = Field(default_factory=list, description="User roles")
+    permissions: list[str] = Field(default_factory=list, description="User permissions")
+    last_login: datetime | None = Field(None, description="Last login timestamp")
     login_count: int = Field(0, description="Total login count")
-    created_by: Optional[UUID] = Field(None, description="Created by admin ID")
-    updated_by: Optional[UUID] = Field(None, description="Last updated by admin ID")
+    created_by: UUID | None = Field(None, description="Created by admin ID")
+    updated_by: UUID | None = Field(None, description="Last updated by admin ID")
 
 
 class BulkUserOperation(BaseModel):
     """Schema for bulk user operations"""
 
-    user_ids: List[UUID] = Field(
+    user_ids: list[UUID] = Field(
         ..., min_length=1, max_length=1000, description="List of user IDs"
     )
     operation: str = Field(..., description="Operation to perform")
-    parameters: Optional[Dict[str, Any]] = Field(
-        None, description="Operation parameters"
-    )
+    parameters: dict[str, Any] | None = Field(None, description="Operation parameters")
 
 
 class BulkOperationResult(BaseModel):
@@ -130,8 +128,8 @@ class BulkOperationResult(BaseModel):
     total_appointments: int
     successful_appointments: int
     failed_appointments: int
-    errors: List[Dict[str, Any]] = Field(default_factory=list)
-    details: Optional[Dict[str, Any]] = None
+    errors: list[dict[str, Any]] = Field(default_factory=list)
+    details: dict[str, Any] | None = None
 
 
 # Role Management Schemas
@@ -142,20 +140,20 @@ class AdminRoleCreate(BaseModel):
     display_name: str = Field(
         ..., min_length=1, max_length=200, description="Role display name"
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         None, max_length=500, description="Role description"
     )
-    permissions: List[UUID] = Field(default_factory=list, description="Permission IDs")
+    permissions: list[UUID] = Field(default_factory=list, description="Permission IDs")
     is_active: bool = Field(True, description="Role active status")
 
 
 class AdminRoleUpdate(BaseModel):
     """Schema for role updates"""
 
-    name: Optional[str] = Field(None, min_length=1, max_length=100)
-    display_name: Optional[str] = Field(None, min_length=1, max_length=200)
-    description: Optional[str] = Field(None, max_length=500)
-    is_active: Optional[bool] = None
+    name: str | None = Field(None, min_length=1, max_length=100)
+    display_name: str | None = Field(None, min_length=1, max_length=200)
+    description: str | None = Field(None, max_length=500)
+    is_active: bool | None = None
 
 
 class AdminRoleResponse(BaseModel):
@@ -164,15 +162,15 @@ class AdminRoleResponse(BaseModel):
     id: UUID
     name: str
     display_name: str
-    description: Optional[str]
+    description: str | None
     is_active: bool
     is_system: bool
-    permissions: List[str] = Field(default_factory=list)
+    permissions: list[str] = Field(default_factory=list)
     user_count: int = Field(0, description="Number of users with this role")
     created_at: datetime
-    updated_at: Optional[datetime]
-    created_by: Optional[UUID]
-    updated_by: Optional[UUID]
+    updated_at: datetime | None
+    created_by: UUID | None
+    updated_by: UUID | None
 
 
 class RoleAssignment(BaseModel):
@@ -180,8 +178,8 @@ class RoleAssignment(BaseModel):
 
     user_id: UUID
     role_id: UUID
-    assigned_by: Optional[UUID] = None
-    expires_at: Optional[datetime] = None
+    assigned_by: UUID | None = None
+    expires_at: datetime | None = None
 
 
 # Permission Management Schemas
@@ -192,7 +190,7 @@ class AdminPermissionCreate(BaseModel):
     display_name: str = Field(
         ..., min_length=1, max_length=200, description="Permission display name"
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         None, max_length=500, description="Permission description"
     )
     resource: str = Field(..., description="Resource this permission applies to")
@@ -203,9 +201,9 @@ class AdminPermissionCreate(BaseModel):
 class AdminPermissionUpdate(BaseModel):
     """Schema for permission updates"""
 
-    display_name: Optional[str] = Field(None, min_length=1, max_length=200)
-    description: Optional[str] = Field(None, max_length=500)
-    is_active: Optional[bool] = None
+    display_name: str | None = Field(None, min_length=1, max_length=200)
+    description: str | None = Field(None, max_length=500)
+    is_active: bool | None = None
 
 
 class AdminPermissionResponse(BaseModel):
@@ -214,16 +212,16 @@ class AdminPermissionResponse(BaseModel):
     id: UUID
     name: str
     display_name: str
-    description: Optional[str]
+    description: str | None
     resource: str
     action: str
     is_active: bool
     is_system: bool
     role_count: int = Field(0, description="Number of roles with this permission")
     created_at: datetime
-    updated_at: Optional[datetime]
-    created_by: Optional[UUID]
-    updated_by: Optional[UUID]
+    updated_at: datetime | None
+    created_by: UUID | None
+    updated_by: UUID | None
 
 
 # System Monitoring Schemas
@@ -247,24 +245,24 @@ class SystemStats(BaseModel):
 class UserAnalytics(BaseModel):
     """User analytics data"""
 
-    registration_trend: List[Dict[str, Union[str, int]]]
-    login_trend: List[Dict[str, Union[str, int]]]
-    user_activity: List[Dict[str, Union[str, int]]]
-    role_distribution: List[Dict[str, Union[str, int]]]
-    geographic_distribution: Optional[List[Dict[str, Union[str, int]]]] = None
+    registration_trend: list[dict[str, str | int]]
+    login_trend: list[dict[str, str | int]]
+    user_activity: list[dict[str, str | int]]
+    role_distribution: list[dict[str, str | int]]
+    geographic_distribution: list[dict[str, str | int]] | None = None
 
 
 class SystemHealth(BaseModel):
     """System health status"""
 
     status: str = Field(..., description="Overall system status")
-    database: Dict[str, Any]
-    redis: Optional[Dict[str, Any]] = None
-    disk_usage: Dict[str, Any]
-    memory_usage: Dict[str, Any]
+    database: dict[str, Any]
+    redis: dict[str, Any] | None = None
+    disk_usage: dict[str, Any]
+    memory_usage: dict[str, Any]
     cpu_usage: float
     uptime: int
-    last_backup: Optional[datetime] = None
+    last_backup: datetime | None = None
     active_sessions: int
     error_rate: float
 
@@ -278,13 +276,13 @@ class AdminAuditLog(BaseModel):
     admin_email: str
     action: AdminActionType
     resource_type: str
-    resource_id: Optional[str] = None
-    details: Dict[str, Any]
-    ip_address: Optional[str] = None
-    user_agent: Optional[str] = None
+    resource_id: str | None = None
+    details: dict[str, Any]
+    ip_address: str | None = None
+    user_agent: str | None = None
     timestamp: datetime
     success: bool
-    error_message: Optional[str] = None
+    error_message: str | None = None
 
 
 class AdminAuditLogCreate(BaseModel):
@@ -292,12 +290,12 @@ class AdminAuditLogCreate(BaseModel):
 
     action: AdminActionType
     resource_type: str
-    resource_id: Optional[str] = None
-    details: Dict[str, Any] = Field(default_factory=dict)
-    ip_address: Optional[str] = None
-    user_agent: Optional[str] = None
+    resource_id: str | None = None
+    details: dict[str, Any] = Field(default_factory=dict)
+    ip_address: str | None = None
+    user_agent: str | None = None
     success: bool = True
-    error_message: Optional[str] = None
+    error_message: str | None = None
 
 
 # Export Schemas
@@ -306,10 +304,10 @@ class ExportRequest(BaseModel):
 
     export_type: str = Field(..., description="Type of data to export")
     format: ExportFormat = Field(ExportFormat.CSV, description="Export format")
-    filters: Optional[Dict[str, Any]] = Field(None, description="Export filters")
-    include_fields: Optional[List[str]] = Field(None, description="Fields to include")
-    exclude_fields: Optional[List[str]] = Field(None, description="Fields to exclude")
-    date_range: Optional[Dict[str, datetime]] = Field(
+    filters: dict[str, Any] | None = Field(None, description="Export filters")
+    include_fields: list[str] | None = Field(None, description="Fields to include")
+    exclude_fields: list[str] | None = Field(None, description="Fields to exclude")
+    date_range: dict[str, datetime] | None = Field(
         None, description="Date range filter"
     )
 
@@ -319,11 +317,11 @@ class ExportResponse(BaseModel):
 
     export_id: UUID
     status: str
-    download_url: Optional[str] = None
-    file_size: Optional[int] = None
-    record_count: Optional[int] = None
+    download_url: str | None = None
+    file_size: int | None = None
+    record_count: int | None = None
     created_at: datetime
-    expires_at: Optional[datetime] = None
+    expires_at: datetime | None = None
 
 
 # Dashboard Schemas
@@ -333,24 +331,22 @@ class DashboardData(BaseModel):
     system_stats: SystemStats
     user_analytics: UserAnalytics
     system_health: SystemHealth
-    recent_activities: List[AdminAuditLog]
-    alerts: List[Dict[str, Any]] = Field(default_factory=list)
-    quick_actions: List[Dict[str, Any]] = Field(default_factory=list)
+    recent_activities: list[AdminAuditLog]
+    alerts: list[dict[str, Any]] = Field(default_factory=list)
+    quick_actions: list[dict[str, Any]] = Field(default_factory=list)
 
 
 # Search and Filter Schemas
 class UserSearchFilters(BaseModel):
     """User search and filter options"""
 
-    search: Optional[str] = Field(None, description="Search term")
-    is_active: Optional[bool] = Field(None, description="Filter by active status")
-    is_verified: Optional[bool] = Field(
-        None, description="Filter by verification status"
-    )
-    is_system_user: Optional[bool] = Field(
+    search: str | None = Field(None, description="Search term")
+    is_active: bool | None = Field(None, description="Filter by active status")
+    is_verified: bool | None = Field(None, description="Filter by verification status")
+    is_system_user: bool | None = Field(
         None, description="Filter by system user status"
     )
-    roles: Optional[List[str]] = Field(None, description="Filter by roles")
+    roles: list[str] | None = Field(None, description="Filter by roles")
     # created_after: Optional[datetime] = Field(None, description="Created after date")
     # created_before: Optional[datetime] = Field(None, description="Created before date")
     # last_login_after: Optional[datetime] = Field(
@@ -364,10 +360,10 @@ class UserSearchFilters(BaseModel):
 class AdminActivityFilters(BaseModel):
     """Admin activity search and filter options"""
 
-    admin_id: Optional[UUID] = Field(None, description="Filter by admin ID")
-    action: Optional[AdminActionType] = Field(None, description="Filter by action type")
-    resource_type: Optional[str] = Field(None, description="Filter by resource type")
-    success: Optional[bool] = Field(None, description="Filter by success status")
-    date_from: Optional[datetime] = Field(None, description="Date from")
-    date_to: Optional[datetime] = Field(None, description="Date to")
-    ip_address: Optional[str] = Field(None, description="Filter by IP address")
+    admin_id: UUID | None = Field(None, description="Filter by admin ID")
+    action: AdminActionType | None = Field(None, description="Filter by action type")
+    resource_type: str | None = Field(None, description="Filter by resource type")
+    success: bool | None = Field(None, description="Filter by success status")
+    date_from: datetime | None = Field(None, description="Date from")
+    date_to: datetime | None = Field(None, description="Date to")
+    ip_address: str | None = Field(None, description="Filter by IP address")

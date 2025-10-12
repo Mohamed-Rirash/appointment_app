@@ -1,418 +1,239 @@
-# 🏢 Office Appointment Management System
+# Full Stack FastAPI Template
 
-A comprehensive, production-ready FastAPI application for managing office appointments, host scheduling, and user access control. Built with modern Python technologies and enterprise-grade features for scalability and reliability.
+<a href="https://github.com/fastapi/full-stack-fastapi-template/actions?query=workflow%3ATest" target="_blank"><img src="https://github.com/fastapi/full-stack-fastapi-template/workflows/Test/badge.svg" alt="Test"></a>
+<a href="https://coverage-badge.samuelcolvin.workers.dev/redirect/fastapi/full-stack-fastapi-template" target="_blank"><img src="https://coverage-badge.samuelcolvin.workers.dev/fastapi/full-stack-fastapi-template.svg" alt="Coverage"></a>
 
-## 🌟 Overview
+## Technology Stack and Features
 
-This application provides a complete solution for managing office-based appointment systems with sophisticated user management, host scheduling, and comprehensive administrative controls. It features multi-office support, role-based access control, real-time availability management, and integrated notification systems.
+- ⚡ [**FastAPI**](https://fastapi.tiangolo.com) for the Python backend API.
+    - 🧰 [SQLModel](https://sqlmodel.tiangolo.com) for the Python SQL database interactions (ORM).
+    - 🔍 [Pydantic](https://docs.pydantic.dev), used by FastAPI, for the data validation and settings management.
+    - 💾 [PostgreSQL](https://www.postgresql.org) as the SQL database.
+- 🚀 [React](https://react.dev) for the frontend.
+    - 💃 Using TypeScript, hooks, Vite, and other parts of a modern frontend stack.
+    - 🎨 [Chakra UI](https://chakra-ui.com) for the frontend components.
+    - 🤖 An automatically generated frontend client.
+    - 🧪 [Playwright](https://playwright.dev) for End-to-End testing.
+    - 🦇 Dark mode support.
+- 🐋 [Docker Compose](https://www.docker.com) for development and production.
+- 🔒 Secure password hashing by default.
+- 🔑 JWT (JSON Web Token) authentication.
+- 📫 Email based password recovery.
+- ✅ Tests with [Pytest](https://pytest.org).
+- 📞 [Traefik](https://traefik.io) as a reverse proxy / load balancer.
+- 🚢 Deployment instructions using Docker Compose, including how to set up a frontend Traefik proxy to handle automatic HTTPS certificates.
+- 🏭 CI (continuous integration) and CD (continuous deployment) based on GitHub Actions.
 
-## 🛠️ Tech Stack
+### Dashboard Login
 
-### Backend Framework
-- **Python 3.12** - Modern Python runtime
-- **FastAPI** - High-performance async web framework
-- **SQLAlchemy 2.x** - Async ORM with PostgreSQL support
-- **Pydantic v2** - Data validation and serialization
+[![API docs](img/login.png)](https://github.com/fastapi/full-stack-fastapi-template)
 
-### Database & Caching
-- **PostgreSQL** - Primary database with async support (`asyncpg`)
-- **Redis** - Caching, rate limiting, and session storage
-- **Alembic** - Database migration management
+### Dashboard - Admin
 
-### External Integrations
-- **SMTP Email** - Email notifications (configurable provider)
-- **SMS Service** - SMS notifications (configurable provider)
-- **Docker** - Complete containerized deployment
+[![API docs](img/dashboard.png)](https://github.com/fastapi/full-stack-fastapi-template)
 
-### Development & Testing
-- **Pytest** - Comprehensive test suite
-- **Docker Compose** - Local development environment
-- **Uvicorn** - ASGI server with auto-reload
+### Dashboard - Create User
 
-## 🎯 Core Features
+[![API docs](img/dashboard-create.png)](https://github.com/fastapi/full-stack-fastapi-template)
 
-### 🔐 Authentication & Authorization
-- **JWT-based Authentication** - Secure token-based user sessions
-- **Role-Based Access Control (RBAC)** - Granular permission system
-- **Multi-level User Roles** - Admin, Host, Secretary, Reception, User roles
-- **Email Domain Restrictions** - Configurable access control
+### Dashboard - Items
 
-### 🏢 Office Management
-- **Multi-Office Support** - Manage multiple office locations
-- **Office Membership System** - User-office relationship management
-- **Host Assignment** - Assign users as appointment hosts
-- **Office Statistics** - Comprehensive reporting and analytics
+[![API docs](img/dashboard-items.png)](https://github.com/fastapi/full-stack-fastapi-template)
 
-### 📅 Appointment System
-- **Time Slot Management** - Automated slot generation from host availability
-- **Appointment Booking** - Citizen appointment scheduling
-- **Status Tracking** - Complete appointment lifecycle management
-- **Conflict Prevention** - Automated double-booking prevention
+### Dashboard - User Settings
 
-### ⏰ Host Availability
-- **Recurring Schedules** - Weekly availability patterns
-- **One-time Availability** - Special date availability
-- **15-minute Slots** - Automated time slot generation
-- **Real-time Updates** - Dynamic availability management
+[![API docs](img/dashboard-user-settings.png)](https://github.com/fastapi/full-stack-fastapi-template)
 
-### 📧 Communication
-- **Email Notifications** - Automated email alerts
-- **SMS Notifications** - SMS-based alerts and reminders
-- **Template System** - Customizable notification templates
-- **Multi-provider Support** - Configurable SMS and email providers
+### Dashboard - Dark Mode
 
-### 🔧 Enterprise Features
-- **Response Caching** - Redis-backed response caching
-- **Rate Limiting** - Configurable request throttling
-- **Security Headers** - Comprehensive security middleware
-- **Request Logging** - Structured logging with correlation IDs
-- **Health Monitoring** - Application health endpoints
-- **CORS Support** - Cross-origin resource sharing
+[![API docs](img/dashboard-dark.png)](https://github.com/fastapi/full-stack-fastapi-template)
 
-## 🏗️ Architecture
+### Interactive API Documentation
 
-### Application Structure
-```
-backend/
-├── app/
-│   ├── main.py              # FastAPI application factory
-│   ├── config.py            # Configuration management
-│   ├── database.py          # Database connection management
-│   ├── auth/                # Authentication system
-│   │   ├── models.py        # User and auth models
-│   │   ├── router.py        # Authentication endpoints
-│   │   └── dependencies.py  # Auth middleware
-│   ├── appointments/        # Appointment management
-│   │   ├── models.py        # Appointment database models
-│   │   ├── routers.py       # Appointment API endpoints
-│   │   ├── services.py      # Business logic
-│   │   └── schemas.py       # Request/response schemas
-│   ├── office_mgnt/         # Office management system
-│   │   ├── models.py        # Office and membership models
-│   │   ├── router.py        # Office management endpoints
-│   │   ├── services.py      # Office business logic
-│   │   └── schemas.py       # Office data schemas
-│   ├── admin/               # Administrative functions
-│   ├── core/                # Core middleware and utilities
-│   │   ├── cache.py         # Redis caching system
-│   │   ├── middleware/      # Security and performance middleware
-│   │   └── exceptions.py    # Custom exception handlers
-│   ├── notifications/       # SMS and email notifications
-│   ├── emails/              # Email service
-│   ├── sms/                 # SMS service
-│   └── templates/           # Email templates
-├── tests/                   # Test suite
-├── alembic/                 # Database migrations
-└── compose.yml              # Docker orchestration
-```
+[![API docs](img/docs.png)](https://github.com/fastapi/full-stack-fastapi-template)
 
-### Database Schema
-```sql
--- Core entities
-users (id, email, roles, permissions)
-offices (id, name, location, status)
-office_memberships (user_id, office_id, position, is_primary)
+## How To Use It
 
--- Appointment system
-appointments (id, citizen_id, host_id, office_id, appointment_date, status)
-time_slots (id, office_id, slot_start, slot_end, date, is_booked)
+You can **just fork or clone** this repository and use it as is.
 
--- Availability management
-host_availability (id, office_id, daysofweek, start_time, end_time, is_recurring)
-```
+✨ It just works. ✨
 
-## 🚀 Quick Start
+### How to Use a Private Repository
 
-### Prerequisites
-- **Docker & Docker Compose** (recommended)
-- **Python 3.12+** (for local development)
+If you want to have a private repository, GitHub won't allow you to simply fork it as it doesn't allow changing the visibility of forks.
 
-### Docker Deployment (Recommended)
+But you can do the following:
 
-1. **Clone and navigate to the project:**
-   ```bash
-   git clone <repository-url>
-   cd appointment-app
-   ```
+- Create a new GitHub repo, for example `my-full-stack`.
+- Clone this repository manually, set the name with the name of the project you want to use, for example `my-full-stack`:
 
-2. **Configure environment:**
-   ```bash
-   cp .env.example .env
-   # Edit .env with your configuration
-   ```
-
-3. **Start the application:**
-   ```bash
-   docker compose up --build
-   ```
-
-4. **Access the application:**
-   - **API**: http://localhost:8000
-   - **API Documentation**: http://localhost:8000/docs (development only)
-   - **Database Admin**: http://localhost:8080 (Adminer)
-   - **Email Testing**: http://localhost:8025 (Mailpit)
-
-### Local Development Setup
-
-1. **Create virtual environment:**
-   ```bash
-   cd backend
-   python -m venv .venv
-   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-   ```
-
-2. **Install dependencies:**
-   ```bash
-   pip install -e .
-   ```
-
-3. **Configure environment variables in `.env`:**
-   ```env
-   SECRET_KEY=your-secret-key-here
-   ENVIRONMENT=local
-   POSTGRES_SERVER=localhost
-   POSTGRES_USER=appuser
-   POSTGRES_PASSWORD=your-password
-   POSTGRES_DB=appointment_app
-   REDIS_HOST=localhost
-   REDIS_PORT=6379
-   ```
-
-4. **Initialize database:**
-   ```bash
-   alembic upgrade head
-   ```
-
-5. **Start the application:**
-   ```bash
-   uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-   ```
-
-## 🔧 Configuration
-
-### Environment Variables
-
-#### Core Application
-```env
-SECRET_KEY=your-secret-key-min-32-chars
-ENVIRONMENT=local|development|staging|production
-API_V1_STR=/api/v1
-FRONTEND_HOST=http://localhost:3000
-```
-
-#### Database
-```env
-POSTGRES_SERVER=localhost
-POSTGRES_PORT=5432
-POSTGRES_USER=appuser
-POSTGRES_PASSWORD=your-password
-POSTGRES_DB=appointment_app
-```
-
-#### Redis (Caching & Rate Limiting)
-```env
-REDIS_HOST=localhost
-REDIS_PORT=6379
-REDIS_PASSWORD=your-redis-password
-CACHE_TTL=300
-```
-
-#### Email Configuration
-```env
-MAIL_SERVER=smtp.gmail.com
-MAIL_PORT=587
-MAIL_USERNAME=your-email@gmail.com
-MAIL_PASSWORD=your-app-password
-MAIL_FROM=noreply@yourdomain.com
-```
-
-#### SMS Configuration
-```env
-SMS_ENABLED=true
-SMS_PROVIDER=twilio|smscatcher
-SMS_API_KEY=your-sms-api-key
-SMS_API_SECRET=your-sms-secret
-```
-
-#### Security & Performance
-```env
-RATE_LIMIT_ENABLED=true
-RATE_LIMIT_REQUESTS=100
-RATE_LIMIT_WINDOW=60
-CORS_ORIGINS=["http://localhost:3000"]
-ALLOWED_HOSTS=["localhost", "127.0.0.1"]
-```
-
-## 📚 API Endpoints
-
-### Authentication
-- `POST /api/v1/auth/login` - User authentication
-- `POST /api/v1/auth/register` - User registration
-- `GET /api/v1/auth/me` - Current user profile
-
-### Office Management
-- `GET /api/v1/offices` - List all offices
-- `POST /api/v1/offices` - Create new office
-- `GET /api/v1/offices/{office_id}` - Get office details
-- `PATCH /api/v1/offices/{office_id}` - Update office
-- `DELETE /api/v1/offices/{office_id}` - Delete office
-
-### Membership Management
-- `POST /api/v1/offices/{office_id}/memberships` - Assign user to office
-- `GET /api/v1/offices/{office_id}/memberships` - List office members
-- `PATCH /api/v1/offices/{office_id}/memberships/{user_id}` - Update membership
-- `DELETE /api/v1/offices/{office_id}/memberships/{user_id}` - Remove membership
-
-### Host Management
-- `POST /api/v1/offices/hosts/assign` - Assign host to office
-- `GET /api/v1/offices/hosts` - List host assignments
-- `PUT /api/v1/offices/hosts/{host_id}/office/{office_id}` - Update host assignment
-- `DELETE /api/v1/offices/hosts/{host_id}/office/{office_id}` - Remove host
-
-### Availability Management
-- `POST /api/v1/availability/hosts/{office_id}` - Set host availability
-- `GET /api/v1/availability/hosts/{office_id}` - Get host availability
-- `GET /api/v1/availability/hosts/{office_id}/slots` - Get available time slots
-
-### Appointment Management
-- `GET /api/v1/appointments` - List appointments
-- `POST /api/v1/appointments` - Create appointment
-- `GET /api/v1/appointments/{appointment_id}` - Get appointment details
-- `PATCH /api/v1/appointments/{appointment_id}` - Update appointment
-- `DELETE /api/v1/appointments/{appointment_id}` - Cancel appointment
-
-## 🔐 Security Features
-
-### Authentication & Authorization
-- JWT tokens with configurable expiration
-- Password hashing with bcrypt
-- Email verification system
-- Account lockout protection
-
-### Access Control
-- Role-based permissions (RBAC)
-- Office-level access control
-- API endpoint protection
-- Admin-only operations
-
-### Security Middleware
-- CORS configuration
-- Security headers
-- Request size limits
-- Rate limiting per endpoint
-- SQL injection prevention
-
-## 📊 Monitoring & Logging
-
-### Health Checks
-- Application health endpoint (`/health`)
-- Database connectivity monitoring
-- Redis connectivity monitoring
-- Service dependency checks
-
-### Logging
-- Structured JSON logging
-- Request/response logging
-- Error tracking and reporting
-- Performance metrics
-
-### Metrics Collection
-- Response time tracking
-- Error rate monitoring
-- Cache hit/miss ratios
-- Database query performance
-
-## 🧪 Testing
-
-### Running Tests
 ```bash
-# Run all tests
-pytest
-
-# Run with coverage
-pytest --cov=app
-
-# Run specific test module
-pytest tests/test_appointments.py
-
-# Run with verbose output
-pytest -v
+git clone git@github.com:fastapi/full-stack-fastapi-template.git my-full-stack
 ```
 
-### Test Coverage
-- Unit tests for all services
-- Integration tests for API endpoints
-- Database operation tests
-- Authentication flow tests
+- Enter into the new directory:
 
-## 🚀 Deployment
-
-### Production Considerations
-
-#### Environment Setup
-```env
-ENVIRONMENT=production
-SECRET_KEY=your-production-secret-key
-POSTGRES_SERVER=your-prod-db-host
-REDIS_HOST=your-redis-host
-ALLOWED_HOSTS=["yourdomain.com", "www.yourdomain.com"]
+```bash
+cd my-full-stack
 ```
 
-#### Security Enhancements
-- Enable HTTPS/SSL
-- Configure proper CORS origins
-- Set up monitoring and alerting
-- Implement backup strategies
-- Configure log aggregation
+- Set the new origin to your new repository, copy it from the GitHub interface, for example:
 
-#### Performance Optimization
-- Enable response caching
-- Configure appropriate rate limits
-- Set up database connection pooling
-- Implement background job processing
-
-### Docker Production Deployment
-```yaml
-# docker-compose.prod.yml
-version: '3.8'
-services:
-  backend:
-    image: your-registry/appointment-app:latest
-    environment:
-      - ENVIRONMENT=production
-    deploy:
-      replicas: 3
+```bash
+git remote set-url origin git@github.com:octocat/my-full-stack.git
 ```
 
-## 🤝 Contributing
+- Add this repo as another "remote" to allow you to get updates later:
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes
-4. Add tests for new functionality
-5. Run the test suite (`pytest`)
-6. Commit your changes (`git commit -m 'Add amazing feature'`)
-7. Push to the branch (`git push origin feature/amazing-feature`)
-8. Open a Pull Request
+```bash
+git remote add upstream git@github.com:fastapi/full-stack-fastapi-template.git
+```
 
-### Development Guidelines
-- Follow PEP 8 style guidelines
-- Write comprehensive docstrings
-- Add type hints to all functions
-- Include tests for new features
-- Update documentation as needed
+- Push the code to your new repository:
 
-## 📝 License
+```bash
+git push -u origin master
+```
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+### Update From the Original Template
 
-## 🆘 Support
+After cloning the repository, and after doing changes, you might want to get the latest changes from this original template.
 
-For support and questions:
-- 📧 Email: support@yourdomain.com
-- 💬 Slack: [#appointment-app](https://your-slack-workspace.slack.com)
-- 📖 Documentation: [Internal Wiki](https://wiki.yourdomain.com)
+- Make sure you added the original repository as a remote, you can check it with:
 
----
+```bash
+git remote -v
 
-**Built with ❤️ using FastAPI, Python, and modern web technologies.**
+origin    git@github.com:octocat/my-full-stack.git (fetch)
+origin    git@github.com:octocat/my-full-stack.git (push)
+upstream    git@github.com:fastapi/full-stack-fastapi-template.git (fetch)
+upstream    git@github.com:fastapi/full-stack-fastapi-template.git (push)
+```
+
+- Pull the latest changes without merging:
+
+```bash
+git pull --no-commit upstream master
+```
+
+This will download the latest changes from this template without committing them, that way you can check everything is right before committing.
+
+- If there are conflicts, solve them in your editor.
+
+- Once you are done, commit the changes:
+
+```bash
+git merge --continue
+```
+
+### Configure
+
+You can then update configs in the `.env` files to customize your configurations.
+
+Before deploying it, make sure you change at least the values for:
+
+- `SECRET_KEY`
+- `FIRST_SUPERUSER_PASSWORD`
+- `POSTGRES_PASSWORD`
+
+You can (and should) pass these as environment variables from secrets.
+
+Read the [deployment.md](./deployment.md) docs for more details.
+
+### Generate Secret Keys
+
+Some environment variables in the `.env` file have a default value of `changethis`.
+
+You have to change them with a secret key, to generate secret keys you can run the following command:
+
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(32))"
+```
+
+Copy the content and use that as password / secret key. And run that again to generate another secure key.
+
+## How To Use It - Alternative With Copier
+
+This repository also supports generating a new project using [Copier](https://copier.readthedocs.io).
+
+It will copy all the files, ask you configuration questions, and update the `.env` files with your answers.
+
+### Install Copier
+
+You can install Copier with:
+
+```bash
+pip install copier
+```
+
+Or better, if you have [`pipx`](https://pipx.pypa.io/), you can run it with:
+
+```bash
+pipx install copier
+```
+
+**Note**: If you have `pipx`, installing copier is optional, you could run it directly.
+
+### Generate a Project With Copier
+
+Decide a name for your new project's directory, you will use it below. For example, `my-awesome-project`.
+
+Go to the directory that will be the parent of your project, and run the command with your project's name:
+
+```bash
+copier copy https://github.com/fastapi/full-stack-fastapi-template my-awesome-project --trust
+```
+
+If you have `pipx` and you didn't install `copier`, you can run it directly:
+
+```bash
+pipx run copier copy https://github.com/fastapi/full-stack-fastapi-template my-awesome-project --trust
+```
+
+**Note** the `--trust` option is necessary to be able to execute a [post-creation script](https://github.com/fastapi/full-stack-fastapi-template/blob/master/.copier/update_dotenv.py) that updates your `.env` files.
+
+### Input Variables
+
+Copier will ask you for some data, you might want to have at hand before generating the project.
+
+But don't worry, you can just update any of that in the `.env` files afterwards.
+
+The input variables, with their default values (some auto generated) are:
+
+- `project_name`: (default: `"FastAPI Project"`) The name of the project, shown to API users (in .env).
+- `stack_name`: (default: `"fastapi-project"`) The name of the stack used for Docker Compose labels and project name (no spaces, no periods) (in .env).
+- `secret_key`: (default: `"changethis"`) The secret key for the project, used for security, stored in .env, you can generate one with the method above.
+- `first_superuser`: (default: `"admin@example.com"`) The email of the first superuser (in .env).
+- `first_superuser_password`: (default: `"changethis"`) The password of the first superuser (in .env).
+- `smtp_host`: (default: "") The SMTP server host to send emails, you can set it later in .env.
+- `smtp_user`: (default: "") The SMTP server user to send emails, you can set it later in .env.
+- `smtp_password`: (default: "") The SMTP server password to send emails, you can set it later in .env.
+- `emails_from_email`: (default: `"info@example.com"`) The email account to send emails from, you can set it later in .env.
+- `postgres_password`: (default: `"changethis"`) The password for the PostgreSQL database, stored in .env, you can generate one with the method above.
+- `sentry_dsn`: (default: "") The DSN for Sentry, if you are using it, you can set it later in .env.
+
+## Backend Development
+
+Backend docs: [backend/README.md](./backend/README.md).
+
+## Frontend Development
+
+Frontend docs: [frontend/README.md](./frontend/README.md).
+
+## Deployment
+
+Deployment docs: [deployment.md](./deployment.md).
+
+## Development
+
+General development docs: [development.md](./development.md).
+
+This includes using Docker Compose, custom local domains, `.env` configurations, etc.
+
+## Release Notes
+
+Check the file [release-notes.md](./release-notes.md).
+
+## License
+
+The Full Stack FastAPI Template is licensed under the terms of the MIT license.

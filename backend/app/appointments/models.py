@@ -67,6 +67,11 @@ appointments = Table(
     Column("canceled_by", UUID(as_uuid=True), ForeignKey("users.id"), nullable=True),
     Column("canceled_reason", String(length=255), nullable=True),
     Column("issued_by", UUID(as_uuid=True), ForeignKey("users.id"), nullable=False),
+    # Decision tracking
+    Column("decision_reason", String(length=500), nullable=True),
+    Column("decided_at", DateTime(timezone=True), nullable=True),
+    Column("decided_by", UUID(as_uuid=True), ForeignKey("users.id"), nullable=True),
+    Column("new_appointment_date", DateTime(timezone=True), nullable=True),
 )
 
 

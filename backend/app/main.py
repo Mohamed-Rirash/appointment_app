@@ -7,10 +7,10 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
-from fastapi.responses import Response, JSONResponse
+from fastapi.responses import JSONResponse, Response
 
-from app.admin.router import router as admin_router
 from app.admin.exceptions import AdminException
+from app.admin.router import router as admin_router
 
 # Router imports
 from app.appointments.routers import appointment_router
@@ -51,19 +51,8 @@ from app.rate_limiting import (
     RateLimitMiddleware,
     rate_limiter,
 )
-from app.role_perm_seed import (
-    assign_permissions,
-    create_first_admin,
-    init_permissions,
-    init_roles,
-)
 
-# from app.admin.middleware import AdminRateLimitMiddleware
-# from app.admin.router import router as admin_router
-
-
-# from app.superadmin.router import router as superadmin_router
-
+#
 
 settings = get_settings()
 logger = get_logger(__name__)
@@ -99,14 +88,6 @@ async def lifespan(app: FastAPI):
     logger.info(
         f"RBAC bootstrap flag INIT_RBAC_ON_STARTUP={settings.INIT_RBAC_ON_STARTUP}"
     )
-    if settings.INIT_RBAC_ON_STARTUP:
-        try:
-            await init_permissions()
-            await init_roles()
-            await assign_permissions()
-            await create_first_admin()
-        except Exception as e:
-            logger.warning(f"RBAC initialization skipped/failed: {e}")
 
     # Connect to Redis cache
     try:
@@ -277,9 +258,3 @@ app.include_router(admin_router, prefix=settings.API_V1_STR)
 app.include_router(office_mgnt_router, prefix=settings.API_V1_STR)
 app.include_router(hostavailableroutes, prefix=settings.API_V1_STR)
 app.include_router(appointment_router, prefix=settings.API_V1_STR)
-
-
-# Explicit global OPTIONS handler to always succeed preflight
-# @app.options("/{rest_of_path:path}")
-# async def preflight_handler() -> response:
-#     return response(status_code=199)
