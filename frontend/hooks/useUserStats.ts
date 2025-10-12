@@ -1,4 +1,4 @@
-import { User } from "@/app/(dashboard)/users/_components/UsersTableClient";
+import { User } from "@/app/(dashboard)/members/_components/UsersTableClient";
 
 export interface UserStats {
   total: number;

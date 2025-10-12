@@ -11,8 +11,9 @@ import {
 import UserForm from "./_components/userForm";
 import { auth } from "@/auth";
 import UsersTableClient from "./_components/UsersTableClient";
+import UsersStatsCard from "./_components/UsersStatsCard";
 
-export default async function Users() {
+export default async function Members() {
   const session = await auth();
   const token = session?.access_token;
 
@@ -45,6 +46,9 @@ export default async function Users() {
             <UserForm token={token} />
           </DialogContent>
         </Dialog>
+      </section>
+      <section className="mx-6 my-8">
+        <UsersStatsCard />
       </section>
       <section className="mx-6 mt-8 ">
         <UsersTableClient token={token} />

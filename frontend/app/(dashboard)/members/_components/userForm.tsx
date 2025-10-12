@@ -27,6 +27,8 @@ import {
 import { client } from "@/helpers/api/client";
 import toast from "react-hot-toast";
 import { Spinner } from "@/components/ui/spinner";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
 // Validation schema
 const userSchema = z.object({
@@ -42,6 +44,7 @@ type UserFormData = z.infer<typeof userSchema>;
 
 export default function UserForm({ token }: { token?: string }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
   const form = useForm<UserFormData>({
     resolver: zodResolver(userSchema),
@@ -56,7 +59,7 @@ export default function UserForm({ token }: { token?: string }) {
   async function onSubmit(data: UserFormData) {
     setIsSubmitting(true);
     if (data.role === "") {
-      toast.error("Please select a role");
+      setError("Please select a role");
       setIsSubmitting(false);
       return;
     }
@@ -90,6 +93,13 @@ export default function UserForm({ token }: { token?: string }) {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           {/* First Name */}
+          {error && (
+            <Alert variant="destructive" className="mb-6 animate-in fade-in-0">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
           <FormField
             control={form.control}
             name="first_name"
