@@ -114,9 +114,9 @@ class AdminUserService:
             )
 
         # Resolve and validate roles BEFORE any DB writes
-        resolved_role_ids: List[UUID] = []
+        resolved_role_ids: list[UUID] = []
         if user_data.roles:
-            missing_roles: List[str] = []
+            missing_roles: list[str] = []
             for role_value in user_data.roles:
                 role_obj = None
                 try:
@@ -163,9 +163,14 @@ class AdminUserService:
                 await send_account_invite_email(
                     created_user, reset_token, background_tasks
                 )
-            except Exception:
-                # Do not fail user creation if email sending fails
-                pass
+                print(f"✅ Welcome email sent successfully to {created_user['email']}")
+            except Exception as email_error:
+                # Log the error but don't fail user creation
+                print(
+                    f"❌ Failed to send welcome email to {created_user['email']}: {str(email_error)}"
+                )
+                # TODO: Consider storing email failure status in user record or audit log
+                # For now, we'll continue with user creation but log the issue
 
         return created_user
 

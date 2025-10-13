@@ -196,7 +196,7 @@ def create_application() -> FastAPI:
             },
         )
 
-    app.add_exception_handler(AdminException, admin_exception_handler)
+    app.add_exception_handler(AdminException, admin_exception_handler)  # pyright: ignore[reportArgumentType]
     app.add_exception_handler(
         BusinessLogicError,
         business_logic_error_handler,  # pyright: ignore[reportArgumentType]

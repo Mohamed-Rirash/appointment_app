@@ -2,7 +2,7 @@ from app.auth.constants import USER_VERIFY_ACCOUNT, USER_INVITE
 from app.auth.security import hash_password
 from app.auth.utils import get_context_string
 from app.config import get_settings
-from app.emails.email_config import send_email
+from app.core.emails.services import send_email
 from app.core.security import create_access_token
 
 settings = get_settings()
@@ -18,13 +18,15 @@ async def send_account_verification_email(user_data, background_tasks):
         "activate_url": activate_url,
     }
     subject = f"Account Verification - {settings.PROJECT_NAME}"
+    print(f"📧 Sending verification email to {user_data['email']}")
     await send_email(
         recipients=user_data["email"],
         subject=subject,
-        template_name="user/account-verification-inline.html",
         context=data,
         background_tasks=background_tasks,
+        email_type="account_verification",
     )
+    print(f"✅ Verification email sent to {user_data['email']}")
 
 
 async def send_account_activation_confirmation_email(user, background_tasks):
@@ -32,14 +34,15 @@ async def send_account_activation_confirmation_email(user, background_tasks):
         "app_name": settings.PROJECT_NAME,
         "name": user["first_name"],
         "login_url": f"{settings.FRONTEND_HOST}",
+        "message": "Your account has been successfully activated! You can now log in to your account.",
     }
     subject = f"Welcome - {settings.PROJECT_NAME}"
     await send_email(
         recipients=[user["email"]],
         subject=subject,
-        template_name="user/account-verification-confirmation-inline.html",
         context=data,
         background_tasks=background_tasks,
+        email_type="account_verification_confirmation",
     )
 
 
@@ -51,14 +54,15 @@ async def send_password_reset_email(user: dict, reset_token: str, background_tas
         "app_name": settings.PROJECT_NAME,
         "name": user["first_name"],
         "activate_url": reset_url,
+        "message": f"Please click the following link to reset your password: {reset_url}",
     }
     subject = f"Password Reset - {settings.PROJECT_NAME}"
     await send_email(
         recipients=user["email"],
         subject=subject,
-        template_name="user/password-reset-inline.html",
         context=data,
         background_tasks=background_tasks,
+        email_type="password_reset",
     )
 
 
@@ -71,12 +75,15 @@ async def send_account_invite_email(user: dict, reset_token: str, background_tas
         "name": user["first_name"],
         "login_url": login_url,
         "activate_url": activate_url,
+        "message": f"You've been invited to join {settings.PROJECT_NAME}. Click here to set up your account: {activate_url}",
     }
     subject = f"You're invited - {settings.PROJECT_NAME}"
+    print(f"📧 Sending invitation email to {user['email']}")
     await send_email(
         recipients=[user["email"]],
         subject=subject,
-        template_name="user/account-invite-inline.html",
         context=data,
         background_tasks=background_tasks,
+        email_type="account_invite",
     )
+    print(f"✅ Invitation email sent to {user['email']}")

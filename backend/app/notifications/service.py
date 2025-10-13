@@ -10,7 +10,7 @@ from fastapi.background import BackgroundTasks
 
 from app.config import get_settings
 from app.loggs import get_logger
-from app.emails.email_config import send_email as send_email_template
+from app.core.emails.services import send_email as send_email_template
 
 logger = get_logger(__name__)
 settings = get_settings()
@@ -134,10 +134,11 @@ class NotificationService:
 
             if background_tasks:
                 # Use background task for non-blocking
-                send_email_template([to_email], subject, context, template_name, background_tasks)
+                await send_email_template([to_email], subject, context, background_tasks, template_name)
             else:
                 # Send immediately for testing
-                await send_email_template([to_email], subject, context, template_name, background_tasks or BackgroundTasks())
+                bg_tasks = BackgroundTasks()
+                await send_email_template([to_email], subject, context, bg_tasks, template_name)
 
             logger.info("Email notification queued", extra={
                 "to": to_email,
