@@ -1,0 +1,43 @@
+/* [project]/app/satoshi_dcac4462.module.css [app-client] (css) */
+@font-face {
+  font-family: satoshi;
+  src: url("../media/Satoshi_Regular-s.p.8b170606.woff2") format("woff2");
+  font-display: swap;
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: satoshi;
+  src: url("../media/Satoshi_Medium-s.p.eae7bb78.woff2") format("woff2");
+  font-display: swap;
+  font-weight: 500;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: satoshi;
+  src: url("../media/Satoshi_Bold-s.p.fc9d5d15.woff2") format("woff2");
+  font-display: swap;
+  font-weight: 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: satoshi Fallback;
+  src: local(Arial);
+  ascent-override: 102.23%;
+  descent-override: 24.29%;
+  line-gap-override: 10.12%;
+  size-adjust: 98.8%;
+}
+
+.satoshi_dcac4462-module__m5mmoG__className {
+  font-family: satoshi, satoshi Fallback;
+}
+
+.satoshi_dcac4462-module__m5mmoG__variable {
+  --font-satoshi: "satoshi", "satoshi Fallback";
+}
+
+/*# sourceMappingURL=app_satoshi_dcac4462_module_css_bad6b30c._.single.css.map*/

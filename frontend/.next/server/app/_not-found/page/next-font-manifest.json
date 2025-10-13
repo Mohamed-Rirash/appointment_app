@@ -1,0 +1,12 @@
+{
+  "pages": {},
+  "app": {
+    "[project]/app/_not-found/page": [
+      "static/media/Satoshi_Regular-s.p.8b170606.woff2",
+      "static/media/Satoshi_Medium-s.p.eae7bb78.woff2",
+      "static/media/Satoshi_Bold-s.p.fc9d5d15.woff2"
+    ]
+  },
+  "appUsingSizeAdjust": true,
+  "pagesUsingSizeAdjust": false
+}

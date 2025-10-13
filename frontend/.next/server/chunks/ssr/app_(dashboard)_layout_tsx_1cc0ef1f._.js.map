@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 4, "column": 0}, "map": {"version":3,"sources":["file:///G:/projects/backend/appointment_app/frontend/app/%28dashboard%29/layout.tsx"],"sourcesContent":["export default function LayoutDashboard({\r\n  children,\r\n}: {\r\n  children: React.ReactNode;\r\n}) {\r\n  return (\r\n    <>\r\n      {/* <div className=\"sm:flex\">\r\n        <div className=\"bg-red-300 w-full max-w-[240px] hidden sm:block\">\r\n          <div className=\"bg-blue-400 px-4\">\r\n            {\" \"}\r\n            <div className=\"bg-white\">\r\n              {\" \"}\r\n              <p>How are you doing</p>\r\n            </div>\r\n          </div>\r\n        </div>\r\n\r\n        <div className=\"bg-amber-300 h-screen  w-full\">{children}</div>\r\n      </div> */}\r\n    </>\r\n  );\r\n}\r\n"],"names":[],"mappings":";;;;;;AAAe,SAAS,gBAAgB,EACtC,QAAQ,EAGT;IACC,qBACE;AAgBJ","debugId":null}}]
+}

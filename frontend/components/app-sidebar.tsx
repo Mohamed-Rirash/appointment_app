@@ -34,7 +34,7 @@ import {
 
 const items = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "User management", url: "/users", icon: UsersIcon },
+  { title: "Members", url: "/members", icon: UsersIcon },
   { title: "Office management", url: "/offices", icon: Building },
   { title: "Add appointment", url: "/appointments/add", icon: PlusCircle },
   { title: "View appointment", url: "/appointments", icon: Eye },

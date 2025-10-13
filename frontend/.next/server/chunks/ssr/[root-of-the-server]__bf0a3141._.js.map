@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 3, "column": 0}, "map": {"version":3,"sources":[],"names":[],"mappings":"","debugId":null}},
+    {"offset": {"line": 19, "column": 0}, "map": {"version":3,"sources":["file:///G:/projects/backend/appointment_app/frontend/app/%28dashboard%29/profile/page.tsx"],"sourcesContent":["export default function Profile() {\r\n  return (\r\n    <>\r\n      <div className=\"border border-[#eeeeee] ml-[122px] mt-[160px] p-6\"></div>\r\n    </>\r\n  );\r\n}\r\n"],"names":[],"mappings":";;;;;;AAAe,SAAS;IACtB,qBACE;kBACE,cAAA,6VAAC;YAAI,WAAU;;;;;;;AAGrB","debugId":null}}]
+}
