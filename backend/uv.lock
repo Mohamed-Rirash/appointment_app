@@ -345,7 +345,7 @@ requires-dist = [
     { name = "databases", extras = ["postgresql"], specifier = ">=0.8.0" },
     { name = "email-validator", specifier = ">=2.1.0" },
     { name = "fastapi", extras = ["standard"], specifier = ">=0.104.1" },
-    { name = "fastapi-mail", specifier = ">=1.4.1" },
+    { name = "fastapi-mail", specifier = ">=1.5.0" },
     { name = "httpx", specifier = ">=0.25.2" },
     { name = "jupyterlab", specifier = ">=4.4.9" },
     { name = "loguru", specifier = ">=0.7.2" },

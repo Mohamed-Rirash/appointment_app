@@ -2,36 +2,56 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Activate your account</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Activate your {{ app_name }} account</title>
   </head>
-  <body style="margin:0;padding:0;background-color:#f5f7fb;font-family:Arial,Helvetica,sans-serif;color:#2b2b2b;">
-    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color:#f5f7fb;">
+  <body style="margin:0;padding:0;background-color:#f8fafc;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;color:#1f2937;line-height:1.6;">
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color:#f8fafc;">
       <tr>
-        <td align="center" style="padding:24px;">
-          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width:600px;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e6e9f2;">
+        <td align="center" style="padding:32px 16px;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width:600px;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e2e8f0;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1),0 2px 4px -1px rgba(0,0,0,0.06);">
+            <!-- Header -->
             <tr>
-              <td style="padding:24px 24px 0 24px;text-align:center;background:#ffffff;">
-                <h1 style="margin:0 0 8px 0;font-size:22px;line-height:28px;color:#111827;">Welcome to {{ app_name }}!</h1>
-                <p style="margin:0 0 8px 0;font-size:14px;color:#6b7280;">Hi <strong>{{ name }}</strong>, please activate your account.</p>
+              <td style="padding:40px 32px 24px 32px;text-align:center;background:linear-gradient(135deg,#10b981 0%,#059669 100%);">
+                <h1 style="margin:0 0 12px 0;font-size:28px;line-height:36px;color:#ffffff;font-weight:700;">Activate Your Account</h1>
+                <p style="margin:0;font-size:16px;color:#d1fae5;">Hi <strong>{{ name }}</strong>, welcome to {{ app_name }}!</p>
               </td>
             </tr>
+
+            <!-- Main Content -->
             <tr>
-              <td style="padding:0 24px 24px 24px;background:#ffffff;">
-                <p style="margin:16px 0 0 0;font-size:14px;color:#374151;">Click the button below to activate your account:</p>
-                <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:16px 0 8px 0;">
+              <td style="padding:32px 32px 24px 32px;background:#ffffff;">
+                <p style="margin:0 0 24px 0;font-size:16px;color:#374151;">Thank you for signing up! To complete your registration and start using your account, please verify your email address by clicking the button below.</p>
+
+                <!-- CTA Button -->
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:24px 0;">
                   <tr>
-                    <td align="center" bgcolor="#16a34a" style="border-radius:8px;">
-                      <a href="{{ activate_url }}" style="display:inline-block;padding:12px 18px;color:#ffffff;text-decoration:none;font-weight:600;font-size:14px;line-height:16px;border-radius:8px;">Activate Account</a>
+                    <td align="center">
+                      <a href="{{ activate_url }}" style="display:inline-block;padding:16px 32px;background:linear-gradient(135deg,#10b981 0%,#059669 100%);color:#ffffff;text-decoration:none;font-weight:600;font-size:16px;border-radius:12px;box-shadow:0 4px 14px 0 rgba(16,185,129,0.4);transition:all 0.3s ease;">Activate Account</a>
                     </td>
                   </tr>
                 </table>
-                <p style="margin:8px 0 0 0;font-size:12px;color:#6b7280;word-break:break-all;">If the button doesn’t work, copy and paste this URL into your browser:<br>
-                  <a href="{{ activate_url }}" style="color:#2563eb;text-decoration:underline;">{{ activate_url }}</a></p>
+
+                <!-- Fallback URL -->
+                <div style="margin:24px 0;padding:16px;background:#f0fdf4;border-radius:8px;border-left:4px solid #10b981;">
+                  <p style="margin:0 0 8px 0;font-size:14px;color:#166534;font-weight:500;">Button not working?</p>
+                  <p style="margin:0;font-size:12px;color:#15803d;word-break:break-all;">Copy and paste this link into your browser:</p>
+                  <a href="{{ activate_url }}" style="color:#10b981;text-decoration:underline;font-size:12px;word-break:break-all;">{{ activate_url }}</a>
+                </div>
+
+                <!-- Security Note -->
+                <div style="margin:24px 0;padding:16px;background:#fef3c7;border-radius:8px;border-left:4px solid #f59e0b;">
+                  <p style="margin:0;font-size:14px;color:#92400e;font-weight:500;">🔒 Security Note</p>
+                  <p style="margin:4px 0 0 0;font-size:12px;color:#a16207;">This verification link will expire in 24 hours for your security.</p>
+                </div>
               </td>
             </tr>
+
+            <!-- Footer -->
             <tr>
-              <td style="padding:16px 24px 24px 24px;background:#f9fafb;border-top:1px solid #e6e9f2;text-align:center;">
-                <p style="margin:0;font-size:12px;color:#9ca3af;">© {{ app_name }}</p>
+              <td style="padding:24px 32px;background:#f8fafc;border-top:1px solid #e2e8f0;text-align:center;">
+                <p style="margin:0 0 8px 0;font-size:14px;color:#6b7280;">If you didn't create an account with us, you can safely ignore this email.</p>
+                <p style="margin:0;font-size:12px;color:#9ca3af;">© {{ app_name }} - All rights reserved</p>
               </td>
             </tr>
           </table>

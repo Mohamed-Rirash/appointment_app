@@ -3,7 +3,7 @@ appointement_booking_app - Application Configuration
 Generated from FastAPI Production Boilerplate
 """
 
-from typing import Annotated, Any, List, Literal, Optional
+from typing import Annotated, Any, Literal
 
 from pydantic import (
     AnyUrl,
@@ -30,7 +30,7 @@ def parse_cors(v: Any) -> list[str]:
     if isinstance(v, str):
         # Split by comma and clean whitespace; ignore empty parts
         return [origin.strip() for origin in v.split(",") if origin.strip()]
-    elif isinstance(v, (list, tuple)):
+    elif isinstance(v, list | tuple):
         return [str(origin).strip() for origin in v if origin]
     else:
         raise ValueError(f"Invalid CORS origin format: {v}")
@@ -57,8 +57,8 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
     # Optional JWT hardening
-    JWT_ISSUER: Optional[str] = None
-    JWT_AUDIENCE: Optional[str] = None
+    JWT_ISSUER: str | None = None
+    JWT_AUDIENCE: str | None = None
     JWT_DENYLIST_ENABLED: bool = False
 
     # --------------------
@@ -82,7 +82,7 @@ class Settings(BaseSettings):
 
     REDIS_HOST: str = "localhost"
     REDIS_PORT: int = 6379
-    REDIS_PASSWORD: Optional[str] = None
+    REDIS_PASSWORD: str | None = None
     REDIS_DB: int = 0
     REDIS_SSL: bool = False
     CACHE_TTL: int = 300
@@ -95,7 +95,7 @@ class Settings(BaseSettings):
     RATE_LIMIT_ENABLED: bool = True
     RATE_LIMIT_REQUESTS: int = 100
     RATE_LIMIT_WINDOW: int = 60
-    RATE_LIMIT_STORAGE_URL: Optional[str] = None
+    RATE_LIMIT_STORAGE_URL: str | None = None
 
     # Endpoint-specific rate limiting (applies per route and client)
     ENDPOINT_RATE_LIMIT_ENABLED: bool = True
@@ -107,7 +107,7 @@ class Settings(BaseSettings):
     # --------------------
     LOG_LEVEL: str = "INFO"
     LOG_FORMAT: str = "json"
-    LOG_FILE: Optional[str] = None
+    LOG_FILE: str | None = None
     LOG_ROTATION: str = "1 day"
     LOG_RETENTION: str = "30 days"
 
@@ -127,8 +127,8 @@ class Settings(BaseSettings):
     # SECURITY HEADERS & MIDDLEWARE
     # --------------------
     ENABLE_SECURITY_HEADERS: bool = True
-    ALLOWED_HOSTS: List[str] = ["*"]
-    TRUSTED_PROXIES: List[str] = []
+    ALLOWED_HOSTS: list[str] = ["*"]
+    TRUSTED_PROXIES: list[str] = []
     MAX_REQUEST_SIZE: int = 16 * 1024 * 1024  # 16MB
     REQUEST_TIMEOUT: int = 30
 
@@ -136,32 +136,16 @@ class Settings(BaseSettings):
     # CORS
     # --------------------
 
-    BACKEND_CORS_ORIGINS: Annotated[
-        list[AnyUrl] | str, BeforeValidator(parse_cors)
-    ] = ["http://localhost:3000"]
-
-    USE_CREDENTIALS: bool = True
+    BACKEND_CORS_ORIGINS: Annotated[list[AnyUrl] | str, BeforeValidator(parse_cors)] = [
+        AnyUrl("http://localhost:3000")
+    ]
 
     # --------------------
     # EMAIL DOMAIN RESTRICTIONS
     # --------------------
 
-    ALLOWED_EMAIL_DOMAINS: List[str] = ["gmail.com", "amoud.org"]
+    ALLOWED_EMAIL_DOMAINS: list[str] = ["gmail.com", "amoud.org"]
     ENFORCE_EMAIL_DOMAIN: bool = True
-
-    # --------------------
-    # EMAIL SETTINGS
-    # --------------------
-    MAIL_USERNAME: str = ""
-    MAIL_PASSWORD: str = ""
-    MAIL_PORT: int = 1025
-    MAIL_SERVER: str = "mailpit"
-    MAIL_STARTTLS: bool = False
-    MAIL_SSL_TLS: bool = False
-    MAIL_DEBUG: bool = True
-    MAIL_FROM: str = "noreply@test.com"
-    MAIL_FROM_NAME: str = "App"
-    SUPPRESS_SEND: bool = False
 
     # --------------------
     # SMS SETTINGS
@@ -171,20 +155,20 @@ class Settings(BaseSettings):
     SMS_HOST: str = "smscatcher"
     SMS_PORT: int = 3001
     SMS_FROM: str = "+1234567890"
-    SMS_API_KEY: Optional[str] = None
-    SMS_API_SECRET: Optional[str] = None
+    SMS_API_KEY: str | None = None
+    SMS_API_SECRET: str | None = None
 
     # --------------------
     # THIRD-PARTY & EXTERNAL
     # --------------------
     SENTRY_DSN: HttpUrl | None = None
     SENTRY_TRACES_SAMPLE_RATE: float = 0.1
-    SENTRY_ENVIRONMENT: Optional[str] = None
+    SENTRY_ENVIRONMENT: str | None = None
 
     # --------------------
     # FIRST SUPERUSER (bootstrap)
     # --------------------
-    FIRST_SUPERUSER: Optional[str] = "admin@example.com"
+    FIRST_SUPERUSER: str | None = "admin@example.com"
     FIRST_SUPERUSER_PASSWORD: str = "changethis"
 
     def _check_default_secret(self, var_name: str, value: str | None) -> None:
@@ -203,7 +187,7 @@ class Settings(BaseSettings):
 
         if message:
             if self.ENVIRONMENT == "local":
-                print(message)
+                pass
             else:
                 raise ValueError(message)
 
@@ -213,8 +197,9 @@ class Settings(BaseSettings):
         self._check_default_secret("POSTGRES_PASSWORD", self.POSTGRES_PASSWORD)
         self._check_default_secret("SMS_API_KEY", self.SMS_API_KEY)
         self._check_default_secret("SMS_API_SECRET", self.SMS_API_SECRET)
-        self._check_default_secret("MAIL_PASSWORD", self.MAIL_PASSWORD)
-        self._check_default_secret("FIRST_SUPERUSER_PASSWORD", self.FIRST_SUPERUSER_PASSWORD)
+        self._check_default_secret(
+            "FIRST_SUPERUSER_PASSWORD", self.FIRST_SUPERUSER_PASSWORD
+        )
 
         return self
 
