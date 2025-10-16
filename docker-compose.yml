@@ -136,22 +136,22 @@ services:
     networks:
       - app-network
 
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: frontend
-    ports:
-      - "3000:3000"
-    environment:
-      - NODE_ENV=production
-      # Add your backend URL
-      - NEXT_PUBLIC_API_URL=http://backend:8000
-    depends_on:
-      - backend
-    restart: unless-stopped
-    networks:
-      - app-network
+  # frontend:
+  #   build:
+  #     context: ./frontend
+  #     dockerfile: Dockerfile
+  #   container_name: frontend
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     - NODE_ENV=production
+  #     # Add your backend URL
+  #     - NEXT_PUBLIC_API_URL=http://backend:8000
+  #   depends_on:
+  #     - backend
+  #   restart: unless-stopped
+  #   networks:
+  #     - app-network
 
   # -------------------------------
   # Backend (FastAPI or similar)
@@ -200,19 +200,19 @@ services:
   # -------------------------------
   # Frontend (Next.js standalone)
   # -------------------------------
-  frontend:
-      build:
-        context: ./frontend
-        dockerfile: Dockerfile
-        args:
-          NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
-      environment:
-        - NODE_ENV=production
-      ports:
-        - "3000:3000"
-      env_file:
-        - .env
-
+      
+  #     build:
+  #       context: ./frontend
+  #       dockerfile: Dockerfile
+  #       args:
+  #         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+  #     environment:
+  #       - NODE_ENV=production
+  #     ports:
+  #       - "3000:3000"
+  #     env_file:
+  #       - .env
+  #
 volumes:
   app-db-data:
   redis-data:

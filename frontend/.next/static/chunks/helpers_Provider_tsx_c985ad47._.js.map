@@ -1,6 +1,0 @@
-{
-  "version": 3,
-  "sources": [],
-  "sections": [
-    {"offset": {"line": 4, "column": 0}, "map": {"version":3,"sources":["file:///G:/projects/backend/appointment_app/frontend/helpers/Provider.tsx"],"sourcesContent":["\"use client\";\r\nimport { QueryClient, QueryClientProvider } from \"@tanstack/react-query\";\r\n\r\nexport default function Provider({ children }: { children: React.ReactNode }) {\r\n  // Create a client\r\n  const queryClient = new QueryClient();\r\n\r\n  return (\r\n    <>\r\n      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>\r\n    </>\r\n  );\r\n}\r\n"],"names":[],"mappings":";;;;;AACA;AAAA;AADA;;;AAGe,SAAS,SAAS,KAA2C;QAA3C,EAAE,QAAQ,EAAiC,GAA3C;IAC/B,kBAAkB;IAClB,MAAM,cAAc,IAAI,wQAAW;IAEnC,qBACE;kBACE,cAAA,4SAAC,gTAAmB;YAAC,QAAQ;sBAAc;;;;;;;AAGjD;KATwB","debugId":null}}]
-}
