@@ -33,13 +33,14 @@ export interface User {
   email: string;
   is_active: boolean;
   is_verified: boolean;
+  is_system_user: boolean;
   roles: string[];
   created_at: string;
   updated_at: string;
 }
 
 interface UsersResponse {
-  appointments: User[];
+  users: User[];
   total: number;
   page: number;
   size: number;
@@ -90,8 +91,12 @@ export default function UsersTableClient({ token }: { token?: string }) {
     placeholderData: (previousData) => previousData,
   });
 
-  const users = data?.appointments || [];
-  const filteredUsers = users.filter((user: User) => {
+  const users = data?.users || [];
+  // First: remove system users
+  const nonSystemUsers = users.filter((user) => !user.is_system_user);
+
+  // Then: apply role filter
+  const filteredUsers = nonSystemUsers.filter((user: User) => {
     if (!roleFilter) return true;
     return user.roles.includes(roleFilter);
   });

@@ -13,6 +13,9 @@
   --color-foreground: var(--foreground);
   
   --shadow-gren: 0px 2px 8px -3px rgba(36, 196, 83, 0.25);
+  --background-image-gradient-green: linear-gradient(135deg, #0F9938  0%,  #29E05F 100%);
+  --shadow-inner-gren: inset 4px 4px 8px 0 rgba(255, 255, 255, 0.29);
+  --shadow-inner-gren-top: inset -4px -4px 8px 0 rgba(29, 162, 68, 0.5);
   /* --font-satoshi: "satoshi"; */
   --font-family-satoshi: var(--font-satoshi), sans-serif;
   --font-sans: var(--font-geist-sans);
@@ -139,4 +142,23 @@ body{
   font-family: "satoshi";
   
 }
+/* 
+.combined-shadow{
+  @apply shadow-gren;
+  @apply shadow-inner-gren;
+  @apply shadow-inner-gren-top
+} */
 
+.combined-shadow {
+  box-shadow: 
+    0px 2px 8px -3px rgba(36, 196, 83, 0.25),
+    inset 4px 4px 8px 0 rgba(255, 255, 255, 0.29),
+    inset -4px -4px 8px 0 rgba(29, 162, 68, 0.5);
+}
+
+.combined-shadow-white {
+  box-shadow: 
+    0px 2px 8px -3px rgba(36, 196, 83, 0.25),
+    inset 2px 2px 4px 0 rgba(36, 196, 83, 0.05),
+    inset -2px -2px 4px 0 rgba(36, 196, 83, 0.1);
+}

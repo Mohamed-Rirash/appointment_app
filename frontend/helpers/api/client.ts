@@ -1,4 +1,3 @@
-// fuctions/api/client.ts
 import axios from "axios";
 
 // Create an axios instance with base URL and default config
@@ -20,6 +19,12 @@ interface Userdata {
   last_name: string;
   role: string;
   send_welcome_email: boolean;
+}
+
+interface Office {
+  name: string;
+  description: string;
+  location: string;
 }
 
 interface LoginResponse {
@@ -266,6 +271,40 @@ export const client = {
       }
     );
     console.log("revoke", response.data);
+    return response.data;
+  },
+
+  // Get Offices
+  async getOffices(token: string) {
+    const response = await apiClient.get("/offices", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  },
+
+  // Get Office
+  async getOffice(token?: string, id?: string) {
+    const response = await apiClient.get(`/offices/${id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  },
+
+  // create office
+  async createOffice(
+    data: { name: string; description: string; location: string },
+    token?: string
+  ) {
+    const response = await apiClient.post("/offices", data, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  },
+  // edit pffice
+  async editOffice(officeId: string, data: Office, token: string) {
+    const response = await apiClient.patch(`/offices/${officeId}`, data, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
     return response.data;
   },
 };

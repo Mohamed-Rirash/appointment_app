@@ -13,6 +13,10 @@ dist-ssr
 *.local
 openapi.json
 
+# Next.js
+frontend/.next/
+frontend/out/
+frontend/.vercel/
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
