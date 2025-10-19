@@ -8,17 +8,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Eye, Pencil, Trash2, ArrowLeftRight, CheckCircle, LocateIcon } from "lucide-react";
-// import { Office } from "@/types/office";
 import { useOffices } from "@/hooks/office/useOffices";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import { EditOffice } from "./EditOffice";
-import { useState } from "react";
-import { EditUserModal } from "../../members/_components/EditUserModal";
 import { DeleteOffice } from "./DeleteOffice";
+import { DeactivateOfficeButton } from "./DeactivateOfficeButton";
+import { ActivateOfficeButton } from "./ActivateOfficeButton";
 
 
 export interface Office {
@@ -76,8 +74,8 @@ export default function OfficeTable({ token }: { token?: string }) {
         <TableBody>
           {offices.map((office: Office) => (
             <TableRow key={office.id} className="border-t border-[#eeeeee] hover:bg-gray-50">
-              <TableCell className="px-4 py-3 font-medium">{office.name}</TableCell>
-              <TableCell className="px-4 py-3 text-sm text-brand-gray">{office.description}</TableCell>
+              <TableCell className="px-4 py-3 font-medium text-brand-black">{office.name}</TableCell>
+              <TableCell className="px-4 py-3  text-brand-gray">{office.description}</TableCell>
               <TableCell className="px-4 py-3">{office.location}</TableCell>
               <TableCell className="px-4 py-3">
                 <Badge
@@ -103,15 +101,9 @@ export default function OfficeTable({ token }: { token?: string }) {
                   <DeleteOffice officeId={office.id} token={token} />
                   {/* Deactivate / Activate */}
                   {office.is_active ? (
-                    <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
-                      <ArrowLeftRight className="h-4 w-4 mr-1" />
-                      Deactivate
-                    </Button>
+                    <DeactivateOfficeButton officeId={office.id} token={token} />
                   ) : (
-                    <Button variant="ghost" size="sm" className="text-green-600 hover:text-green-700">
-                      <CheckCircle className="h-4 w-4 mr-1" />
-                      Activate
-                    </Button>
+                    <ActivateOfficeButton officeId={office.id} token={token} />
                   )}
                 </div>
               </TableCell>

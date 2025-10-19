@@ -315,4 +315,18 @@ export const client = {
      console.log("delted data", response.data)
       return response.data;
     },
+    // office deactivate
+    async deactivateOffice(officeId: string, token: string) {
+      const response = await apiClient.post(`/offices/${officeId}/deactivate`, {}, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return response.data;
+    },
+        // office activate
+        async activateOffice(officeId: string, token: string) {
+          const response = await apiClient.post(`/offices/${officeId}/activate`, {}, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          return response.data;
+        }
 };
