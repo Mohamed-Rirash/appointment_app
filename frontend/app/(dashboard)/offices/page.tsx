@@ -9,7 +9,7 @@ import {
 import { Plus } from "lucide-react";
 import CreateOfficeForm from "./_components/officeForm";
 import { auth } from "@/auth";
-import { OfficeCard } from "./_components/officeCard";
+import OfficeTable from "./_components/OfficeTable";
 
 export default async function Offices() {
   const session = await auth();
@@ -17,7 +17,7 @@ export default async function Offices() {
 
   return (
     <>
-      <main className="mx-6 mt-8">
+      <main className="mx-8 mt-8">
         <section className="flex justify-between items-center">
           <div className="">
             <h1 className="font-bold text-2xl">Offices</h1>
@@ -52,7 +52,7 @@ export default async function Offices() {
           </div>
         </section>
         <section className="mt-8">
-          <OfficeCard token={token} />
+        <OfficeTable token={token}/>
         </section>
       </main>
     </>

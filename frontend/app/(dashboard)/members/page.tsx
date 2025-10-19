@@ -24,7 +24,7 @@ export default async function Members() {
           <div className="">
             <h1 className="font-bold text-2xl">Users</h1>
             <p className="text-brand-gray text-lg leading-5 w-full max-w-[247px]">
-              Manage user accounts and permissions
+              Manage user accounts 
             </p>
           </div>
 

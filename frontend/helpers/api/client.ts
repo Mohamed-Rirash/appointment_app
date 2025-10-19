@@ -307,4 +307,12 @@ export const client = {
     });
     return response.data;
   },
+    // Delete office
+    async deleteOffice(officeId: string, token?: string) {
+      const response = await apiClient.delete(`/offices/${officeId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+     console.log("delted data", response.data)
+      return response.data;
+    },
 };

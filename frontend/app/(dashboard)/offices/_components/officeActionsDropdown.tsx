@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal } from "lucide-react";
-import { EditOfficeMenuItem } from "./EditOfficeMenuItem";
+import { EditOfficeMenuItem } from "./EditOffice";
 
 interface Office {
   id: string;
@@ -36,7 +36,7 @@ export function OfficeActionsDropdown({
         align="end"
         className="w-48 p-2 font-medium border border-[#eeeeee] rounded-md shadow-gren "
       >
-        <EditOfficeMenuItem initialData={office} token={token} />
+      
       </DropdownMenuContent>
     </DropdownMenu>
   );

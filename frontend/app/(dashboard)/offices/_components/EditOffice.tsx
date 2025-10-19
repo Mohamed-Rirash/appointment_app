@@ -1,14 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
+
 import {
   Form,
   FormControl,
@@ -24,6 +17,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useState } from "react"; // Add this import
 import z from "zod";
+import { Pencil } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 const officeSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -43,15 +38,16 @@ interface Office {
 
 type OfficeFormData = z.infer<typeof officeSchema>;
 
-export function EditOfficeMenuItem({
+export function EditOffice({
+
   initialData,
   token,
 }: {
   initialData: Office;
-  token: string;
+  token?: string;
 }) {
   const { editOffice, loading } = useEditOffice(token);
-  const [isDialogOpen, setIsDialogOpen] = useState(false); // Control dialog state
+  const [isOpen, setIsOpne] = useState(false)
 
   const form = useForm<OfficeFormData>({
     resolver: zodResolver(officeSchema),
@@ -60,23 +56,30 @@ export function EditOfficeMenuItem({
 
   async function onSubmit(values: OfficeFormData) {
     console.log("value::", values);
-    await editOffice(initialData.id, values);
-    setIsDialogOpen(false); // Close dialog after submission
+    const success = await editOffice(initialData.id, values);
+    if (success) {
+      setIsOpne(false)
+      form.reset()
+    }
   }
 
   return (
     <>
-      <DropdownMenuItem
-        onSelect={(e) => {
-          e.preventDefault();
-          setIsDialogOpen(true); // Open dialog when menu item is selected
-        }}
-        className="hover:bg-brand-primary w-full cursor-pointer"
-      >
-        <span className="w-full text-left text-brand text-lg">Edit</span>
-      </DropdownMenuItem>
 
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <Dialog
+        open={isOpen} onOpenChange={setIsOpne}
+      >
+        <DialogTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-green-600 hover:text-green-700"
+
+          >
+            <Pencil className="h-4 w-4 mr-1" />
+            Edit
+          </Button>
+        </DialogTrigger>
         <DialogContent className="p-6 max-w-[368px] w-full">
           <DialogTitle className="text-lg mb-0 font-bold text-center text-brand-black">
             Edit Office
@@ -91,7 +94,7 @@ export function EditOfficeMenuItem({
               onSubmit={form.handleSubmit(onSubmit)}
               className="space-y-4 mt-6"
             >
-              {/* Name */}
+
               <FormField
                 control={form.control}
                 name="name"
@@ -109,7 +112,7 @@ export function EditOfficeMenuItem({
                 )}
               />
 
-              {/* Description */}
+
               <FormField
                 control={form.control}
                 name="description"
@@ -131,7 +134,7 @@ export function EditOfficeMenuItem({
                 )}
               />
 
-              {/* Location */}
+
               <FormField
                 control={form.control}
                 name="location"
@@ -150,7 +153,6 @@ export function EditOfficeMenuItem({
                 )}
               />
 
-              {/* Submit Button */}
               <Button
                 type="submit"
                 disabled={loading}

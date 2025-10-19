@@ -149,13 +149,13 @@ export default function Signin() {
             <Button
               disabled={loading}
               type="submit"
-              className={`py-[28px] w-full  text-xl font-bold mt-4 bg-linear-to-r from-[#21D256] to-[#0EA73C] ${
+              className={`py-[28px] w-full  text-xl font-bold mt-4 combined-shadow bg-gradient-green ${
                 loading ? "opacity-50 pointer-disabled" : ""
               }`}
             >
               {loading ? (
                 <>
-                  Login in ... <Spinner className="ml-2 h-4 w-4 text-white" />
+               <Spinner className="ml-2 h-4 w-4 text-white" />
                 </>
               ) : (
                 "Login"
