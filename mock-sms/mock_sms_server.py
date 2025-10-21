@@ -12,16 +12,20 @@ import os
 from datetime import datetime
 from typing import List, Dict, Any
 
-app = FastAPI(title="Mock SMS Server", description="SMS testing service for development")
+app = FastAPI(
+    title="Mock SMS Server", description="SMS testing service for development"
+)
 
 # In-memory storage for SMS messages (in production, use a database)
 sms_messages = []
 message_id_counter = 1
 
+
 class SMSMessage(BaseModel):
     to: str
     message: str
     from_: str
+
 
 class SMSDelivery(BaseModel):
     id: int
@@ -30,6 +34,7 @@ class SMSDelivery(BaseModel):
     from_: str
     timestamp: str
     status: str = "delivered"
+
 
 @app.post("/sms", response_model=SMSDelivery)
 async def send_sms(sms: SMSMessage):
@@ -42,7 +47,7 @@ async def send_sms(sms: SMSMessage):
         message=sms.message,
         from_=sms.from_,
         timestamp=datetime.now().isoformat(),
-        status="delivered"
+        status="delivered",
     )
 
     sms_messages.append(delivery.dict())
@@ -51,10 +56,12 @@ async def send_sms(sms: SMSMessage):
     print(f"SMS sent to {sms.to}: {sms.message}")
     return delivery
 
+
 @app.get("/sms", response_model=List[Dict[str, Any]])
 async def get_sms_messages(limit: int = 100, offset: int = 0):
     """Get all SMS messages with pagination"""
-    return sms_messages[offset:offset + limit]
+    return sms_messages[offset : offset + limit]
+
 
 @app.get("/sms/{message_id}", response_model=Dict[str, Any])
 async def get_sms_message(message_id: int):
@@ -64,16 +71,19 @@ async def get_sms_message(message_id: int):
             return msg
     raise HTTPException(status_code=404, detail="SMS message not found")
 
+
 @app.delete("/sms", response_model=Dict[str, str])
 async def clear_sms_messages():
     """Clear all SMS messages (for testing)"""
     sms_messages.clear()
     return {"message": "All SMS messages cleared"}
 
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
     return {"status": "healthy", "service": "mock-sms-server"}
+
 
 @app.get("/", response_class=HTMLResponse)
 async def get_web_ui():
@@ -81,11 +91,13 @@ async def get_web_ui():
     with open("index.html", "r") as f:
         return f.read()
 
+
 # Mount static files for web UI
 app.mount("/static", StaticFiles(directory="."), name="static")
 
 if __name__ == "__main__":
     import uvicorn
+
     port = int(os.getenv("PORT", 3001))
     host = os.getenv("HOST", "0.0.0.0")
     uvicorn.run(app, host=host, port=port)

@@ -11,46 +11,32 @@ from fastapi.responses import JSONResponse, Response
 
 from app.admin.exceptions import AdminException
 from app.admin.router import router as admin_router
-
 # Router imports
 from app.appointments.routers import appointment_router
 from app.auth.router import router as auth_router
 from app.config import get_settings
 from app.core.cache import cache_manager
 from app.core.middleware.caching import ResponseCachingMiddleware
-
 # Middleware imports
 # from app.core.middleware.cors import setup_cors
 from app.core.middleware.cors import setup_cors
 from app.core.middleware.error_handling import (
-    AuthenticationError,
-    AuthorizationError,
-    BusinessLogicError,
-    ConflictError,
-    ErrorHandlingMiddleware,
-    ResourceNotFoundError,
-    authentication_error_handler,
-    authorization_error_handler,
-    business_logic_error_handler,
-    conflict_error_handler,
-    resource_not_found_error_handler,
-)
+    AuthenticationError, AuthorizationError, BusinessLogicError, ConflictError,
+    ErrorHandlingMiddleware, ResourceNotFoundError,
+    authentication_error_handler, authorization_error_handler,
+    business_logic_error_handler, conflict_error_handler,
+    resource_not_found_error_handler)
 from app.core.middleware.logging import RequestLoggingMiddleware
-from app.core.middleware.security import (
-    ProxyHeadersMiddleware,
-    RequestSizeMiddleware,
-    RequestTimeoutMiddleware,
-    SecurityHeadersMiddleware,
-)
+from app.core.middleware.security import (ProxyHeadersMiddleware,
+                                          RequestSizeMiddleware,
+                                          RequestTimeoutMiddleware,
+                                          SecurityHeadersMiddleware)
 from app.database import database
 from app.loggs import get_logger
 from app.office_mgnt.router import hostavailableroutes
 from app.office_mgnt.router import router as office_mgnt_router
-from app.rate_limiting import (
-    EndpointRateLimitMiddleware,
-    RateLimitMiddleware,
-    rate_limiter,
-)
+from app.rate_limiting import (EndpointRateLimitMiddleware,
+                               RateLimitMiddleware, rate_limiter)
 
 #
 
@@ -196,7 +182,9 @@ def create_application() -> FastAPI:
             },
         )
 
-    app.add_exception_handler(AdminException, admin_exception_handler)  # pyright: ignore[reportArgumentType]
+    app.add_exception_handler(
+        AdminException, admin_exception_handler
+    )  # pyright: ignore[reportArgumentType]
     app.add_exception_handler(
         BusinessLogicError,
         business_logic_error_handler,  # pyright: ignore[reportArgumentType]

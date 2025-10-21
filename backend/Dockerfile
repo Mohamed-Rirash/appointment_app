@@ -43,4 +43,5 @@ COPY ./tests /app/tests
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync
 
-CMD ["fastapi", "run", "--workers", "4", "app/main.py"]
+# CMD ["fastapi", "run", "--workers", "4", "app/main.py"]
+CMD ["fastapi", "dev", "--host", "0.0.0.0", "--port", "8000", "--reload", "app/main.py"]
