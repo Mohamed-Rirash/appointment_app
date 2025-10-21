@@ -12,32 +12,19 @@ from databases import Database
 from fastapi import BackgroundTasks, status
 
 from app.admin.config import get_admin_config
-from app.admin.crud import AdminAuditCRUD, AdminRoleCRUD, AdminSystemCRUD, AdminUserCRUD
-from app.admin.exceptions import (
-    AdminValidationError,
-    BulkOperationError,
-    EmailDomainNotAllowedError,
-    ExportError,
-    InvalidBulkOperationError,
-    RoleAssignmentError,
-    RolesMissingError,
-    SystemUserProtectedError,
-    UserAlreadyExistsError,
-    UserNotFoundError,
-)
-from app.admin.schemas import (
-    AdminActionType,
-    AdminRoleCreate,
-    AdminRoleUpdate,
-    AdminUserCreate,
-    AdminUserUpdate,
-    BulkOperationResult,
-    BulkUserOperation,
-    PaginationParams,
-    SystemStats,
-    UserAnalytics,
-    UserSearchFilters,
-)
+from app.admin.crud import (AdminAuditCRUD, AdminRoleCRUD, AdminSystemCRUD,
+                            AdminUserCRUD)
+from app.admin.exceptions import (AdminValidationError, BulkOperationError,
+                                  EmailDomainNotAllowedError, ExportError,
+                                  InvalidBulkOperationError,
+                                  RoleAssignmentError, RolesMissingError,
+                                  SystemUserProtectedError,
+                                  UserAlreadyExistsError, UserNotFoundError)
+from app.admin.schemas import (AdminActionType, AdminRoleCreate,
+                               AdminRoleUpdate, AdminUserCreate,
+                               AdminUserUpdate, BulkOperationResult,
+                               BulkUserOperation, PaginationParams,
+                               SystemStats, UserAnalytics, UserSearchFilters)
 from app.auth.crud import UserCRUD
 from app.auth.rbac import RBACCRUD, RoleCRUD
 from app.core.security import generate_password, hash_password
@@ -85,10 +72,11 @@ class AdminUserService:
         db: Database,
         user_data: AdminUserCreate,
         created_by: UUID,
-        background_tasks: Optional[BackgroundTasks] = None,
+        background_tasks: BackgroundTasks | None = None,
     ) -> dict[str, Any]:
         """Create new user with admin capabilities"""
-        # validate email domain
+
+        # Validate email domain
         if not validate_email_domain(str(user_data.email)):
             raise EmailDomainNotAllowedError()
 
@@ -115,15 +103,20 @@ class AdminUserService:
 
         # Resolve and validate roles BEFORE any DB writes
         resolved_role_ids: list[UUID] = []
-        if user_data.roles:
+        roles_to_process = (
+            [user_data.roles] if isinstance(user_data.roles, str) else user_data.roles
+        )
+
+        if roles_to_process:
             missing_roles: list[str] = []
-            for role_value in user_data.roles:
+            for role_value in roles_to_process:
                 role_obj = None
                 try:
                     role_uuid = UUID(role_value)
                     role_obj = await RoleCRUD.get_by_id(db, role_uuid)
                 except Exception:
                     role_obj = await RoleCRUD.get_by_name(db, role_value)
+
                 if not role_obj:
                     missing_roles.append(str(role_value))
                 else:
@@ -169,8 +162,7 @@ class AdminUserService:
                 print(
                     f"❌ Failed to send welcome email to {created_user['email']}: {str(email_error)}"
                 )
-                # TODO: Consider storing email failure status in user record or audit log
-                # For now, we'll continue with user creation but log the issue
+                # TODO: Optionally store email failure status in user record or audit log
 
         return created_user
 

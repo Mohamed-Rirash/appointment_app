@@ -86,9 +86,7 @@ class AdminUserCreate(BaseModel):
     is_verified: bool = Field(False, description="User verification status")
     send_welcome_email: bool = Field(True, description="Send welcome email to user")
     # Accept role names or IDs; backend will resolve names to IDs
-    roles: list[str] | None = Field(
-        None, description="Initial roles to assign (names or IDs)"
-    )
+    roles: str = Field(..., description="Initial roles to assign (names or IDs)")
 
 
 class AdminUserUpdate(BaseModel):
