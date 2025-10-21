@@ -1,24 +1,31 @@
-import asyncio
+import asyncio  # noqa: I001
 from datetime import date, time
-from typing import Optional
 from uuid import UUID
 
 from databases import Database
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    HTTPException,
+    Query,
+    Request,
+    status,
+)
 from fastapi.responses import StreamingResponse
 
 from app.appointments import schemas as sch
 from app.appointments.constants import AppointmentStatus
+from app.appointments.crud import AppointmentCrud
 from app.appointments.exceptions import (
     AppointmentAlreadyApproved,
     AppointmentCompletionNotAllowed,
     AppointmentDecisionNotAllowed,
     AppointmentEditNotAllowed,
     AppointmentNotFound,
-    AppointmentPostponementNotAllowed,
 )
 from app.appointments.services import AppointmentService
-from app.appointments.sms_config import SMSConfig, sms_service
+from app.appointments.sms_service import SMSService
 from app.appointments.utils import office_connections
 from app.auth.dependencies import CurrentUser, require_any_role
 from app.database import get_db
@@ -26,30 +33,18 @@ from app.database import get_db
 appointment_router = APIRouter(prefix="/appointments", tags=["Appointments"])
 
 
-# Background task functions for SMS notifications
-async def send_appointment_approved_sms(appointment_id: str, citizen_phone: str, citizen_name: str, appointment_date: str, office_name: str):
-    """Background task to send SMS notification for approved appointment"""
-    await sms_service.send_appointment_approved_task(appointment_id, citizen_phone, citizen_name, appointment_date, office_name)
-
-
-async def send_appointment_denied_sms(appointment_id: str, citizen_phone: str, citizen_name: str, reason: str = None):
-    """Background task to send SMS notification for denied appointment"""
-    await sms_service.send_appointment_denied_task(appointment_id, citizen_phone, citizen_name, reason)
-
-
-async def send_appointment_postponed_sms(appointment_id: str, citizen_phone: str, citizen_name: str, old_date: str, new_date: str, reason: str = None):
-    """Background task to send SMS notification for postponed appointment"""
-    await sms_service.send_appointment_postponed_task(appointment_id, citizen_phone, citizen_name, old_date, new_date, reason)
-
-
-async def send_appointment_cancelled_sms(appointment_id: str, citizen_phone: str, citizen_name: str, reason: str):
-    """Background task to send SMS notification for cancelled appointment"""
-    await sms_service.send_appointment_cancelled_task(appointment_id, citizen_phone, citizen_name, reason)
+# async def send_appointment_cancelled_sms(
+#     appointment_id: str, citizen_phone: str, citizen_name: str, reason: str
+# ):
+#     """Background task to send SMS notification for cancelled appointment"""
+#     await sms_provider.send_appointment_cancelled_task(
+#         appointment_id, citizen_phone, citizen_name, reason
+#     )
 
 
 @appointment_router.post(
     "/with-citizen",
-    response_model=sch.AppointmentWithCitizenRead,
+    status_code=status.HTTP_201_CREATED,
     summary="Create citizen and appointment in one request",
 )
 async def create_with_citizen(
@@ -57,8 +52,35 @@ async def create_with_citizen(
     db: Database = Depends(get_db),
     user: CurrentUser = Depends(require_any_role("host", "secretary", "reception")),
 ):
-    return await AppointmentService.create_with_citizen(db, payload, user.id)
-    # TODO: Add SSE endpoint
+    """
+    Create a new citizen and an appointment in one request.
+
+    - Validates slot availability
+    - Rolls back if any part fails
+    - Broadcasts new appointment event on success
+    """
+    try:
+        await AppointmentService.create_with_citizen(db, payload, user.id)
+        return {"message": "Appointment created successfully"}
+
+    except AppointmentNotFound as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+    except Exception as e:
+        # Log the error with proper serialization
+        error_detail = str(e)
+        if hasattr(e, '__dict__'):
+            error_detail = {k: str(v) for k, v in e.__dict__.items()}
+
+        print(f"Error creating appointment with citizen: {error_detail}")
+
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "message": "An error occurred while creating appointment",
+                "error": error_detail if isinstance(error_detail, str) else str(error_detail)
+            }
+        )
 
 
 @appointment_router.get(
@@ -86,8 +108,8 @@ async def sse_endpoint(request: Request, office_id: str = Query(...)):
 @appointment_router.post("/{appointment_id}/decision")
 async def decide_appointment(
     appointment_id: UUID,
+    background_tasks: BackgroundTasks,
     decision: AppointmentStatus = Query(AppointmentStatus.APPROVED),
-    background_tasks: BackgroundTasks = None,
     db: Database = Depends(get_db),
     _current_user: CurrentUser = Depends(require_any_role("host", "secretary")),
 ):
@@ -100,26 +122,30 @@ async def decide_appointment(
         if background_tasks and updated_appointment:
             try:
                 # Get appointment details with citizen info for SMS
-                appointment_details = await AppointmentService.get_appointment_by_id(db, appointment_id)
+                appointment_details = await AppointmentCrud.get_appointment_by_id(
+                    db, appointment_id
+                )
                 if appointment_details:
                     citizen_name = f"{appointment_details.citizen_firstname} {appointment_details.citizen_lastname}"
 
                     if decision == AppointmentStatus.APPROVED:
                         background_tasks.add_task(
-                            send_appointment_approved_sms,
+                            SMSService.send_appointment_approved_sms,
                             str(appointment_id),
                             appointment_details.citizen_phone,
                             citizen_name,
-                            appointment_details.appointment_date.strftime("%Y-%m-%d %H:%M"),
-                            getattr(appointment_details, 'office_name', 'Office')
+                            appointment_details.appointment_date.strftime(
+                                "%Y-%m-%d %H:%M"
+                            ),
+                            getattr(appointment_details, "office_name", "Office"),
                         )
                     elif decision == AppointmentStatus.DENIED:
                         background_tasks.add_task(
-                            send_appointment_denied_sms,
+                            SMSService.send_appointment_denied_sms,
                             str(appointment_id),
                             appointment_details.citizen_phone,
                             citizen_name,
-                            getattr(appointment_details, 'decision_reason', None)
+                            getattr(appointment_details, "decision_reason", None),  # pyright: ignore[reportArgumentType]
                         )
             except Exception as e:
                 # Log error but don't fail the request
@@ -141,7 +167,7 @@ async def decide_appointment(
 async def postpone_appointment(
     appointment_id: UUID,
     decision: sch.AppointmentDecision,
-    background_tasks: BackgroundTasks = None,
+    background_tasks: BackgroundTasks,
     db: Database = Depends(get_db),
     current_user: CurrentUser = Depends(require_any_role("host", "secretary")),
 ):
@@ -154,20 +180,28 @@ async def postpone_appointment(
         if background_tasks and updated_appointment:
             try:
                 # Get appointment details with citizen info for SMS
-                appointment_details = await AppointmentService.get_appointment_by_id(db, appointment_id)
+                appointment_details = await AppointmentCrud.get_appointment_by_id(
+                    db, appointment_id
+                )
                 if appointment_details:
                     citizen_name = f"{appointment_details.citizen_firstname} {appointment_details.citizen_lastname}"
-                    old_date = appointment_details.appointment_date.strftime("%Y-%m-%d %H:%M")
-                    new_date = decision.new_appointment_date.strftime("%Y-%m-%d %H:%M") if decision.new_appointment_date else "TBD"
+                    old_date = appointment_details.appointment_date.strftime(
+                        "%Y-%m-%d %H:%M"
+                    )
+                    new_date = (
+                        decision.new_appointment_date.strftime("%Y-%m-%d %H:%M")
+                        if decision.new_appointment_date
+                        else "TBD"
+                    )
 
                     background_tasks.add_task(
-                        send_appointment_postponed_sms,
+                        SMSService.send_appointment_postponed_sms,
                         str(appointment_id),
                         appointment_details.citizen_phone,
                         citizen_name,
                         old_date,
                         new_date,
-                        decision.reason
+                        decision.reason,  # pyright: ignore[reportArgumentType]
                     )
             except Exception as e:
                 # Log error but don't fail the request
@@ -183,11 +217,15 @@ async def postpone_appointment(
         raise HTTPException(
             status_code=400, detail="Can only postpone pending appointments"
         )
+
+
 async def edit_appointment(
     appointment_id: UUID,
     update_data: sch.AppointmentUpdate,
     db: Database = Depends(get_db),
-    current_user: CurrentUser = Depends(require_any_role("host", "secretary", "reception")),
+    current_user: CurrentUser = Depends(
+        require_any_role("host", "secretary", "reception")
+    ),
 ):
     try:
         updated_appointment = await AppointmentService.edit_appointment(
@@ -206,9 +244,11 @@ async def edit_appointment(
 async def cancel_appointment(
     appointment_id: UUID,
     cancel_data: sch.AppointmentCancel,
-    background_tasks: BackgroundTasks = None,
+    background_tasks: BackgroundTasks,
     db: Database = Depends(get_db),
-    current_user: CurrentUser = Depends(require_any_role("host", "secretary", "reception")),
+    current_user: CurrentUser = Depends(
+        require_any_role("host", "secretary", "reception")
+    ),
 ):
     try:
         updated_appointment = await AppointmentService.cancel_appointment(
@@ -219,17 +259,19 @@ async def cancel_appointment(
         if background_tasks and updated_appointment:
             try:
                 # Get appointment details with citizen info for SMS
-                appointment_details = await AppointmentService.get_appointment_by_id(db, appointment_id)
-                if appointment_details:
-                    citizen_name = f"{appointment_details.citizen_firstname} {appointment_details.citizen_lastname}"
+                appointment_details = await AppointmentCrud.get_appointment_by_id(
+                    db, appointment_id
+                )
+                # if appointment_details:
+                #     citizen_name = f"{appointment_details.citizen_firstname} {appointment_details.citizen_lastname}"
 
-                    background_tasks.add_task(
-                        send_appointment_cancelled_sms,
-                        str(appointment_id),
-                        appointment_details.citizen_phone,
-                        citizen_name,
-                        cancel_data.reason
-                    )
+                # background_tasks.add_task(
+                #     send_appointment_cancelled_sms,
+                #     str(appointment_id),
+                #     appointment_details.citizen_phone,
+                #     citizen_name,
+                #     cancel_data.reason,
+                # )
             except Exception as e:
                 # Log error but don't fail the request
                 print(f"Failed to queue SMS notification: {str(e)}")
@@ -245,9 +287,11 @@ async def cancel_appointment(
 @appointment_router.post("/{appointment_id}/complete")
 async def complete_appointment(
     appointment_id: UUID,
-    complete_data: sch.AppointmentComplete = None,
+    complete_data: sch.AppointmentComplete,
     db: Database = Depends(get_db),
-    current_user: CurrentUser = Depends(require_any_role("host", "secretary", "reception")),
+    current_user: CurrentUser = Depends(
+        require_any_role("host", "secretary", "reception")
+    ),
 ):
     try:
         updated_appointment = await AppointmentService.complete_appointment(
@@ -269,7 +313,9 @@ async def complete_appointment(
     description="Search approved appointments by citizen name, phone, or email for gate security verification",
 )
 async def search_approved_appointments(
-    search: str = Query(..., description="Search term for citizen name, phone, or email"),
+    search: str = Query(
+        ..., description="Search term for citizen name, phone, or email"
+    ),
     db: Database = Depends(get_db),
     current_user: CurrentUser = Depends(require_any_role("reception", "security")),
 ):
@@ -293,11 +339,11 @@ async def search_approved_appointments(
     """,
 )
 async def get_all_appointments(
-    by_decision: Optional[AppointmentStatus] = Query(None),
-    by_time_slot: Optional[time] = Query(None),
-    by_date: Optional[date] = Query(None),
-    search: Optional[str] = Query(None),
-    completed: Optional[bool] = Query(
+    by_decision: AppointmentStatus | None = Query(None),
+    by_time_slot: time | None = Query(None),
+    by_date: date | None = Query(None),
+    search: str | None = Query(None),
+    completed: bool | None = Query(
         None, description="Filter only completed appointments"
     ),
     db: Database = Depends(get_db),
@@ -327,13 +373,17 @@ async def get_all_appointments(
     description="Get appointment history with filtering options",
 )
 async def get_appointment_history(
-    status: Optional[AppointmentStatus] = Query(None, description="Filter by appointment status"),
-    start_date: Optional[date] = Query(None, description="Start date for history range"),
-    end_date: Optional[date] = Query(None, description="End date for history range"),
-    citizen_id: Optional[UUID] = Query(None, description="Filter by specific citizen"),
-    host_id: Optional[UUID] = Query(None, description="Filter by specific host"),
+    status: AppointmentStatus | None = Query(
+        None, description="Filter by appointment status"
+    ),
+    start_date: date | None = Query(None, description="Start date for history range"),
+    end_date: date | None = Query(None, description="End date for history range"),
+    citizen_id: UUID | None = Query(None, description="Filter by specific citizen"),
+    host_id: UUID | None = Query(None, description="Filter by specific host"),
     db: Database = Depends(get_db),
-    current_user: CurrentUser = Depends(require_any_role("host", "secretary", "reception")),
+    current_user: CurrentUser = Depends(
+        require_any_role("host", "secretary", "reception")
+    ),
 ):
     try:
         filters = sch.AppointmentHistoryFilters(
@@ -374,7 +424,9 @@ async def print_appointment_slip(
     current_user: CurrentUser = Depends(require_any_role("reception", "security")),
 ):
     try:
-        slip_data = await AppointmentService.generate_appointment_slip(db, appointment_id)
+        slip_data = await AppointmentService.generate_appointment_slip(
+            db, appointment_id
+        )
         return slip_data
     except AppointmentNotFound:
         raise HTTPException(status_code=404, detail="Appointment not found")

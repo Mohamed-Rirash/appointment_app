@@ -1,6 +1,5 @@
 import uuid
 from datetime import date, datetime
-from typing import Optional
 
 from databases import Database
 from sqlalchemy import func, or_
@@ -16,8 +15,8 @@ from app.appointments.exceptions import (
     AppointmentNotFound,
     AppointmentPostponementNotAllowed,
 )
-from app.appointments.models import appointments, citizen_info
-from app.appointments.sms_config import SMSConfig, sms_service
+from app.appointments.utils import broadcast_event
+from app.appointments.view import appointment_details
 
 
 class AppointmentService:
@@ -26,24 +25,57 @@ class AppointmentService:
         db, payload: sch.AppointmentWithCitizenCreate, user_id
     ):
         async with db.transaction():
-            # 1. Insert citizen
+            # 1️⃣ Insert Citizen
             citizen_data = payload.citizen.model_dump()
             citizen_data.setdefault("id", uuid.uuid4())
-            citizen_record = await AppointmentCrud.create_citizen(db, citizen_data)
-            citizen_dict = dict(citizen_record) if citizen_record else None
 
-            # 2. Insert appointment
+            citizen_record = await AppointmentCrud.create_citizen(db, citizen_data)
+            if not citizen_record:
+                raise AppointmentNotFound("Failed to create citizen record.")
+
+            citizen_dict = dict(citizen_record)
+
+            # 2️⃣ Check available slot
             appointment_data = payload.appointment.model_dump()
+            slot_date = appointment_data["appointment_date"].date()
+            slot_time = appointment_data["time_slotted"]
+
+            # Find slot by start time
+            slot = await AppointmentCrud.get_slot_by_start_time(
+                db, slot_date, slot_time
+            )
+            if not slot:
+                raise AppointmentNotFound(f"No slot found for {slot_time}.")
+
+            # Check if booked
+            if slot["is_booked"]:
+                raise AppointmentNotFound(f"Time slot {slot_time} is already booked.")
+
+            # Mark slot booked
+            await AppointmentCrud.mark_slot_booked(db, slot["id"])
+
+            # 3️⃣ Insert Appointment
             appointment_data["citizen_id"] = citizen_dict["id"]
+
+            # Set default values
             appointment_data.setdefault("id", uuid.uuid4())
             appointment_data.setdefault("issued_by", user_id)
+
+            # Explicitly set decision_reason to None to ensure consistency
+            appointment_data["decision_reason"] = None
+
+
+
             appointment_record = await AppointmentCrud.create_appointment(
                 db, appointment_data
             )
-            appointment_dict = dict(appointment_record) if appointment_record else None
+            if not appointment_record:
+                raise AppointmentNotFound("Failed to create appointment record.")
 
-        # 🔔 3. Broadcast event (notify office)
-        if appointment_dict and "office_id" in appointment_dict:
+            appointment_dict = dict(appointment_record)
+
+        # 4️⃣ Broadcast event after transaction commit
+        if "office_id" in appointment_dict:
             await broadcast_event(
                 office_id=appointment_dict["office_id"],
                 event={
@@ -53,7 +85,7 @@ class AppointmentService:
                 },
             )
 
-        # 4. Return schema
+        # 5️⃣ Return combined schema
         return sch.AppointmentWithCitizenRead(
             citizen=sch.CitizenRead.model_validate(citizen_dict),
             appointment=sch.AppointmentRead.model_validate(appointment_dict),
@@ -93,7 +125,10 @@ class AppointmentService:
 
     @staticmethod
     async def postpone_appointment(
-        db: Database, appointment_id: uuid.UUID, decision: sch.AppointmentDecision, user_id: uuid.UUID
+        db: Database,
+        appointment_id: uuid.UUID,
+        decision: sch.AppointmentDecision,
+        user_id: uuid.UUID,
     ):
         async with db.transaction():
             # 1. Fetch appointment
@@ -128,7 +163,11 @@ class AppointmentService:
                     "type": "appointment_postponed",
                     "appointment_id": str(appointment_id),
                     "reason": decision.reason,
-                    "new_date": decision.new_appointment_date.isoformat() if decision.new_appointment_date else None,
+                    "new_date": (
+                        decision.new_appointment_date.isoformat()
+                        if decision.new_appointment_date
+                        else None
+                    ),
                 },
             )
 
@@ -137,7 +176,10 @@ class AppointmentService:
 
     @staticmethod
     async def edit_appointment(
-        db: Database, appointment_id: uuid.UUID, update_data: sch.AppointmentUpdate, user_id: uuid.UUID
+        db: Database,
+        appointment_id: uuid.UUID,
+        update_data: sch.AppointmentUpdate,
+        user_id: uuid.UUID,
     ):
         async with db.transaction():
             # 1. Fetch appointment
@@ -160,11 +202,15 @@ class AppointmentService:
             if appointment.status != AppointmentStatus.PENDING:
                 # For non-pending appointments, only allow purpose updates
                 if "appointment_date" in update_dict or "time_slotted" in update_dict:
-                    raise AppointmentEditNotAllowed("Can only edit date/time for pending appointments")
+                    raise AppointmentEditNotAllowed(
+                        "Can only edit date/time for pending appointments"
+                    )
 
             # 4. Update appointment
             if update_dict:
-                await AppointmentCrud.update_appointment(db, appointment_id, update_dict)
+                await AppointmentCrud.update_appointment(
+                    db, appointment_id, update_dict
+                )
 
             # 5. Broadcast event
             await broadcast_event(
@@ -181,7 +227,10 @@ class AppointmentService:
 
     @staticmethod
     async def cancel_appointment(
-        db: Database, appointment_id: uuid.UUID, cancel_data: sch.AppointmentCancel, user_id: uuid.UUID
+        db: Database,
+        appointment_id: uuid.UUID,
+        cancel_data: sch.AppointmentCancel,
+        user_id: uuid.UUID,
     ):
         async with db.transaction():
             # 1. Fetch appointment
@@ -193,13 +242,15 @@ class AppointmentService:
 
             # 2. Update appointment with cancellation data
             await AppointmentCrud.update_appointment(
-                db, appointment_id, {
+                db,
+                appointment_id,
+                {
                     "status": AppointmentStatus.CANCELLED,
                     "canceled_at": datetime.now(),
                     "canceled_by": user_id,
                     "canceled_reason": cancel_data.reason,
-                    "is_active": False
-                }
+                    "is_active": False,
+                },
             )
 
             # 3. Broadcast event
@@ -217,7 +268,10 @@ class AppointmentService:
 
     @staticmethod
     async def complete_appointment(
-        db: Database, appointment_id: uuid.UUID, complete_data: sch.AppointmentComplete, user_id: uuid.UUID
+        db: Database,
+        appointment_id: uuid.UUID,
+        complete_data: sch.AppointmentComplete,
+        user_id: uuid.UUID,
     ):
         async with db.transaction():
             # 1. Fetch appointment
@@ -229,14 +283,15 @@ class AppointmentService:
 
             # 2. Only allow completing approved appointments
             if appointment.status != AppointmentStatus.APPROVED:
-                raise AppointmentCompletionNotAllowed("Can only complete approved appointments")
+                raise AppointmentCompletionNotAllowed(
+                    "Can only complete approved appointments"
+                )
 
             # 3. Update appointment to completed
             await AppointmentCrud.update_appointment(
-                db, appointment_id, {
-                    "status": AppointmentStatus.COMPLETED,
-                    "is_active": False
-                }
+                db,
+                appointment_id,
+                {"status": AppointmentStatus.COMPLETED, "is_active": False},
             )
 
             # 4. Broadcast event
@@ -263,14 +318,16 @@ class AppointmentService:
                 appointment_details.c.citizen_lastname.ilike(f"%{search_term}%"),
                 appointment_details.c.citizen_phone.ilike(f"%{search_term}%"),
                 appointment_details.c.citizen_email.ilike(f"%{search_term}%"),
-            )
+            ),
         ]
 
         appointments = await AppointmentCrud.get_all_appointments(db, conditions)
         return appointments
 
     @staticmethod
-    async def get_appointment_history(db: Database, filters: sch.AppointmentHistoryFilters):
+    async def get_appointment_history(
+        db: Database, filters: sch.AppointmentHistoryFilters
+    ):
         conditions = []
 
         # Only include non-active appointments (completed, cancelled, etc.)
@@ -282,16 +339,20 @@ class AppointmentService:
 
             if filters.start_date:
                 conditions.append(
-                    func.date(appointment_details.c.appointment_date) >= filters.start_date
+                    func.date(appointment_details.c.appointment_date)
+                    >= filters.start_date
                 )
 
             if filters.end_date:
                 conditions.append(
-                    func.date(appointment_details.c.appointment_date) <= filters.end_date
+                    func.date(appointment_details.c.appointment_date)
+                    <= filters.end_date
                 )
 
             if filters.citizen_id:
-                conditions.append(appointment_details.c.citizen_id == filters.citizen_id)
+                conditions.append(
+                    appointment_details.c.citizen_id == filters.citizen_id
+                )
 
             if filters.host_id:
                 conditions.append(appointment_details.c.host_id == filters.host_id)
@@ -315,18 +376,26 @@ class AppointmentService:
             "host_name": appointment.host_name,
             "office_name": appointment.office_name,
             "purpose": appointment.purpose,
-            "appointment_date": appointment.appointment_date.isoformat() if appointment.appointment_date else None,
-            "time_slotted": str(appointment.time_slotted) if appointment.time_slotted else None,
+            "appointment_date": (
+                appointment.appointment_date.isoformat()
+                if appointment.appointment_date
+                else None
+            ),
+            "time_slotted": (
+                str(appointment.time_slotted) if appointment.time_slotted else None
+            ),
             "status": appointment.status,
             "issued_by": appointment.issued_by_name,
-            "issued_at": appointment.created_at.isoformat() if appointment.created_at else None,
+            "issued_at": (
+                appointment.created_at.isoformat() if appointment.created_at else None
+            ),
         }
 
         return slip_data
 
     @staticmethod
     async def get_appointments(
-        db: Database, filters: Optional[sch.AppointmentFilters] = None
+        db: Database, filters: sch.AppointmentFilters | None = None
     ):
         conditions = []
 

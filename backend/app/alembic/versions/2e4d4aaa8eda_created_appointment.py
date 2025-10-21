@@ -60,8 +60,13 @@ def upgrade() -> None:
         sa.Column("canceled_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("canceled_by", sa.UUID(), nullable=True),
         sa.Column("canceled_reason", sa.String(length=255), nullable=True),
-        sa.Column("created_by", sa.UUID(), nullable=False),
-        sa.ForeignKeyConstraint(["created_by"], ["users.id"]),
+        sa.Column("issued_by", sa.UUID(), nullable=False),
+        sa.Column("decision_reason", sa.String(length=500), nullable=True),
+        sa.Column("decided_at", sa.DateTime(timezone=True), nullable=True),
+        sa.Column("decided_by", sa.UUID(), nullable=True),
+        sa.Column("new_appointment_date", sa.DateTime(timezone=True), nullable=True),
+        sa.ForeignKeyConstraint(["issued_by"], ["users.id"]),
+        sa.ForeignKeyConstraint(["decided_by"], ["users.id"]),
         sa.ForeignKeyConstraint(["canceled_by"], ["users.id"]),
         sa.ForeignKeyConstraint(["citizen_id"], ["citizen_info.id"]),
         sa.ForeignKeyConstraint(["host_id"], ["users.id"]),
@@ -112,3 +117,4 @@ def downgrade() -> None:
 
     op.drop_table("appointments")
     op.drop_table("citizen_info")
+    op.drop_table("time_slots")

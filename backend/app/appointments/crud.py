@@ -26,12 +26,29 @@ class AppointmentCrud:
         )
         return await db.fetch_one(query)
 
+    #
     @staticmethod
     async def mark_slot_booked(db: Database, slot_id):
         query = (
             update(time_slot).where(time_slot.c.id == slot_id).values(is_booked=True)
         )
         await db.execute(query)
+
+    @staticmethod
+    async def get_slot_by_start_time(db: Database, date, slot_time):
+        """Find a slot by its start time and date"""
+        query = select(time_slot).where(
+            (time_slot.c.date == date) & (time_slot.c.slot_start == slot_time)
+        )
+        return await db.fetch_one(query)
+
+    @staticmethod
+    async def is_slot_booked(db: Database, slot_id):
+        """Check if slot is booked"""
+        query = select(time_slot.c.is_booked).where(time_slot.c.id == slot_id)
+        result = await db.fetch_one(query)
+
+        return result and result["is_booked"]
 
     @staticmethod
     async def update_appointment(db, appointment_id, appointment_data):
@@ -45,7 +62,9 @@ class AppointmentCrud:
 
     @staticmethod
     async def get_appointment_by_id(db, appointment_id):
-        query = select(appointment_details).where(appointment_details.c.appointment_id == appointment_id)
+        query = select(appointment_details).where(
+            appointment_details.c.appointment_id == appointment_id
+        )
         return await db.fetch_one(query)
 
     @staticmethod

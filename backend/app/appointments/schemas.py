@@ -1,8 +1,7 @@
 from datetime import date, datetime, time
-from typing import Optional
 from uuid import UUID
 
-from pydantic import BaseModel, EmailStr, Field, FutureDate
+from pydantic import BaseModel, EmailStr, Field
 
 from app.appointments.constants import AppointmentStatus
 
@@ -67,8 +66,10 @@ class Slot(BaseModel):
 
 class AppointmentDecision(BaseModel):
     status: AppointmentStatus = Field(default=AppointmentStatus.APPROVED)
-    reason: Optional[str] = Field(None, description="Reason for the decision")
-    new_appointment_date: Optional[datetime] = Field(None, description="New date for postponed appointments")
+    reason: str | None = Field("", description="Reason for the decision")
+    new_appointment_date: datetime | None = Field(
+        None, description="New date for postponed appointments"
+    )
 
 
 class AppointmentCancel(BaseModel):
@@ -76,34 +77,38 @@ class AppointmentCancel(BaseModel):
 
 
 class AppointmentUpdate(BaseModel):
-    purpose: Optional[str] = Field(None, description="Updated purpose of visit")
-    appointment_date: Optional[datetime] = Field(None, description="Updated appointment date")
-    time_slotted: Optional[time] = Field(None, description="Updated time slot")
+    purpose: str | None = Field(None, description="Updated purpose of visit")
+    appointment_date: datetime | None = Field(
+        None, description="Updated appointment date"
+    )
+    time_slotted: time | None = Field(None, description="Updated time slot")
 
 
 class AppointmentComplete(BaseModel):
-    notes: Optional[str] = Field(None, description="Optional notes for completion")
+    notes: str | None = Field(None, description="Optional notes for completion")
 
 
 class AppointmentHistoryFilters(BaseModel):
-    status: Optional[AppointmentStatus] = Field(None, description="Filter by appointment status")
-    start_date: Optional[date] = Field(None, description="Start date for history range")
-    end_date: Optional[date] = Field(None, description="End date for history range")
-    citizen_id: Optional[UUID] = Field(None, description="Filter by specific citizen")
-    host_id: Optional[UUID] = Field(None, description="Filter by specific host")
+    status: AppointmentStatus | None = Field(
+        None, description="Filter by appointment status"
+    )
+    start_date: date | None = Field(None, description="Start date for history range")
+    end_date: date | None = Field(None, description="End date for history range")
+    citizen_id: UUID | None = Field(None, description="Filter by specific citizen")
+    host_id: UUID | None = Field(None, description="Filter by specific host")
 
 
 class AppointmentFilters(BaseModel):
-    by_decision: Optional[AppointmentStatus] = Field(
+    by_decision: AppointmentStatus | None = Field(
         None,
         description="Filter by appointment status (approved, denied, pending, etc.)",
     )
-    by_time_slot: Optional[time] = Field(None, description="Filter by appointment time")
-    by_date: Optional[date] = Field(None, description="Filter by appointment date")
-    search: Optional[str] = Field(
+    by_time_slot: time | None = Field(None, description="Filter by appointment time")
+    by_date: date | None = Field(None, description="Filter by appointment date")
+    search: str | None = Field(
         None,
         description="Search by citizen name, email, or phone number",
     )
-    completed: Optional[bool] = Field(
+    completed: bool | None = Field(
         None, description="Filter only completed appointments"
     )
