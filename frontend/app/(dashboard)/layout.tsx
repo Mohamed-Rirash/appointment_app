@@ -4,7 +4,6 @@ import { Toaster } from "react-hot-toast";
 import {
   SidebarInset,
   SidebarProvider,
-  SidebarTrigger,
 } from "@/components/ui/sidebar";
 
 export default function LayoutDashboard({
