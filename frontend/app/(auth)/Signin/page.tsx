@@ -9,7 +9,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -19,7 +18,7 @@ import { authenticate } from "@/helpers/services/action";
 import Link from "next/link";
 import Image from "next/image";
 
-import logo from "@/public/logo.png";
+import logo from "@/public/logtwo.png";
 import { useRouter } from "next/navigation";
 import { Spinner } from "@/components/ui/spinner";
 
@@ -89,8 +88,8 @@ export default function Signin() {
             Get Started
           </h1> */}
           <Image src={logo} width={258} height={32} alt="logo" />
-          <p className="text-[#999999] text-lg font-medium">
-            welcome to the system
+          <p className="text-[#999999] text-lg text-center font-medium">
+            Ministry of Civil Aviation and Airports Development
           </p>
         </div>
 
@@ -149,13 +148,12 @@ export default function Signin() {
             <Button
               disabled={loading}
               type="submit"
-              className={`py-[28px] w-full  text-xl font-bold mt-4 combined-shadow bg-gradient-green ${
-                loading ? "opacity-50 pointer-disabled" : ""
-              }`}
+              className={`py-[28px] w-full  text-xl font-bold mt-4 combined-shadow bg-gradient-green ${loading ? "opacity-50 pointer-disabled" : ""
+                }`}
             >
               {loading ? (
                 <>
-               <Spinner className="ml-2 h-4 w-4 text-white" />
+                  <Spinner className="ml-2 h-4 w-4 text-white" />
                 </>
               ) : (
                 "Login"
