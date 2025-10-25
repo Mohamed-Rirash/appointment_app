@@ -303,6 +303,33 @@ async def admin_revoke_role_by_name(
     return AdminBaseResponse(message="Role revoked successfully")
 
 
+# ================================
+# Role Management Endpoints
+# ================================
+
+
+@router.get("/roles")
+async def get_all_roles(
+    db: Database = Depends(get_db),
+    admin: CurrentUser = Depends(require_permissions("roles:read", require_all=False)),
+):
+    """Get all roles in the system"""
+    query = select(roles)
+    result = await db.fetch_all(query)
+    return [dict(row) for row in result]
+
+
+@router.get("/permissions")
+async def get_all_permissions(
+    db: Database = Depends(get_db),
+    admin: CurrentUser = Depends(require_permissions("permissions:read", require_all=False)),
+):
+    """Get all permissions in the system"""
+    query = select(permissions)
+    result = await db.fetch_all(query)
+    return [dict(row) for row in result]
+
+
 # =============================================================================
 # NOTE: Office management endpoints have been moved to /offices module
 # All office, host assignment, and stats endpoints are now in:

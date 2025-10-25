@@ -106,14 +106,23 @@ class Settings(BaseSettings):
     # LOGGING & MONITORING
     # --------------------
     LOG_LEVEL: str = "INFO"
-    LOG_FORMAT: str = "json"
+    LOG_FORMAT: str = "json"  # "json" or "text"
     LOG_FILE: str | None = None
     LOG_ROTATION: str = "1 day"
     LOG_RETENTION: str = "30 days"
 
-    REQUEST_LOGGING: bool = False
+    REQUEST_LOGGING: bool = True  # Enable request logging by default
 
     ENABLE_METRICS: bool = False
+
+    # --------------------
+    # SENTRY ERROR TRACKING
+    # --------------------
+    SENTRY_DSN: str | None = None
+    SENTRY_ENVIRONMENT: str | None = None  # Defaults to ENVIRONMENT if not set
+    SENTRY_TRACES_SAMPLE_RATE: float = 1.0  # 1.0 = 100% of transactions
+    SENTRY_PROFILES_SAMPLE_RATE: float = 1.0  # 1.0 = 100% of transactions
+    SENTRY_ENABLED: bool = False  # Enable Sentry error tracking
 
     # (API key settings removed; not used)
 
@@ -154,6 +163,7 @@ class Settings(BaseSettings):
     SMS_PROVIDER: str = "smscatcher"  # smscatcher, twilio, etc.
     SMS_HOST: str = "smscatcher"
     SMS_PORT: int = 3001
+    SMS_API_URL: str = "http://smscatcher:3001/sms"  # Full URL for SMS service
     SMS_FROM: str = "+1234567890"
     SMS_API_KEY: str | None = None
     SMS_API_SECRET: str | None = None
