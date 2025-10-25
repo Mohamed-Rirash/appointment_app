@@ -17,6 +17,7 @@ from app.appointments.exceptions import (
 )
 from app.appointments.utils import broadcast_event
 from app.appointments.view import appointment_details
+from app.core.serialization import serialize_database_record
 
 
 class AppointmentService:
@@ -24,68 +25,103 @@ class AppointmentService:
     async def create_with_citizen(
         db, payload: sch.AppointmentWithCitizenCreate, user_id
     ):
-        async with db.transaction():
-            # 1️⃣ Insert Citizen
-            citizen_data = payload.citizen.model_dump()
-            citizen_data.setdefault("id", uuid.uuid4())
+        try:
+            async with db.transaction():
+                # 1️⃣ Insert Citizen
+                citizen_data = payload.citizen.model_dump()
+                citizen_data.setdefault("id", uuid.uuid4())
 
-            citizen_record = await AppointmentCrud.create_citizen(db, citizen_data)
-            if not citizen_record:
-                raise AppointmentNotFound("Failed to create citizen record.")
+                print(f"Creating citizen with data: {citizen_data}")
+                citizen_record = await AppointmentCrud.create_citizen(db, citizen_data)
+                if not citizen_record:
+                    raise AppointmentNotFound("Failed to create citizen record.")
 
-            citizen_dict = dict(citizen_record)
+                citizen_dict = dict(citizen_record)
+                print(f"Citizen created: {citizen_dict['id']}")
 
-            # 2️⃣ Check available slot
-            appointment_data = payload.appointment.model_dump()
-            slot_date = appointment_data["appointment_date"].date()
-            slot_time = appointment_data["time_slotted"]
+                # 2️⃣ Check available slot
+                appointment_data = payload.appointment.model_dump()
+                slot_date = appointment_data["appointment_date"].date()
+                slot_time = appointment_data["time_slotted"]
 
-            # Find slot by start time
-            slot = await AppointmentCrud.get_slot_by_start_time(
-                db, slot_date, slot_time
-            )
-            if not slot:
-                raise AppointmentNotFound(f"No slot found for {slot_time}.")
+                print(f"Checking slot for date: {slot_date}, time: {slot_time}")
+                # Find slot by start time
+                slot = await AppointmentCrud.get_slot_by_start_time(
+                    db, slot_date, slot_time
+                )
+                if not slot:
+                    raise AppointmentNotFound(f"No slot found for {slot_time}.")
 
-            # Check if booked
-            if slot["is_booked"]:
-                raise AppointmentNotFound(f"Time slot {slot_time} is already booked.")
+                # Check if booked
+                if slot["is_booked"]:
+                    raise AppointmentNotFound(f"Time slot {slot_time} is already booked.")
 
-            # Mark slot booked
-            await AppointmentCrud.mark_slot_booked(db, slot["id"])
+                print(f"Marking slot {slot['id']} as booked")
+                # Mark slot booked
+                await AppointmentCrud.mark_slot_booked(db, slot["id"])
 
-            # 3️⃣ Insert Appointment
-            appointment_data["citizen_id"] = citizen_dict["id"]
+                # 3️⃣ Insert Appointment
+                appointment_data["citizen_id"] = citizen_dict["id"]
 
-            # Set default values
-            appointment_data.setdefault("id", uuid.uuid4())
-            appointment_data.setdefault("issued_by", user_id)
+                # Set default values
+                appointment_data.setdefault("id", uuid.uuid4())
+                appointment_data.setdefault("issued_by", user_id)
 
-            # Explicitly set decision_reason to None to ensure consistency
-            appointment_data["decision_reason"] = None
+                # Explicitly set decision_reason to None to ensure consistency
+                appointment_data["decision_reason"] = None
 
+                print(f"Creating appointment with data: {appointment_data}")
+                appointment_record = await AppointmentCrud.create_appointment(
+                    db, appointment_data
+                )
+                if not appointment_record:
+                    raise AppointmentNotFound("Failed to create appointment record.")
 
-
-            appointment_record = await AppointmentCrud.create_appointment(
-                db, appointment_data
-            )
-            if not appointment_record:
-                raise AppointmentNotFound("Failed to create appointment record.")
-
-            appointment_dict = dict(appointment_record)
+                appointment_dict = dict(appointment_record)
+                print(f"Appointment created: {appointment_dict['id']}")
+        except Exception as e:
+            print(f"Error in create_with_citizen service: {type(e).__name__}: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            raise
 
         # 4️⃣ Broadcast event after transaction commit
         if "office_id" in appointment_dict:
+            # Convert database records to JSON-serializable format
+            citizen_dict_serializable = serialize_database_record(citizen_dict)
+            appointment_dict_serializable = serialize_database_record(appointment_dict)
+
             await broadcast_event(
-                office_id=appointment_dict["office_id"],
+                office_id=str(appointment_dict["office_id"]),
                 event={
                     "type": "new_appointment",
-                    "citizen": citizen_dict,
-                    "appointment": appointment_dict,
+                    "citizen": citizen_dict_serializable,
+                    "appointment": appointment_dict_serializable,
                 },
             )
 
-        # 5️⃣ Return combined schema
+            # 5️⃣ Broadcast updated time slots for the appointment date
+            from app.office_mgnt.crud import TimeSlotCRUD
+
+            appointment_date = appointment_data["appointment_date"].date()
+            updated_slots = await TimeSlotCRUD.get_slots_by_date(
+                db, appointment_dict["office_id"], appointment_date
+            )
+            updated_slots_serializable = [
+                serialize_database_record(slot) for slot in updated_slots
+            ]
+
+            await broadcast_event(
+                office_id=str(appointment_dict["office_id"]),
+                event={
+                    "type": "time_slots_updated",
+                    "date": str(appointment_date),
+                    "slots": updated_slots_serializable,
+                    "reason": "appointment_created",
+                },
+            )
+
+        # 6️⃣ Return combined schema
         return sch.AppointmentWithCitizenRead(
             citizen=sch.CitizenRead.model_validate(citizen_dict),
             appointment=sch.AppointmentRead.model_validate(appointment_dict),
@@ -93,7 +129,11 @@ class AppointmentService:
 
     @staticmethod
     async def decide_appointment(
-        db: Database, appointment_id: uuid.UUID, decision: AppointmentStatus
+        db: Database,
+        appointment_id: uuid.UUID,
+        decision: sch.AppointmentDecision,
+        user_id: uuid.UUID,
+        office_id: uuid.UUID
     ):
         async with db.transaction():
             # 1. Fetch appointment
@@ -103,22 +143,49 @@ class AppointmentService:
             if not appointment:
                 raise AppointmentNotFound()
 
-            # 2. Validate state
-            if appointment.status == AppointmentStatus.APPROVED:
+            # 2. Validate office_id matches the appointment's office
+            if str(appointment.office_id) != str(office_id):
+                raise AppointmentDecisionNotAllowed(
+                    "Office ID does not match the appointment's office"
+                )
+
+            # 3. Validate state - can only decide on pending appointments
+            if appointment.status != AppointmentStatus.PENDING:
                 raise AppointmentAlreadyApproved()
 
-            # 3. Apply business logic
-            if decision == AppointmentStatus.APPROVED:
+            # 4. Prepare update data
+            update_data = {
+                "status": decision.status,
+                "decided_at": datetime.now(),
+                "decided_by": user_id,
+            }
+
+            # Add decision reason if provided
+            if decision.reason:
+                update_data["decision_reason"] = decision.reason
+
+            # 5. Apply business logic
+            if decision.status == AppointmentStatus.APPROVED:
                 await AppointmentCrud.update_appointment(
-                    db, appointment_id, {"status": decision}
+                    db, appointment_id, update_data
                 )
-                await AppointmentCrud.mark_slot_booked(db, appointment.slot_id)
-            elif decision == AppointmentStatus.DENIED:
+            elif decision.status == AppointmentStatus.DENIED:
                 await AppointmentCrud.update_appointment(
-                    db, appointment_id, {"status": decision}
+                    db, appointment_id, update_data
                 )
             else:
-                raise AppointmentDecisionNotAllowed()
+                raise AppointmentDecisionNotAllowed("Decision must be approved or denied")
+
+            # 6. Broadcast event to notify about decision
+            await broadcast_event(
+                office_id=str(appointment.office_id),
+                event={
+                    "type": f"appointment_{decision.status.value}",
+                    "appointment_id": str(appointment_id),
+                    "decision": decision.status.value,
+                    "reason": decision.reason,
+                },
+            )
 
             # Return updated appointment
             return await AppointmentCrud.get_appointment_by_id(db, appointment_id)
@@ -142,34 +209,128 @@ class AppointmentService:
             if appointment.status not in [AppointmentStatus.PENDING]:
                 raise AppointmentPostponementNotAllowed()
 
-            # 3. Update appointment with postpone decision
+            # 3. Validate new date and time slot are provided
+            if not decision.new_appointment_date or not decision.new_time_slot:
+                raise ValueError(
+                    "Both new_appointment_date and new_time_slot are required for postponing"
+                )
+
+            # 4. Check if new time slot is available
+            slot_date = decision.new_appointment_date.date()
+            slot_time = decision.new_time_slot
+
+            print(f"Checking new slot for date: {slot_date}, time: {slot_time}")
+            new_slot = await AppointmentCrud.get_slot_by_start_time(
+                db, slot_date, slot_time
+            )
+            if not new_slot:
+                raise AppointmentNotFound(f"No slot found for {slot_time} on {slot_date}.")
+
+            # Check if new slot is already booked
+            if new_slot["is_booked"]:
+                raise AppointmentNotFound(
+                    f"Time slot {slot_time} on {slot_date} is already booked."
+                )
+
+            # 5. Free up the old time slot
+            old_slot_date = appointment.appointment_date.date()
+            old_slot_time = appointment.time_slotted
+            old_slot = await AppointmentCrud.get_slot_by_start_time(
+                db, old_slot_date, old_slot_time
+            )
+            if old_slot:
+                # Mark old slot as available
+                await db.execute(
+                    f"UPDATE time_slot SET is_booked = false WHERE id = '{old_slot['id']}'"
+                )
+                print(f"Freed up old slot {old_slot['id']}")
+
+            # 6. Book the new time slot
+            await AppointmentCrud.mark_slot_booked(db, new_slot["id"])
+            print(f"Booked new slot {new_slot['id']}")
+
+            # 7. Update appointment with postpone decision and new date/time
+            # Store OLD date in new_appointment_date field for reference in notifications
             update_data = {
                 "status": AppointmentStatus.POSTPONED,
                 "decision_reason": decision.reason,
                 "decided_at": datetime.now(),
                 "decided_by": user_id,
+                "new_appointment_date": appointment.appointment_date,  # Store OLD date for reference
+                "appointment_date": decision.new_appointment_date,  # Update to NEW date
+                "time_slotted": decision.new_time_slot,  # Update to NEW time slot
             }
-
-            # If new date is provided, update it
-            if decision.new_appointment_date:
-                update_data["new_appointment_date"] = decision.new_appointment_date
 
             await AppointmentCrud.update_appointment(db, appointment_id, update_data)
 
-            # 4. Broadcast event to notify about postponement
+            # 8. Fetch updated time slots for both old and new dates
+            from app.office_mgnt.crud import TimeSlotCRUD
+            from app.core.serialization import serialize_database_record
+
+            # Get updated slots for old date (now has freed slot)
+            old_date_slots = await TimeSlotCRUD.get_slots_by_date(
+                db, appointment.office_id, old_slot_date
+            )
+            old_date_slots_serializable = [
+                serialize_database_record(slot) for slot in old_date_slots
+            ]
+
+            # Get updated slots for new date (now has booked slot)
+            new_date_slots = await TimeSlotCRUD.get_slots_by_date(
+                db, appointment.office_id, slot_date
+            )
+            new_date_slots_serializable = [
+                serialize_database_record(slot) for slot in new_date_slots
+            ]
+
+            # 9. Broadcast event to notify about postponement with updated slots
             await broadcast_event(
-                office_id=appointment.office_id,
+                office_id=str(appointment.office_id),
                 event={
                     "type": "appointment_postponed",
                     "appointment_id": str(appointment_id),
                     "reason": decision.reason,
-                    "new_date": (
-                        decision.new_appointment_date.isoformat()
-                        if decision.new_appointment_date
-                        else None
-                    ),
+                    "old_date": appointment.appointment_date.isoformat(),
+                    "old_time": str(appointment.time_slotted),
+                    "new_date": decision.new_appointment_date.isoformat(),
+                    "new_time": str(decision.new_time_slot),
+                    # Include updated time slots for both dates
+                    "updated_slots": {
+                        "old_date": {
+                            "date": str(old_slot_date),
+                            "slots": old_date_slots_serializable,
+                        },
+                        "new_date": {
+                            "date": str(slot_date),
+                            "slots": new_date_slots_serializable,
+                        },
+                    },
                 },
             )
+
+            # 10. Broadcast separate time slot update events for frontend to refresh slots
+            # This allows the frontend to update the time slot picker without full page reload
+            await broadcast_event(
+                office_id=str(appointment.office_id),
+                event={
+                    "type": "time_slots_updated",
+                    "date": str(old_slot_date),
+                    "slots": old_date_slots_serializable,
+                    "reason": "appointment_postponed",
+                },
+            )
+
+            # Only broadcast for new date if it's different from old date
+            if str(slot_date) != str(old_slot_date):
+                await broadcast_event(
+                    office_id=str(appointment.office_id),
+                    event={
+                        "type": "time_slots_updated",
+                        "date": str(slot_date),
+                        "slots": new_date_slots_serializable,
+                        "reason": "appointment_postponed",
+                    },
+                )
 
             # Return updated appointment
             return await AppointmentCrud.get_appointment_by_id(db, appointment_id)
@@ -198,6 +359,11 @@ class AppointmentService:
             if update_data.time_slotted is not None:
                 update_dict["time_slotted"] = update_data.time_slotted
 
+            # If there's nothing to update, return the existing appointment
+            # and avoid broadcasting a no-op update event.
+            if not update_dict:
+                return appointment
+
             # 3. Only allow editing pending appointments
             if appointment.status != AppointmentStatus.PENDING:
                 # For non-pending appointments, only allow purpose updates
@@ -213,12 +379,14 @@ class AppointmentService:
                 )
 
             # 5. Broadcast event
+            from app.core.serialization import convert_to_json_serializable
+
             await broadcast_event(
-                office_id=appointment.office_id,
+                office_id=str(appointment.office_id),
                 event={
                     "type": "appointment_updated",
                     "appointment_id": str(appointment_id),
-                    "updates": update_dict,
+                    "updates": convert_to_json_serializable(update_dict),
                 },
             )
 
@@ -255,7 +423,7 @@ class AppointmentService:
 
             # 3. Broadcast event
             await broadcast_event(
-                office_id=appointment.office_id,
+                office_id=str(appointment.office_id),
                 event={
                     "type": "appointment_cancelled",
                     "appointment_id": str(appointment_id),
@@ -296,7 +464,7 @@ class AppointmentService:
 
             # 4. Broadcast event
             await broadcast_event(
-                office_id=appointment.office_id,
+                office_id=str(appointment.office_id),
                 event={
                     "type": "appointment_completed",
                     "appointment_id": str(appointment_id),

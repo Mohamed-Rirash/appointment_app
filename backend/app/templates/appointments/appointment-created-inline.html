@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Appointment Created - {{ app_name }}</title>
+  </head>
+  <body style="margin:0;padding:0;background-color:#f8fafc;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;color:#1f2937;line-height:1.6;">
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color:#f8fafc;">
+      <tr>
+        <td align="center" style="padding:32px 16px;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width:600px;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e2e8f0;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1),0 2px 4px -1px rgba(0,0,0,0.06);">
+            <!-- Header -->
+            <tr>
+              <td style="padding:40px 32px 24px 32px;text-align:center;background:linear-gradient(135deg,#10b981 0%,#059669 100%);">
+                <h1 style="margin:0 0 12px 0;font-size:28px;line-height:36px;color:#ffffff;font-weight:700;">📅 Appointment Created!</h1>
+                <p style="margin:0;font-size:16px;color:#d1fae5;">Your appointment has been successfully scheduled</p>
+              </td>
+            </tr>
+            
+            <!-- Content -->
+            <tr>
+              <td style="padding:32px;">
+                <p style="margin:0 0 16px 0;font-size:16px;color:#374151;">Dear <strong>{{ citizen_name }}</strong>,</p>
+                
+                <p style="margin:0 0 24px 0;font-size:16px;color:#374151;">
+                  Your appointment has been successfully created and is now <strong style="color:#f59e0b;">pending approval</strong>.
+                </p>
+                
+                <!-- Appointment Details Card -->
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#f9fafb;border-radius:12px;border:1px solid #e5e7eb;margin-bottom:24px;">
+                  <tr>
+                    <td style="padding:24px;">
+                      <h2 style="margin:0 0 16px 0;font-size:18px;color:#111827;font-weight:600;">Appointment Details</h2>
+                      
+                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                        <tr>
+                          <td style="padding:8px 0;font-size:14px;color:#6b7280;width:40%;">📅 Date:</td>
+                          <td style="padding:8px 0;font-size:14px;color:#111827;font-weight:500;">{{ appointment_date }}</td>
+                        </tr>
+                        <tr>
+                          <td style="padding:8px 0;font-size:14px;color:#6b7280;">⏰ Time:</td>
+                          <td style="padding:8px 0;font-size:14px;color:#111827;font-weight:500;">{{ appointment_time }}</td>
+                        </tr>
+                        <tr>
+                          <td style="padding:8px 0;font-size:14px;color:#6b7280;">📝 Purpose:</td>
+                          <td style="padding:8px 0;font-size:14px;color:#111827;font-weight:500;">{{ purpose }}</td>
+                        </tr>
+                        <tr>
+                          <td style="padding:8px 0;font-size:14px;color:#6b7280;">🏢 Office:</td>
+                          <td style="padding:8px 0;font-size:14px;color:#111827;font-weight:500;">{{ office_name }}</td>
+                        </tr>
+                        <tr>
+                          <td style="padding:8px 0;font-size:14px;color:#6b7280;">🆔 Appointment ID:</td>
+                          <td style="padding:8px 0;font-size:12px;color:#6b7280;font-family:monospace;">{{ appointment_id }}</td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+                
+                <!-- Status Info -->
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#fef3c7;border-radius:8px;border-left:4px solid #f59e0b;margin-bottom:24px;">
+                  <tr>
+                    <td style="padding:16px;">
+                      <p style="margin:0;font-size:14px;color:#92400e;">
+                        <strong>⏳ Status: Pending Approval</strong><br/>
+                        Your appointment is currently under review. You will receive another notification once it has been reviewed by our staff.
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+                
+                <!-- Next Steps -->
+                <h3 style="margin:0 0 12px 0;font-size:16px;color:#111827;font-weight:600;">What happens next?</h3>
+                <ul style="margin:0 0 24px 0;padding-left:20px;font-size:14px;color:#374151;">
+                  <li style="margin-bottom:8px;">Your appointment will be reviewed by our staff</li>
+                  <li style="margin-bottom:8px;">You'll receive an email and SMS notification once it's approved or if any changes are needed</li>
+                  <li style="margin-bottom:8px;">Please arrive 10 minutes before your scheduled time</li>
+                  <li>Bring any required documents or identification</li>
+                </ul>
+                
+                <p style="margin:0 0 16px 0;font-size:14px;color:#6b7280;">
+                  If you have any questions or need to make changes to your appointment, please contact our office.
+                </p>
+                
+                <p style="margin:0;font-size:14px;color:#374151;">
+                  Thank you for choosing {{ app_name }}!
+                </p>
+              </td>
+            </tr>
+            
+            <!-- Footer -->
+            <tr>
+              <td style="padding:24px 32px;background:#f9fafb;border-top:1px solid #e5e7eb;text-align:center;">
+                <p style="margin:0 0 8px 0;font-size:14px;color:#6b7280;">
+                  Best regards,<br/>
+                  <strong style="color:#111827;">{{ app_name }} Team</strong>
+                </p>
+                <p style="margin:0;font-size:12px;color:#9ca3af;">
+                  This is an automated message. Please do not reply to this email.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+

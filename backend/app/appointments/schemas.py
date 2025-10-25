@@ -38,6 +38,7 @@ class AppointmentRead(AppointmentCreate):
     id: UUID
     citizen_id: UUID
     host_id: UUID
+    issued_by: UUID
     is_active: bool
     created_at: datetime
     updated_at: datetime
@@ -65,10 +66,29 @@ class Slot(BaseModel):
 
 
 class AppointmentDecision(BaseModel):
-    status: AppointmentStatus = Field(default=AppointmentStatus.APPROVED)
-    reason: str | None = Field("", description="Reason for the decision")
+    status: AppointmentStatus = Field(
+        ...,
+        description="Decision status: approved, denied, or postponed"
+    )
+    reason: str | None = Field(
+        "",
+        description="Reason for the decision (required for denied/postponed)"
+    )
     new_appointment_date: datetime | None = Field(
-        None, description="New date for postponed appointments"
+        None,
+        description="New appointment date (required when status is postponed)"
+    )
+    new_time_slot: time | None = Field(
+        None,
+        description="New time slot (required when status is postponed)"
+    )
+
+
+class AppointmentDecisionReason(BaseModel):
+    """Request body for appointment decision - only contains optional reason"""
+    reason: str | None = Field(
+        None,
+        description="Reason for the decision (optional for approved, recommended for denied)"
     )
 
 
