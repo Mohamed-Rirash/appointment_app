@@ -20,6 +20,7 @@ from app.office_mgnt.services import (
     EnhancedOfficeService,
     HostAssignmentService,
     OfficeMembershipService,
+    OfficeSearchService,
     OfficeService,
     OfficeStatsService,
 )
@@ -437,6 +438,93 @@ async def get_all_office_stats(
 
 
 # =============================================================================
+# SEARCH ENDPOINTS
+# =============================================================================
+
+
+@router.get(
+    "/search",
+    response_model=List[sch.OfficeRead],
+    summary="Search offices by name",
+    description="Search for offices by name or description",
+)
+async def search_offices(
+    query: str = Query(..., min_length=1, description="Search query for office name"),
+    db: Database = Depends(get_db),
+    _user: CurrentUser = Depends(require_authentication),
+):
+    """
+    Search for offices by name.
+    Returns matching offices.
+    """
+    from sqlalchemy import or_
+    from app.office_mgnt.models import offices
+
+    search_query = select(offices).where(
+        or_(
+            offices.c.name.ilike(f"%{query}%"),
+            offices.c.description.ilike(f"%{query}%") if offices.c.description else False,
+        )
+    )
+    result = await db.fetch_all(search_query)
+    return [dict(row) for row in result]
+
+
+@router.get(
+    "/search/hosts",
+    response_model=List[sch.HostSearchResult],
+    summary="Search hosts by name",
+    description="Search for hosts by their name and get their office and position information",
+)
+async def search_hosts_by_name(
+    search: str = Query(..., min_length=2, description="Host name to search for"),
+    db: Database = Depends(get_db),
+    _user: CurrentUser = Depends(require_authentication),
+):
+    """
+    Search for hosts by name (e.g., 'Mohamed Ismail').
+    Returns host information including their office and position.
+    """
+    return await OfficeSearchService.search_by_host_name(db, search)
+
+
+@router.get(
+    "/search/by-office",
+    response_model=List[sch.OfficeSearchResult],
+    summary="Search offices and get all hosts",
+    description="Search for offices by name and get all hosts/positions in those offices",
+)
+async def search_offices_with_hosts(
+    search: str = Query(..., min_length=2, description="Office name to search for"),
+    db: Database = Depends(get_db),
+    _user: CurrentUser = Depends(require_authentication),
+):
+    """
+    Search for offices by name (e.g., 'Ministry of Health').
+    Returns office information with all hosts and their positions.
+    """
+    return await OfficeSearchService.search_by_office_name(db, search)
+
+
+@router.get(
+    "/search/by-position",
+    response_model=List[sch.HostSearchResult],
+    summary="Search hosts by position",
+    description="Search for hosts by their position/title",
+)
+async def search_hosts_by_position(
+    position: str = Query(..., min_length=2, description="Position/title to search for"),
+    db: Database = Depends(get_db),
+    _user: CurrentUser = Depends(require_authentication),
+):
+    """
+    Search for hosts by position (e.g., 'Minister', 'Director').
+    Returns host information including their office.
+    """
+    return await OfficeSearchService.search_by_position(db, position)
+
+
+# =============================================================================
 # USER HOST STATUS ENDPOINTS
 # =============================================================================
 
@@ -509,8 +597,8 @@ async def get_host_availability(
 @hostavailableroutes.get(
     "/hosts/{office_id}/slots",
     response_model=List[sch.Slot],
-    summary="Get bookable slots",
-    description="Get generated 15-min slots for a given date.",
+    summary="Get all slots for a date",
+    description="Get all generated 15-min slots for a given date (both booked and available).",
 )
 async def get_slots(
     office_id: UUID,
@@ -518,4 +606,21 @@ async def get_slots(
     db: Database = Depends(get_db),
     _user: CurrentUser = Depends(require_authentication),
 ):
+    """Get all time slots for a specific date"""
     return await AvailabilityService.get_slots_for_date(db, office_id, target_date)
+
+
+@hostavailableroutes.get(
+    "/hosts/{office_id}/slots/available",
+    response_model=List[sch.Slot],
+    summary="Get available (unbooked) slots",
+    description="Get only available (unbooked) 15-min slots for a given date.",
+)
+async def get_available_slots(
+    office_id: UUID,
+    target_date: date = Query(..., description="Date to fetch available slots for"),
+    db: Database = Depends(get_db),
+    _user: CurrentUser = Depends(require_authentication),
+):
+    """Get only available (unbooked) time slots for a specific date"""
+    return await AvailabilityService.get_available_slots_for_date(db, office_id, target_date)

@@ -51,6 +51,8 @@ from app.office_mgnt.schemas import (
 )
 from app.office_mgnt.utils import generate_slots, has_excluded_role
 from app.core.cache import cache_manager
+from sqlalchemy import and_, select
+from app.office_mgnt.models import offices
 
 
 async def _log_admin_action(
@@ -664,6 +666,165 @@ class OfficeStatsService:
             )
 
 
+class OfficeSearchService:
+    """Service for searching offices and hosts"""
+
+    @staticmethod
+    async def search_by_host_name(db: Database, search_term: str) -> List[sch.HostSearchResult]:
+        """
+        Search for hosts by name and return their office and position information
+        """
+        try:
+            from app.office_mgnt.views import office_member_details
+            from sqlalchemy import or_, func
+
+            search_pattern = f"%{search_term}%"
+
+            query = select(office_member_details).where(
+                and_(
+                    office_member_details.c.membership_active.is_(True),
+                    or_(
+                        office_member_details.c.first_name.ilike(search_pattern),
+                        office_member_details.c.last_name.ilike(search_pattern),
+                        func.concat(
+                            office_member_details.c.first_name,
+                            ' ',
+                            office_member_details.c.last_name
+                        ).ilike(search_pattern)
+                    )
+                )
+            )
+
+            results = await db.fetch_all(query)
+
+            return [
+                sch.HostSearchResult(
+                    user_id=row["user_id"],
+                    first_name=row["first_name"],
+                    last_name=row["last_name"],
+                    email=row["email"],
+                    office_id=row["office_id"],
+                    office_name=row["office_name"],
+                    office_location=row["office_location"],
+                    position=row.get("position"),
+                    is_primary=row.get("is_primary", False)
+                )
+                for row in results
+            ]
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to search hosts: {str(e)}"
+            )
+
+    @staticmethod
+    async def search_by_office_name(db: Database, search_term: str) -> List[sch.OfficeSearchResult]:
+        """
+        Search for offices by name and return all hosts/positions in those offices
+        """
+        try:
+            from app.office_mgnt.views import office_member_details
+
+            search_pattern = f"%{search_term}%"
+
+            # Get all offices matching the search
+            office_query = select(offices).where(
+                and_(
+                    offices.c.is_active.is_(True),
+                    offices.c.name.ilike(search_pattern)
+                )
+            )
+
+            office_results = await db.fetch_all(office_query)
+
+            if not office_results:
+                return []
+
+            # For each office, get all hosts
+            results = []
+            for office in office_results:
+                # Get hosts for this office
+                hosts_query = select(office_member_details).where(
+                    and_(
+                        office_member_details.c.office_id == office["id"],
+                        office_member_details.c.membership_active.is_(True)
+                    )
+                )
+
+                hosts_results = await db.fetch_all(hosts_query)
+
+                hosts = [
+                    sch.HostSearchResult(
+                        user_id=row["user_id"],
+                        first_name=row["first_name"],
+                        last_name=row["last_name"],
+                        email=row["email"],
+                        office_id=row["office_id"],
+                        office_name=row["office_name"],
+                        office_location=row["office_location"],
+                        position=row.get("position"),
+                        is_primary=row.get("is_primary", False)
+                    )
+                    for row in hosts_results
+                ]
+
+                results.append(
+                    sch.OfficeSearchResult(
+                        office_id=office["id"],
+                        office_name=office["name"],
+                        office_location=office["location"],
+                        office_description=office.get("description"),
+                        hosts=hosts
+                    )
+                )
+
+            return results
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to search offices: {str(e)}"
+            )
+
+    @staticmethod
+    async def search_by_position(db: Database, position_term: str) -> List[sch.HostSearchResult]:
+        """
+        Search for hosts by position and return their information
+        """
+        try:
+            from app.office_mgnt.views import office_member_details
+
+            search_pattern = f"%{position_term}%"
+
+            query = select(office_member_details).where(
+                and_(
+                    office_member_details.c.membership_active.is_(True),
+                    office_member_details.c.position.ilike(search_pattern)
+                )
+            )
+
+            results = await db.fetch_all(query)
+
+            return [
+                sch.HostSearchResult(
+                    user_id=row["user_id"],
+                    first_name=row["first_name"],
+                    last_name=row["last_name"],
+                    email=row["email"],
+                    office_id=row["office_id"],
+                    office_name=row["office_name"],
+                    office_location=row["office_location"],
+                    position=row.get("position"),
+                    is_primary=row.get("is_primary", False)
+                )
+                for row in results
+            ]
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to search by position: {str(e)}"
+            )
+
+
 # Legacy OfficeService class (keeping for backward compatibility)
 class OfficeService:
     @staticmethod
@@ -1050,3 +1211,19 @@ class AvailabilityService:
             await TimeSlotCRUD.bulk_insert_slots(db, slots_to_insert)
 
         return [sch.Slot(**s) for s in slots_to_insert]
+
+    @staticmethod
+    async def get_available_slots_for_date(
+        db, office_id: UUID, target_date: date
+    ) -> List[sch.Slot]:
+        """
+        Get only available (unbooked) slots for a specific date.
+        This ensures slots are generated if they don't exist, then filters for unbooked ones.
+        """
+        # First, ensure slots are generated for this date
+        all_slots = await AvailabilityService.get_slots_for_date(db, office_id, target_date)
+
+        # Filter to return only unbooked slots
+        available_slots = [slot for slot in all_slots if not slot.is_booked]
+
+        return available_slots

@@ -402,3 +402,26 @@ class OfficeStats(BaseModel):
     total_appointments: int
     pending_appointments: int
     completed_appointments: int
+
+
+# Search schemas
+class HostSearchResult(BaseModel):
+    """Result for host search"""
+    user_id: UUID
+    first_name: str
+    last_name: str
+    email: str
+    office_id: UUID
+    office_name: str
+    office_location: str
+    position: str | None = None
+    is_primary: bool = False
+
+
+class OfficeSearchResult(BaseModel):
+    """Result for office search with hosts"""
+    office_id: UUID
+    office_name: str
+    office_location: str
+    office_description: str | None = None
+    hosts: List[HostSearchResult] = []
