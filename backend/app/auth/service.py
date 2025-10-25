@@ -264,6 +264,13 @@ async def _generate_tokens(user, session, response):
     # Persist/rotate refresh token in DB (single active token per user)
     expiry_time = datetime.now(timezone.utc) + rt_expires
 
+    # Determine cookie settings based on environment
+    # For local/development over HTTP, use lax samesite and no secure flag
+    # For production over HTTPS, use none samesite and secure flag
+    is_local = settings.ENVIRONMENT in ["local", "development"]
+    cookie_samesite = "lax" if is_local else "none"
+    cookie_secure = not is_local
+
     # Set refresh token as httpOnly cookie, scoped to refresh endpoint only
     refresh_path = f"{app_settings.API_V1_STR}/users/refresh"
     response.set_cookie(
@@ -272,8 +279,8 @@ async def _generate_tokens(user, session, response):
         httponly=True,
         max_age=int(rt_expires.total_seconds()),
         expires=expiry_time.strftime("%a, %d-%b-%Y %H:%M:%S GMT"),
-        samesite="none",
-        secure=True,
+        samesite=cookie_samesite,
+        secure=cookie_secure,
         path=refresh_path,
     )
 
@@ -285,8 +292,8 @@ async def _generate_tokens(user, session, response):
         httponly=False,
         max_age=int(rt_expires.total_seconds()),
         expires=expiry_time.strftime("%a, %d-%b-%Y %H:%M:%S GMT"),
-        samesite="none",
-        secure=True,
+        samesite=cookie_samesite,
+        secure=cookie_secure,
         path="/",
     )
 

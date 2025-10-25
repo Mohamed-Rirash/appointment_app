@@ -37,6 +37,9 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest>=8.3.3,<9.0.0",
+    "pytest-asyncio>=0.24.0",
+    "pytest-cov>=6.0.0",
+    "pytest-env>=1.1.5",
     "mypy>=1.13.0,<2.0.0",
     "ruff>=0.7.0,<1.0.0",
     "pre-commit>=3.8.0,<4.0.0",
@@ -80,4 +83,28 @@ sort = "-Cover"
 
 [tool.coverage.html]
 show_contexts = true
+
+# pytest configuration
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+    "--showlocals",
+]
+filterwarnings = [
+    "error",
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 

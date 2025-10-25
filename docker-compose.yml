@@ -87,6 +87,20 @@ services:
       start_period: 20s
     networks:
       - app-network
+    # Docker Compose Watch configuration for hot-reload
+    develop:
+      watch:
+        # Sync source code changes
+        - action: sync
+          path: ./mock-sms/src
+          target: /app/src
+          ignore:
+            - node_modules/
+            - "*.log"
+
+        # Rebuild on dependency changes
+        - action: rebuild
+          path: ./mock-sms/package.json
 
   # -------------------------------
   # Adminer (PostgreSQL UI)
@@ -136,23 +150,82 @@ services:
     networks:
       - app-network
 
+  # -------------------------------
+  # Frontend (Next.js)
+  # -------------------------------
   # frontend:
   #   build:
   #     context: ./frontend
   #     dockerfile: Dockerfile
   #   container_name: frontend
-  #   ports:
-  #     - "3000:3000"
   #   environment:
   #     - NODE_ENV=production
-  #     # Add your backend URL
-  #     - NEXT_PUBLIC_API_URL=http://backend:8000
+  #     # Client-side API URL (browser) - relative path via nginx proxy
+  #     - NEXT_PUBLIC_API_URL=/api/v1
+  #     # Server-side API URL (Next.js server) - internal Docker network URL
+  #     - API_URL=http://backend:8000/api/v1
+  #     # Force Next.js standalone server to listen on all interfaces
+  #     - HOSTNAME=0.0.0.0
+  #     - PORT=3000
+  #     # NextAuth.js configuration
+  #     - AUTH_SECRET=${SECRET_KEY}
+  #     - AUTH_URL=${FRONTEND_HOST}
+  #     - AUTH_TRUST_HOST=true
   #   depends_on:
   #     - backend
   #   restart: unless-stopped
   #   networks:
   #     - app-network
-
+  #   # Docker Compose Watch configuration for hot-reload
+  #   develop:
+  #     watch:
+  #       # Sync source code changes
+  #       - action: sync
+  #         path: ./frontend/app
+  #         target: /app/app
+  #         ignore:
+  #           - node_modules/
+  #           - .next/
+  #           - "*.log"
+  #
+  #       - action: sync
+  #         path: ./frontend/components
+  #         target: /app/components
+  #         ignore:
+  #           - node_modules/
+  #
+  #       - action: sync
+  #         path: ./frontend/helpers
+  #         target: /app/helpers
+  #         ignore:
+  #           - node_modules/
+  #
+  #       - action: sync
+  #         path: ./frontend/hooks
+  #         target: /app/hooks
+  #         ignore:
+  #           - node_modules/
+  #
+  #       # Rebuild on dependency changes
+  #       - action: rebuild
+  #         path: ./frontend/package.json
+  #
+  # # -------------------------------
+  # # Nginx Reverse Proxy
+  # # -------------------------------
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: nginx
+  #   ports:
+  #     - "80:80"
+  #   volumes:
+  #     - ./nginx.conf:/etc/nginx/nginx.conf:ro
+  #   depends_on:
+  #     - frontend
+  #     - backend
+  #   restart: unless-stopped
+  #   networks:
+  #     - app-network
   # -------------------------------
   # Backend (FastAPI or similar)
   # -------------------------------
@@ -189,8 +262,10 @@ services:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - SENTRY_DSN=${SENTRY_DSN}
-    ports:
-      - "8000:8000"
+    # Port 8000 is only accessible internally via nginx proxy
+    # Uncomment below for direct backend access during debugging
+    # ports:
+    #   - "8000:8000"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 15s
@@ -199,6 +274,41 @@ services:
       start_period: 25s
     networks:
       - app-network
+    # Docker Compose Watch configuration for hot-reload
+    develop:
+      watch:
+        # Sync Python source code changes
+        - action: sync
+          path: ./backend/app
+          target: /app/app
+          ignore:
+            - __pycache__/
+            - "*.pyc"
+            - "*.pyo"
+            - "*.pyd"
+            - .pytest_cache/
+            - "*.egg-info/"
+
+        # Sync tests directory
+        - action: sync
+          path: ./backend/tests
+          target: /app/tests
+          ignore:
+            - __pycache__/
+            - "*.pyc"
+            - .pytest_cache/
+
+        # Rebuild on dependency changes
+        - action: rebuild
+          path: ./backend/pyproject.toml
+
+        - action: rebuild
+          path: ./backend/uv.lock
+
+        # Sync scripts
+        - action: sync
+          path: ./backend/scripts
+          target: /app/scripts
   # -------------------------------
   # Frontend (Next.js standalone)
   # -------------------------------
