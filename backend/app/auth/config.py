@@ -10,6 +10,7 @@ class AuthSettings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 50
     REFRESH_TOKEN_EXPIRE_MINUTES: int = 10
     DEBUG: bool = False
+    ENVIRONMENT: str = "local"
 
     model_config = SettingsConfigDict(
         env_file=".env", env_ignore_empty=True, extra="ignore", populate_by_name=True
