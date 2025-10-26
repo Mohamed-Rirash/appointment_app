@@ -1,12 +1,12 @@
 // app/offices/[id]/page.tsx
-import { auth } from "@/auth";
+
 import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Calendar, ArrowLeft, PlusIcon } from "lucide-react";
+import { MapPin, ArrowLeft, PlusIcon } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { client } from "@/helpers/api/client";
-import { OfficeActionsDropdown } from "../_components/officeActionsDropdown";
+import { getSession } from "@/helpers/actions/getsession";
 
 // Define the Office interface
 interface Office {
@@ -24,8 +24,8 @@ export default async function OfficeDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const session = await auth();
-  const token = session?.access_token;
+  const session = await getSession()
+  const token = session?.user.access_token;
   const { id } = await params;
   if (!token) {
     throw new Error("Unauthorized");
@@ -38,9 +38,7 @@ export default async function OfficeDetailPage({
     notFound();
   }
 
-  // Format dates
-  const createdDate = new Date(office.created_at).toLocaleDateString();
-  const updatedDate = new Date(office.updated_at).toLocaleDateString();
+
 
   return (
     <main className="mx-6 my-8">
@@ -86,7 +84,7 @@ export default async function OfficeDetailPage({
                   {office.is_active ? "active" : "inactive"}
                 </Badge>
               </div>
-              <OfficeActionsDropdown office={office} token={token} />
+
             </div>
           </div>
 

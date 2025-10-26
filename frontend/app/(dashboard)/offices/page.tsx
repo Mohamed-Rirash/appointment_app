@@ -1,4 +1,3 @@
-import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -8,12 +7,12 @@ import {
 } from "@/components/ui/dialog";
 import { Plus } from "lucide-react";
 import CreateOfficeForm from "./_components/officeForm";
-import { auth } from "@/auth";
 import OfficeTable from "./_components/OfficeTable";
+import { getSession } from "@/helpers/actions/getsession";
 
 export default async function Offices() {
-  const session = await auth();
-  const token = session?.access_token;
+  const session = await getSession()
+  const token = session?.user.access_token;
 
   return (
     <>

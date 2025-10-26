@@ -4,11 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState, useEffect } from "react";
-import arrow from "@/public/back_arrow.png";
 import Image from "next/image";
 import { client } from "@/helpers/api/client";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, ArrowLeft } from "lucide-react";
 
 export default function ForgetPassword() {
   const [email, setEmail] = useState("");
@@ -102,13 +101,7 @@ export default function ForgetPassword() {
         border border-[#eeeeee] bg-white text-brand-gray hover:bg-brand-primary/40 "
         onClick={() => window.history.back()}
       >
-        <Image
-          className="ml-2"
-          src={arrow}
-          width={18}
-          height={18}
-          alt="arrow"
-        />
+        <ArrowLeft className="h-5! w-5!" />
         <span className="mx-2"> Back to login</span>
       </Button>
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
-import { useActivateUser } from "@/hooks/useActivateUser";
+import { useActivateUser } from "@/helpers/hooks/useActivateUser";
 
 export function ActivateUserMenuItem({
   userId,

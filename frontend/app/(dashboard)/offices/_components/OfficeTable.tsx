@@ -10,13 +10,13 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Eye, Pencil, Trash2, ArrowLeftRight, CheckCircle, LocateIcon } from "lucide-react";
-import { useOffices } from "@/hooks/office/useOffices";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import { EditOffice } from "./EditOffice";
 import { DeleteOffice } from "./DeleteOffice";
 import { DeactivateOfficeButton } from "./DeactivateOfficeButton";
 import { ActivateOfficeButton } from "./ActivateOfficeButton";
+import { useOffices } from "@/helpers/hooks/office/useOffices";
 
 
 export interface Office {
@@ -72,7 +72,7 @@ export default function OfficeTable({ token }: { token?: string }) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {offices.map((office: Office) => (
+          {offices.length === 0 &&   offices.map((office: Office) => (
             <TableRow key={office.id} className="border-t border-[#eeeeee] hover:bg-gray-50">
               <TableCell className="px-4 py-3 font-medium text-brand-black">{office.name}</TableCell>
               <TableCell className="px-4 py-3  text-brand-gray">{office.description}</TableCell>

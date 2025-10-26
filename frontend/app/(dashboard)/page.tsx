@@ -1,32 +1,23 @@
-import { auth, signOut } from "@/auth";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import Image from "next/image";
-import { redirect } from "next/navigation";
+import Link from "next/link";
 
-export default async function Home() {
-  // if (!user) return redirect("/Signin");
-  const session = await auth();
-
-  if (!session?.user) {
-    console.log("No session", session?.user);
-    return redirect("/Signin");
-  }
-
-  console.log("Session", session?.user);
-
+export default function Sidebar() {
   return (
     <>
-      <div className="ml-6">
-        {/* <h1>Hello {session?.user?.email}</h1> */}
-        <p>
-          Lorem ipsum dolor sit, amet consectetur adipisicing elit. Amet quam
-          accusamus ullam dignissimos ut fugit quidem voluptates, similique
-          labore, sit adipisci assumenda excepturi temporibus? Esse nam
-          veritatis iste sequi adipisci.
+      <main className="flex-1 p-6 overflow-auto">
+        <h1 className="text-5xl font-bold text-purple-500 mb-4">
+          Hello, How are you doing?
+        </h1>
+        <p className="mb-6 text-gray-700">
+          Lorem ipsum dolor sit amet consectetur adipisicing elit. In architecto
+          expedita, rerum corrupti provident sit rem minus similique tenetur.
+          Suscipit ullam, amet nobis repellendus sapiente illo dolorum minima
+          voluptas magni?
         </p>
-      </div>
+        <Link href="/Signin">
+          <Button className="bg-amber-600 hover:bg-amber-700">Log in</Button>
+        </Link>
+      </main>
     </>
   );
 }

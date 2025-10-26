@@ -12,13 +12,13 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useEditOffice } from "@/hooks/office/useEditOffice";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useState } from "react";
 import z from "zod";
 import { Pencil } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { useEditOffice } from "@/helpers/hooks/office/useEditOffice";
 
 const officeSchema = z.object({
   name: z.string().min(1, "Name is required"),

@@ -1,46 +1,59 @@
 import type { Metadata } from "next";
-import localFont from "next/font/local";
+import localFont from "next/font/local"; //
 import "./globals.css";
-import { SessionProvider } from "next-auth/react";
 import Provider from "@/helpers/Provider";
 
 const satoshi = localFont({
   src: [
     {
-      path: "../public/font/Satoshi/Satoshi-Regular.woff2",
+      path: "../public/fonts/Satoshi-Regular.woff2",
       weight: "400",
       style: "normal",
     },
     {
-      path: "../public/font/Satoshi/Satoshi-Medium.woff2",
+      path: "../public/fonts/Satoshi-Medium.woff2",
       weight: "500",
       style: "normal",
     },
     {
-      path: "../public/font/Satoshi/Satoshi-Bold.woff2",
+      path: "../public/fonts/Satoshi-Bold.woff2",
       weight: "700",
       style: "normal",
     },
+    // Add more weights/styles as needed
+    {
+      path: "../public/fonts/Satoshi-Black.woff2",
+      weight: "900",
+      style: "normal",
+    },
+    {
+      path: "../public/fonts/Satoshi-Italic.woff2",
+      weight: "400",
+      style: "italic",
+    },
+    {
+      path: "../public/fonts/Satoshi-BoldItalic.woff2",
+      weight: "700",
+      style: "italic",
+    },
   ],
-  variable: "--font-satoshi", // CSS variable for Tailwind
+  variable: "--font-satoshi",
 });
 
 export const metadata: Metadata = {
-  title: "Kullan Desk",
-  description: "full appointment booking system",
+  title: "simple",
+  description: "governtmetn",
 };
 
 export default function RootLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) {
+}>) {
   return (
-    <html lang="en" className={satoshi.variable}>
-      <body>
-        <Provider>
-          <SessionProvider>{children} </SessionProvider>
-        </Provider>
+    <html lang="en">
+      <body className={`${satoshi.className}  antialiased`}>
+        <Provider>{children}</Provider>
       </body>
     </html>
   );

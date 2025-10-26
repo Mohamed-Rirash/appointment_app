@@ -2,7 +2,6 @@
 
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useDeleteUser } from "@/hooks/useDeleteUser";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -14,7 +13,8 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { useDeleteOffice } from "@/hooks/office/useDeleteOffice";
+import { useDeleteOffice } from "@/helpers/hooks/office/useDeleteOffice";
+
 
 export function DeleteOffice({
     officeId,

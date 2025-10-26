@@ -15,9 +15,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { useAssignRole } from "@/hooks/useAssignRole";
 import { useState } from "react";
 import toast from "react-hot-toast";
+import { useAssignRole } from "@/helpers/hooks/useAssignRole";
 
 const AVAILABLE_ROLES = ["admin", "host", "reception", "secretary"] as const;
 

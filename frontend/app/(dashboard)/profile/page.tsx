@@ -1,13 +1,13 @@
-// app/profile/page.tsx
-import { auth } from "@/auth";
+import { getSession } from "@/helpers/actions/getsession";
 import { redirect } from "next/navigation";
 import UserProfileClient from "./_components/UserProfileClient";
 
+
 export default async function ProfilePage() {
-  const session = await auth();
+  const session = await getSession();
 
   if (!session?.user) {
-    redirect("/login");
+    redirect("/Signin");
   }
 
   return (

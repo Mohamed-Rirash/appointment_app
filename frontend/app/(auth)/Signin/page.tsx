@@ -12,15 +12,14 @@ import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-// import { signIn } from "next-auth/react";
 import { useState } from "react";
-import { authenticate } from "@/helpers/services/action";
 import Link from "next/link";
 import Image from "next/image";
 
-import logo from "@/public/logtwo.png";
+import logo from "@/public/logo.png";
 import { useRouter } from "next/navigation";
 import { Spinner } from "@/components/ui/spinner";
+import axios from "axios";
 
 // define the form schema
 const formSchema = z.object({
@@ -42,55 +41,67 @@ export default function Signin() {
 
   const router = useRouter();
 
-  async function Submit(values: z.infer<typeof formSchema>) {
-    // 1. Clear previous errors
-    form.clearErrors();
-    setLoading(true);
-    console.log(values);
-    const result = await authenticate(values.email, values.password);
-    console.log("Result", result);
-    console.log("shit", result.error);
-    setLoading(false);
-    if (result.message === "success") {
+  interface LoginResponse {
+  message?: string;
+  error?: string;
+  user?: any;
+  token?: string;
+}
+async function Submit(values: z.infer<typeof formSchema>) {
+  form.clearErrors();
+  setLoading(true);
+  
+  try {
+    const { data } = await axios.post<LoginResponse>(
+      "http://localhost:80/api/auth/login", 
+      values
+    );
+    
+    console.log("Response data:", data);
+    
+    if (data.message === "success") {
       router.push("/");
-    }
-    // 3. Handle authentication response
-    let errorMessage;
-    if (result?.error) {
-      if (result.error !== "Failed to parse URL from undefined/users/login") {
-        console.log("shit and shiter");
-        console.log("th", result.error);
-        errorMessage = result.error;
-      }
-
-      if (result.error === "Failed to parse URL from undefined/users/login") {
-        console.log("shit and shiter");
-        errorMessage = "Network Error, Please try again";
-      }
-
-      // 4. Set error on password field (common practice for login forms)
+    } else if (data.error) {
+      // Set error on both email and password fields
       form.setError("password", {
         type: "manual",
-        message: errorMessage,
+        message: data.error,
       });
       form.setError("email", {
-        type: "manual",
-        message: errorMessage,
+        type: "manual", 
+        message: data.error,
       });
     }
+    
+  } catch (error: any) {
+    console.error("Login error:", error);
+    
+    let errorMessage = "Login failed. Please try again.";
+    
+    if (axios.isAxiosError(error)) {
+      errorMessage = error.response?.data?.error || error.message;
+    }
+    
+    // Set error on both email and password fields
+    form.setError("password", {
+      type: "manual",
+      message: errorMessage,
+    });
+    form.setError("email", {
+      type: "manual",
+      message: errorMessage,
+    });
+    
+  } finally {
+    setLoading(false);
   }
+}
 
   return (
     <div className="flex justify-center items-center h-screen">
       <div className=" w-full max-w-[468px] sm:border border-[#e1e1e1] p-4 sm:p-8 rounded-[8px]">
         <div className="flex flex-col  justify-center items-center">
-          {/* <h1 className="text-[#2c2c2c] text-4xl sm:text-5xl font-bold mb-2">
-            Get Started
-          </h1> */}
           <Image src={logo} width={258} height={32} alt="logo" />
-          <p className="text-[#999999] text-lg text-center font-medium">
-            Ministry of Civil Aviation and Airports Development
-          </p>
         </div>
 
         <Form {...form}>
@@ -148,12 +159,13 @@ export default function Signin() {
             <Button
               disabled={loading}
               type="submit"
-              className={`py-[28px] w-full  text-xl font-bold mt-4 combined-shadow bg-gradient-green ${loading ? "opacity-50 pointer-disabled" : ""
-                }`}
+              className={`py-[28px] w-full  text-xl font-bold mt-4 bg-linear-to-r from-[#21D256] to-[#0EA73C] ${
+                loading ? "opacity-50 pointer-disabled" : ""
+              }`}
             >
               {loading ? (
                 <>
-                  <Spinner className="ml-2 h-4 w-4 text-white" />
+                  Login in ... <Spinner className="ml-2 h-4 w-4 text-white" />
                 </>
               ) : (
                 "Login"

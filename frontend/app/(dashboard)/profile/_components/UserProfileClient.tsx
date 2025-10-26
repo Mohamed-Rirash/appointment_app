@@ -80,7 +80,7 @@ export default function UserProfileClient({ user }: { user: any }) {
     roles,
     access_token: token,
   } = user;
-
+console.log("UUU",user)
   const strength = getPasswordStrength(newPassword);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -129,10 +129,10 @@ export default function UserProfileClient({ user }: { user: any }) {
   };
 
   return (
-    <div className="border border-[#eeeeee] max-w-[388px] w-full mx-auto mt-[32px] mb-16 p-6 rounded-[4px]">
+    <div className="border border-[#eeeeee]  max-w-[388px] w-full mx-auto p-6 mt-8 rounded-[4px]">
       {/* avatar */}
       <div className="relative">
-        <Avatar className="w-[64px] h-[64px]">
+        <Avatar className="w-16 h-16">
           <AvatarImage src={"/avatar.png"} />
           <AvatarFallback>AB</AvatarFallback>
         </Avatar>
@@ -180,7 +180,7 @@ export default function UserProfileClient({ user }: { user: any }) {
           <Label className="text-[16px] text-brand-gray font-medium">
             First Name
           </Label>
-          <h2 className="text-lg text-brand-black font-medium mt-[-8px]">
+          <h2 className="text-lg text-brand-black font-medium -mt-2">
             {first_name}
           </h2>
         </div>
@@ -188,7 +188,7 @@ export default function UserProfileClient({ user }: { user: any }) {
           <Label className="text-[16px] text-brand-gray font-medium">
             Last Name
           </Label>
-          <h2 className="text-lg text-brand-black font-medium mt-[-8px]">
+          <h2 className="text-lg text-brand-black font-medium -mt-2">
             {last_name}
           </h2>
         </div>
@@ -196,7 +196,7 @@ export default function UserProfileClient({ user }: { user: any }) {
           <Label className="text-[16px] text-brand-gray font-medium">
             Email
           </Label>
-          <h2 className="text-lg text-brand-black font-medium mt-[-8px]">
+          <h2 className="text-lg text-brand-black font-medium -mt-2">
             {email}
           </h2>
         </div>
@@ -204,8 +204,8 @@ export default function UserProfileClient({ user }: { user: any }) {
           <Label className="text-[16px] text-brand-gray font-medium">
             Role
           </Label>
-          <h2 className="text-lg text-brand-black font-medium mt-[-8px]">
-            {roles[0]}
+          <h2 className="text-lg text-brand-black font-medium -mt-2">
+            {roles}
           </h2>
         </div>
       </div>
@@ -349,10 +349,10 @@ export default function UserProfileClient({ user }: { user: any }) {
             </div>
 
             <DialogFooter className="mt-8">
-              <DialogClose asChild>
+              <DialogClose  asChild>
                 <Button
                   type="button"
-                  className="max-w-[156px] w-full py-6 text-[16px] font-bold rounded-[4px] bg-bran-secondary hover:bg-bran-secondary/80 text-brand-gray"
+                  className=" max-w-[156px] w-full py-6 text-[16px] font-bold rounded-[4px] bg-bran-secondary hover:bg-bran-secondary/80 text-brand-gray"
                 >
                   Cancel
                 </Button>

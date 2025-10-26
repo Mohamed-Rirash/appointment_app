@@ -2,7 +2,7 @@
 
 import { CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useActivateOffice } from "@/hooks/office/useActivateOffice";
+import { useActivateOffice } from "@/helpers/hooks/office/useActivateOffice";
 
 export function ActivateOfficeButton({
     officeId,

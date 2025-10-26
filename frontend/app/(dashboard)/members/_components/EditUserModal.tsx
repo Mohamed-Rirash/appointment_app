@@ -22,10 +22,10 @@ import { Input } from "@/components/ui/input";
 
 import { Button } from "@/components/ui/button";
 import { AlertCircle, Pencil } from "lucide-react";
-import { useEditUser } from "@/hooks/useEditUser";
 import { useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Spinner } from "@/components/ui/spinner";
+import { useEditUser } from "@/helpers/hooks/useEditUser";
 
 const editUserSchema = z.object({
   first_name: z.string().min(1, "First name is required"),

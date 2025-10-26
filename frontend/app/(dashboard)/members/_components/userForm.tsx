@@ -177,7 +177,7 @@ export default function UserForm({ token }: { token?: string }) {
                   defaultValue={field.value}
                 >
                   <FormControl>
-                    <SelectTrigger className="h-[56px] w-full py-6 pl-4 text-lg">
+                    <SelectTrigger className="h-14 w-full py-6 pl-4 text-lg">
                       <SelectValue placeholder="Select role" />
                     </SelectTrigger>
                   </FormControl>
@@ -202,7 +202,7 @@ export default function UserForm({ token }: { token?: string }) {
           <Button
             type="submit"
             disabled={isSubmitting}
-            className="w-full mt-6 py-7 bg-gradient-to-r from-[#24C453] to-[#24C453] text-lg font-bold text-white hover:from-[#1fb048] hover:to-[#1fb048]"
+            className="w-full mt-6 py-7 bg-linear-to-r from-[#24C453] to-[#24C453] text-lg font-bold text-white hover:from-[#1fb048] hover:to-[#1fb048]"
           >
             {isSubmitting ? (
               <>

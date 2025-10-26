@@ -12,8 +12,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Trash2 } from "lucide-react";
-import { useRevokeRole } from "@/hooks/useRevokeRole";
+import { useRevokeRole } from "@/helpers/hooks/useRevokeRole";
+
 
 export function RevokeRoleMenuItem({
   userId,

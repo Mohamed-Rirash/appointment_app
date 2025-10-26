@@ -12,9 +12,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
-import { useDeactivateUser } from "@/hooks/useDeactivateUser";
-import { Trash2 } from "lucide-react";
+import { useDeactivateUser } from "@/helpers/hooks/useDeactivateUser";
+
 
 export function DeactivateUserMenuItem({
   userId,
