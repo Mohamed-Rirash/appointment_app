@@ -1,172 +1,644 @@
-# FastAPI Project - Backend
+# Backend API Documentation
+
+A production-ready FastAPI backend for the Appointment Booking Application, featuring comprehensive authentication, role-based access control, and appointment management.
+
+## 📋 Table of Contents
+
+- [Overview](#overview)
+- [Requirements](#requirements)
+- [Quick Start](#quick-start)
+- [Project Structure](#project-structure)
+- [Development](#development)
+- [Testing](#testing)
+- [Database](#database)
+- [API Endpoints](#api-endpoints)
+- [Troubleshooting](#troubleshooting)
+
+## Overview
+
+The backend provides a RESTful API built with FastAPI, featuring:
+
+- **JWT Authentication** with secure token refresh and CSRF protection
+- **Role-Based Access Control (RBAC)** with granular permissions
+- **Appointment Management** with office and host scheduling
+- **User Management** with email verification and password recovery
+- **Comprehensive Logging** with structured JSON output
+- **Rate Limiting** on sensitive endpoints
+- **Database Migrations** with Alembic
+- **Automated Testing** with Pytest
 
 ## Requirements
 
-* [Docker](https://www.docker.com/).
-* [uv](https://docs.astral.sh/uv/) for Python package and environment management.
+### System Requirements
+- **Python 3.11+**
+- **PostgreSQL 12+**
+- **Redis 6+** (for caching and sessions)
+- **Docker & Docker Compose** (recommended)
 
-## Docker Compose
+### Development Tools
+- **[uv](https://docs.astral.sh/uv/)** - Python package manager (recommended)
+- **[Git](https://git-scm.com/)** - Version control
+- **[VS Code](https://code.visualstudio.com/)** - Recommended IDE
 
-Start the local development environment with Docker Compose following the guide in [../development.md](../development.md).
+## Quick Start
 
-## General Workflow
-
-By default, the dependencies are managed with [uv](https://docs.astral.sh/uv/), go there and install it.
-
-From `./backend/` you can install all the dependencies with:
-
-```console
-$ uv sync
-```
-
-Then you can activate the virtual environment with:
-
-```console
-$ source .venv/bin/activate
-```
-
-Make sure your editor is using the correct Python virtual environment, with the interpreter at `backend/.venv/bin/python`.
-
-Modify or add SQLModel models for data and SQL tables in `./backend/app/models.py`, API endpoints in `./backend/app/api/`, CRUD (Create, Read, Update, Delete) utils in `./backend/app/crud.py`.
-
-## VS Code
-
-There are already configurations in place to run the backend through the VS Code debugger, so that you can use breakpoints, pause and explore variables, etc.
-
-The setup is also already configured so you can run the tests through the VS Code Python tests tab.
-
-## Docker Compose Override
-
-During development, you can change Docker Compose settings that will only affect the local development environment in the file `docker-compose.override.yml`.
-
-The changes to that file only affect the local development environment, not the production environment. So, you can add "temporary" changes that help the development workflow.
-
-For example, the directory with the backend code is synchronized in the Docker container, copying the code you change live to the directory inside the container. That allows you to test your changes right away, without having to build the Docker image again. It should only be done during development, for production, you should build the Docker image with a recent version of the backend code. But during development, it allows you to iterate very fast.
-
-There is also a command override that runs `fastapi run --reload` instead of the default `fastapi run`. It starts a single server process (instead of multiple, as would be for production) and reloads the process whenever the code changes. Have in mind that if you have a syntax error and save the Python file, it will break and exit, and the container will stop. After that, you can restart the container by fixing the error and running again:
-
-```console
-$ docker compose watch
-```
-
-There is also a commented out `command` override, you can uncomment it and comment the default one. It makes the backend container run a process that does "nothing", but keeps the container alive. That allows you to get inside your running container and execute commands inside, for example a Python interpreter to test installed dependencies, or start the development server that reloads when it detects changes.
-
-To get inside the container with a `bash` session you can start the stack with:
-
-```console
-$ docker compose watch
-```
-
-and then in another terminal, `exec` inside the running container:
-
-```console
-$ docker compose exec backend bash
-```
-
-You should see an output like:
-
-```console
-root@7f2607af31c3:/app#
-```
-
-that means that you are in a `bash` session inside your container, as a `root` user, under the `/app` directory, this directory has another directory called "app" inside, that's where your code lives inside the container: `/app/app`.
-
-There you can use the `fastapi run --reload` command to run the debug live reloading server.
-
-```console
-$ fastapi run --reload app/main.py
-```
-
-...it will look like:
-
-```console
-root@7f2607af31c3:/app# fastapi run --reload app/main.py
-```
-
-and then hit enter. That runs the live reloading server that auto reloads when it detects code changes.
-
-Nevertheless, if it doesn't detect a change but a syntax error, it will just stop with an error. But as the container is still alive and you are in a Bash session, you can quickly restart it after fixing the error, running the same command ("up arrow" and "Enter").
-
-...this previous detail is what makes it useful to have the container alive doing nothing and then, in a Bash session, make it run the live reload server.
-
-## Backend tests
-
-To test the backend run:
-
-```console
-$ bash ./scripts/test.sh
-```
-
-The tests run with Pytest, modify and add tests to `./backend/tests/`.
-
-If you use GitHub Actions the tests will run automatically.
-
-### Test running stack
-
-If your stack is already up and you just want to run the tests, you can use:
+### Using Docker Compose (Recommended)
 
 ```bash
+# Start all services
+docker compose up -d
+
+# View logs
+docker compose logs -f backend
+
+# Access API documentation
+# http://localhost/docs
+```
+
+### Local Development Setup
+
+1. **Install dependencies**
+   ```bash
+   cd backend
+   uv sync
+   ```
+
+2. **Activate virtual environment**
+   ```bash
+   source .venv/bin/activate
+   ```
+
+3. **Configure environment**
+   ```bash
+   # Copy example .env
+   cp ../.env.example ../.env
+
+   # Update database connection and other settings
+   ```
+
+4. **Run migrations**
+   ```bash
+   alembic upgrade head
+   ```
+
+5. **Start development server**
+   ```bash
+   fastapi run --reload app/main.py
+   ```
+
+   The API will be available at `http://localhost:8000`
+
+## Project Structure
+
+```
+backend/
+├── app/
+│   ├── api/                    # API route handlers
+│   │   ├── routes/
+│   │   │   ├── users.py       # User endpoints
+│   │   │   ├── offices.py     # Office endpoints
+│   │   │   ├── appointments.py # Appointment endpoints
+│   │   │   └── admin.py       # Admin endpoints
+│   │   └── dependencies.py    # Shared dependencies
+│   │
+│   ├── auth/                   # Authentication & Authorization
+│   │   ├── router.py          # Auth endpoints
+│   │   ├── service.py         # Auth business logic
+│   │   ├── dependencies.py    # Auth dependencies
+│   │   ├── crud.py            # User CRUD operations
+│   │   ├── rbac.py            # Role-based access control
+│   │   └── config.py          # Auth configuration
+│   │
+│   ├── core/                   # Core utilities
+│   │   ├── security.py        # JWT and password utilities
+│   │   ├── middleware/        # Custom middleware
+│   │   ├── exceptions.py      # Custom exceptions
+│   │   └── db.py              # Database configuration
+│   │
+│   ├── models.py              # SQLModel definitions
+│   ├── crud.py                # Database operations
+│   ├── config.py              # Application settings
+│   ├── database.py            # Database connection
+│   ├── loggs.py               # Logging configuration
+│   └── main.py                # Application entry point
+│
+├── tests/                      # Test suite
+│   ├── conftest.py            # Pytest configuration
+│   ├── test_auth.py           # Authentication tests
+│   ├── test_users.py          # User endpoint tests
+│   └── test_appointments.py   # Appointment tests
+│
+├── alembic/                    # Database migrations
+│   ├── versions/              # Migration files
+│   └── env.py                 # Migration configuration
+│
+├── scripts/
+│   ├── prestart.sh            # Pre-startup setup
+│   ├── test.sh                # Run tests
+│   └── tests-start.sh         # Run tests with stack
+│
+├── Dockerfile                 # Container image
+├── pyproject.toml             # Python dependencies
+├── uv.lock                    # Dependency lock file
+└── README.md                  # This file
+```
+
+## Development
+
+### Code Organization
+
+**Models** (`app/models.py`)
+- Define SQLModel classes for database tables
+- Include Pydantic validators for data validation
+- Use type hints for all fields
+
+**API Routes** (`app/api/routes/`)
+- Organize endpoints by resource (users, offices, appointments)
+- Use dependency injection for authentication and validation
+- Return appropriate HTTP status codes
+
+**CRUD Operations** (`app/crud.py`)
+- Implement database queries
+- Use async/await for database operations
+- Handle transactions for complex operations
+
+**Authentication** (`app/auth/`)
+- JWT token generation and validation
+- Password hashing and verification
+- Role-based access control
+
+### Hot Reload Development
+
+#### Using Docker Compose Watch
+
+```bash
+# Start services with hot reload
+docker compose watch
+```
+
+This enables:
+- Code synchronization to container
+- Automatic server restart on changes
+- Live debugging capabilities
+
+#### Interactive Container Shell
+
+```bash
+# In one terminal, start the stack
+docker compose watch
+
+# In another terminal, access the container
+docker compose exec backend bash
+
+# Inside the container, run the development server
+fastapi run --reload app/main.py
+```
+
+### VS Code Integration
+
+The project includes VS Code configuration for:
+
+1. **Debugging**
+   - Set breakpoints in code
+   - Step through execution
+   - Inspect variables
+   - View call stack
+
+2. **Testing**
+   - Run tests from Test Explorer
+   - Debug individual tests
+   - View coverage reports
+
+**Setup**:
+- Ensure Python interpreter is set to `backend/.venv/bin/python`
+- Install Python extension for VS Code
+- Open `.vscode/settings.json` to verify configuration
+
+### Code Style & Linting
+
+```bash
+# Format code
+ruff format app/
+
+# Check linting
+ruff check app/
+
+# Type checking
+mypy app/
+```
+
+### Environment Variables
+
+Key backend environment variables:
+
+| Variable | Purpose | Example |
+|----------|---------|---------|
+| `SECRET_KEY` | JWT signing key | Generated secret |
+| `DATABASE_URL` | PostgreSQL connection | `postgresql+asyncpg://user:pass@host/db` |
+| `REDIS_URL` | Redis connection | `redis://localhost:6379` |
+| `ENVIRONMENT` | Deployment environment | `local`, `development`, `production` |
+| `LOG_LEVEL` | Logging level | `DEBUG`, `INFO`, `WARNING` |
+| `SMTP_HOST` | Email server | `smtp.gmail.com` or `mailpit` |
+
+See `.env` file for complete list.
+
+## Testing
+
+### Running Tests
+
+#### Full Test Suite
+
+```bash
+# Run all tests
+bash scripts/test.sh
+
+# Or with Docker
+docker compose exec backend bash scripts/test.sh
+```
+
+#### Specific Tests
+
+```bash
+# Run specific test file
+pytest tests/test_auth.py
+
+# Run specific test function
+pytest tests/test_auth.py::test_login
+
+# Run tests matching pattern
+pytest -k "test_user"
+
+# Stop on first failure
+pytest -x
+
+# Show print statements
+pytest -s
+
+# Verbose output
+pytest -v
+```
+
+#### With Running Stack
+
+```bash
+# Run tests against running services
 docker compose exec backend bash scripts/tests-start.sh
-```
 
-That `/app/scripts/tests-start.sh` script just calls `pytest` after making sure that the rest of the stack is running. If you need to pass extra arguments to `pytest`, you can pass them to that command and they will be forwarded.
-
-For example, to stop on first error:
-
-```bash
-docker compose exec backend bash scripts/tests-start.sh -x
+# With additional pytest arguments
+docker compose exec backend bash scripts/tests-start.sh -v -x
 ```
 
 ### Test Coverage
 
-When the tests are run, a file `htmlcov/index.html` is generated, you can open it in your browser to see the coverage of the tests.
+```bash
+# Generate coverage report
+pytest --cov=app --cov-report=html
 
-## Migrations
-
-As during local development your app directory is mounted as a volume inside the container, you can also run the migrations with `alembic` commands inside the container and the migration code will be in your app directory (instead of being only inside the container). So you can add it to your git repository.
-
-Make sure you create a "revision" of your models and that you "upgrade" your database with that revision every time you change them. As this is what will update the tables in your database. Otherwise, your application will have errors.
-
-* Start an interactive session in the backend container:
-
-```console
-$ docker compose exec backend bash
+# View coverage report
+open htmlcov/index.html
 ```
 
-* Alembic is already configured to import your SQLModel models from `./backend/app/models.py`.
+### Test Structure
 
-* After changing a model (for example, adding a column), inside the container, create a revision, e.g.:
-
-```console
-$ alembic revision --autogenerate -m "Add column last_name to User model"
+```
+tests/
+├── conftest.py              # Pytest fixtures and configuration
+├── test_auth.py             # Authentication tests
+├── test_users.py            # User endpoint tests
+├── test_appointments.py     # Appointment tests
+└── test_admin.py            # Admin endpoint tests
 ```
 
-* Commit to the git repository the files generated in the alembic directory.
+### Writing Tests
 
-* After creating the revision, run the migration in the database (this is what will actually change the database):
-
-```console
-$ alembic upgrade head
-```
-
-If you don't want to use migrations at all, uncomment the lines in the file at `./backend/app/core/db.py` that end in:
+Example test structure:
 
 ```python
-SQLModel.metadata.create_all(engine)
+import pytest
+from fastapi.testclient import TestClient
+from app.main import app
+
+client = TestClient(app)
+
+@pytest.fixture
+def auth_headers(client):
+    """Fixture providing authenticated headers"""
+    response = client.post("/api/v1/users/login", data={
+        "username": "test@example.com",
+        "password": "testpass123"
+    })
+    token = response.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
+
+def test_get_users(auth_headers):
+    """Test getting users list"""
+    response = client.get("/api/v1/admin/users", headers=auth_headers)
+    assert response.status_code == 200
+    assert isinstance(response.json(), list)
 ```
 
-and comment the line in the file `scripts/prestart.sh` that contains:
+## Database
 
-```console
-$ alembic upgrade head
+### Migrations with Alembic
+
+Alembic manages database schema changes. Migrations are version-controlled and can be applied or rolled back.
+
+#### Creating Migrations
+
+1. **Modify a model** in `app/models.py`
+
+2. **Create migration**
+   ```bash
+   # Inside container
+   docker compose exec backend bash
+
+   # Generate migration
+   alembic revision --autogenerate -m "Add column to User"
+   ```
+
+3. **Review migration** in `alembic/versions/`
+
+4. **Apply migration**
+   ```bash
+   alembic upgrade head
+   ```
+
+#### Common Migration Commands
+
+```bash
+# View current revision
+alembic current
+
+# View migration history
+alembic history
+
+# Upgrade to specific revision
+alembic upgrade <revision>
+
+# Downgrade one revision
+alembic downgrade -1
+
+# Downgrade to specific revision
+alembic downgrade <revision>
+
+# Show SQL without executing
+alembic upgrade head --sql
 ```
 
-If you don't want to start with the default models and want to remove them / modify them, from the beginning, without having any previous revision, you can remove the revision files (`.py` Python files) under `./backend/app/alembic/versions/`. And then create a first migration as described above.
+#### Troubleshooting Migrations
+
+```bash
+# Mark migration as applied without running
+alembic stamp <revision>
+
+# Merge conflicting branches
+alembic merge -m "Merge branches"
+
+# Show current database state
+alembic current
+```
+
+### Database Schema
+
+#### Core Tables
+
+**users**
+- User accounts with authentication
+- Email, password hash, verification status
+- Role assignment and permissions
+
+**offices**
+- Office locations
+- Scheduling configuration
+- Host assignments
+
+**appointments**
+- Booking records
+- Time slots and duration
+- User and office references
+
+**roles & permissions**
+- RBAC configuration
+- Permission definitions
+- Role assignments
+
+**token_denylist**
+- Revoked JWT tokens
+- Logout tracking
+- Token expiration
+
+### Direct Database Access
+
+```bash
+# Connect to PostgreSQL
+docker compose exec db psql -U postgres -d app
+
+# Useful queries
+\dt                    # List tables
+\d users               # Describe table
+SELECT * FROM users;   # Query data
+```
+
+## API Endpoints
+
+### Authentication
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/v1/users/login` | User login |
+| POST | `/api/v1/users/refresh` | Refresh access token |
+| POST | `/api/v1/users/logout` | User logout |
+| POST | `/api/v1/users/request-password-reset` | Request password reset |
+| POST | `/api/v1/users/reset-password` | Reset password |
+
+### Users
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/users/me` | Get current user |
+| PUT | `/api/v1/users/me` | Update current user |
+| POST | `/api/v1/users/change-password` | Change password |
+| POST | `/api/v1/users/verify-email` | Verify email |
+
+### Admin - Users
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/admin/users` | List all users |
+| POST | `/api/v1/admin/users` | Create user |
+| GET | `/api/v1/admin/users/{user_id}` | Get user details |
+| PUT | `/api/v1/admin/users/{user_id}` | Update user |
+| DELETE | `/api/v1/admin/users/{user_id}` | Delete user |
+| PATCH | `/api/v1/admin/users/{user_id}/activate` | Activate user |
+| PATCH | `/api/v1/admin/users/{user_id}/deactivate` | Deactivate user |
+| PATCH | `/api/v1/admin/users/{user_id}/suspend` | Suspend user |
+| POST | `/api/v1/admin/users/{user_id}/resend-invite` | Resend invite |
+
+### Offices
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/offices` | List offices |
+| POST | `/api/v1/offices` | Create office |
+| GET | `/api/v1/offices/{office_id}` | Get office details |
+| PATCH | `/api/v1/offices/{office_id}` | Update office |
+| DELETE | `/api/v1/offices/{office_id}` | Delete office |
+| POST | `/api/v1/offices/{office_id}/activate` | Activate office |
+| POST | `/api/v1/offices/{office_id}/deactivate` | Deactivate office |
+
+### Appointments
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/appointments` | List appointments |
+| POST | `/api/v1/appointments` | Create appointment |
+| GET | `/api/v1/appointments/{appointment_id}` | Get appointment |
+| PATCH | `/api/v1/appointments/{appointment_id}` | Update appointment |
+| DELETE | `/api/v1/appointments/{appointment_id}` | Cancel appointment |
+
+### System
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/health` | Health check |
+| GET | `/docs` | Swagger UI |
+| GET | `/redoc` | ReDoc |
+| GET | `/openapi.json` | OpenAPI schema |
 
 ## Email Templates
 
-The email templates are in `./backend/app/email-templates/`. Here, there are two directories: `build` and `src`. The `src` directory contains the source files that are used to build the final email templates. The `build` directory contains the final email templates that are used by the application.
+Email templates are located in `app/email-templates/`:
 
-Before continuing, ensure you have the [MJML extension](https://marketplace.visualstudio.com/items?itemName=attilabuti.vscode-mjml) installed in your VS Code.
+- `src/` - MJML source files (editable)
+- `build/` - Compiled HTML templates (used by app)
 
-Once you have the MJML extension installed, you can create a new email template in the `src` directory. After creating the new email template and with the `.mjml` file open in your editor, open the command palette with `Ctrl+Shift+P` and search for `MJML: Export to HTML`. This will convert the `.mjml` file to a `.html` file and now you can save it in the build directory.
+### Creating Email Templates
+
+1. **Install MJML Extension** for VS Code
+   - Search for "MJML" in extensions
+   - Install by Attila Buti
+
+2. **Create template** in `src/` directory
+   ```
+   app/email-templates/src/welcome.mjml
+   ```
+
+3. **Export to HTML**
+   - Open `.mjml` file
+   - Press `Ctrl+Shift+P`
+   - Search "MJML: Export to HTML"
+   - Save to `build/` directory
+
+4. **Use in code**
+   ```python
+   from app.core.email import send_email
+
+   send_email(
+       to=user.email,
+       subject="Welcome",
+       template_name="welcome",
+       context={"user_name": user.first_name}
+   )
+   ```
+
+## Troubleshooting
+
+### Common Issues
+
+**Database connection error**
+```
+Error: could not connect to server
+```
+- Ensure PostgreSQL is running: `docker compose ps db`
+- Check DATABASE_URL in `.env`
+- Verify credentials
+
+**Migration conflicts**
+```
+FAILED: Can't locate revision identified by 'xxx'
+```
+- Check migration history: `alembic history`
+- Resolve conflicts in migration files
+- Use `alembic merge` if needed
+
+**Port already in use**
+```
+Address already in use
+```
+- Find process: `lsof -i :8000`
+- Kill process: `kill -9 <PID>`
+
+**Import errors**
+```
+ModuleNotFoundError: No module named 'app'
+```
+- Ensure virtual environment is activated
+- Run `uv sync` to install dependencies
+- Check Python path in IDE
+
+### Debug Mode
+
+Enable debug logging:
+
+```bash
+# In .env
+LOG_LEVEL=DEBUG
+
+# Or via environment variable
+export LOG_LEVEL=DEBUG
+```
+
+View logs:
+```bash
+docker compose logs -f backend
+```
+
+### Performance Issues
+
+**Slow queries**
+- Check database indexes
+- Review query logs
+- Use `EXPLAIN ANALYZE` in PostgreSQL
+
+**High memory usage**
+- Check for memory leaks
+- Review async operations
+- Monitor with `docker stats`
+
+## Contributing
+
+### Code Standards
+
+- **Type hints** on all functions
+- **Docstrings** for public functions
+- **Tests** for new features
+- **Migrations** for schema changes
+- **Logging** for important operations
+
+### Pull Request Process
+
+1. Create feature branch
+2. Write tests
+3. Update documentation
+4. Run full test suite
+5. Submit PR with description
+
+## Resources
+
+- [FastAPI Documentation](https://fastapi.tiangolo.com)
+- [SQLModel Documentation](https://sqlmodel.tiangolo.com)
+- [Pydantic Documentation](https://docs.pydantic.dev)
+- [Alembic Documentation](https://alembic.sqlalchemy.org)
+- [Pytest Documentation](https://docs.pytest.org)
+
+## Support
+
+For issues or questions:
+- Check API documentation: http://localhost/docs
+- Review logs: `docker compose logs backend`
+- Check main README: [../README.md](../README.md)
+
+---
+
+**Last Updated**: October 2025
+**Version**: 1.0.0
