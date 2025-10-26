@@ -1,7 +1,8 @@
 "use client";
 
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
-import { useResendInvite } from "@/hooks/useResendInvite";
+import { useResendInvite } from "@/helpers/hooks/useResendInvite";
+
 
 export function ResendInviteMenuItem({
   userId,

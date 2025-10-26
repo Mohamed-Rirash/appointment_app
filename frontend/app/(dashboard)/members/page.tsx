@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { ArrowBigLeftDash, ArrowBigRight, BugIcon, Plus } from "lucide-react";
+import {  Plus } from "lucide-react";
 
 import {
   Dialog,
@@ -9,13 +9,13 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import UserForm from "./_components/userForm";
-import { auth } from "@/auth";
 import UsersTableClient from "./_components/UsersTableClient";
+import { getSession } from "@/helpers/actions/getsession";
 // import UsersStatsCard from "./_components/UsersStatsCard";
 
 export default async function Members() {
-  const session = await auth();
-  const token = session?.access_token;
+  const session = await getSession()
+  const token = session?.user.access_token;
 
   return (
     <>
@@ -24,7 +24,7 @@ export default async function Members() {
           <div className="">
             <h1 className="font-bold text-2xl">Users</h1>
             <p className="text-brand-gray text-lg leading-5 w-full max-w-[247px]">
-              Manage user accounts 
+              Manage user accounts and permissions
             </p>
           </div>
 

@@ -132,31 +132,31 @@ export default function UsersTableClient({ token }: { token?: string }) {
             </SelectTrigger>
             <SelectContent className="font-medium text-brand-black p-2">
               <SelectItem
-                className="rounded-[4px] data-[highlighted]:bg-brand-primary"
+                className="rounded-[4px] data-highlighted:bg-brand-primary"
                 value="all"
               >
                 All
               </SelectItem>
               <SelectItem
-                className="rounded-[4px] data-[highlighted]:bg-brand-primary"
+                className="rounded-[4px] data-highlighted:bg-brand-primary"
                 value="admin"
               >
                 admin
               </SelectItem>
               <SelectItem
-                className="rounded-[4px] data-[highlighted]:bg-brand-primary"
+                className="rounded-[4px] data-highlighted:bg-brand-primary"
                 value="host"
               >
                 host
               </SelectItem>
               <SelectItem
-                className="rounded-[4px] data-[highlighted]:bg-brand-primary"
+                className="rounded-[4px] data-highlighted:bg-brand-primary"
                 value="reception"
               >
                 reception
               </SelectItem>
               <SelectItem
-                className="rounded-[4px] data-[highlighted]:bg-brand-primary"
+                className="rounded-[4px] data-highlighted:bg-brand-primary"
                 value="secretary"
               >
                 secretary
@@ -178,19 +178,19 @@ export default function UsersTableClient({ token }: { token?: string }) {
             </SelectTrigger>
             <SelectContent className="font-medium text-brand-black p-2">
               <SelectItem
-                className="rounded-[4px] data-[highlighted]:bg-brand-primary"
+                className="rounded-[4px] data-highlighted:bg-brand-primary"
                 value="all"
               >
                 All Status
               </SelectItem>
               <SelectItem
-                className="rounded-[4px] data-[highlighted]:bg-brand-primary"
+                className="rounded-[4px] data-highlighted:bg-brand-primary"
                 value="active"
               >
                 Active
               </SelectItem>
               <SelectItem
-                className="rounded-[4px] data-[highlighted]:bg-brand-primary"
+                className="rounded-[4px] data-highlighted:bg-brand-primary"
                 value="inactive"
               >
                 Inactive
@@ -211,19 +211,19 @@ export default function UsersTableClient({ token }: { token?: string }) {
             </SelectTrigger>
             <SelectContent className="font-medium text-brand-black p-2">
               <SelectItem
-                className="rounded-[4px] data-[highlighted]:bg-brand-primary"
+                className="rounded-[4px] data-highlighted:bg-brand-primary"
                 value="all"
               >
                 All
               </SelectItem>
               <SelectItem
-                className="rounded-[4px] data-[highlighted]:bg-brand-primary"
+                className="rounded-[4px] data-highlighted:bg-brand-primary"
                 value="verified"
               >
                 Verified
               </SelectItem>
               <SelectItem
-                className="rounded-[4px] data-[highlighted]:bg-brand-primary"
+                className="rounded-[4px] data-highlighted:bg-brand-primary"
                 value="unverified"
               >
                 Unverified
@@ -334,7 +334,7 @@ export default function UsersTableClient({ token }: { token?: string }) {
                         {/* admin actions */}
                         <UserActionsDropdown
                           userId={user.id}
-                          email={user.email}
+                        //   email={user.email}
                           token={token!}
                           currentRole={user.roles[0]}
                         />

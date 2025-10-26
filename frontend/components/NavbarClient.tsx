@@ -11,27 +11,37 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
-import { SidebarTrigger } from "./ui/sidebar";
-import { signOut } from "next-auth/react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 type Props = {
   user: {
-    first_name: string;
+    id: string;
     email: string;
+    first_name: string;
+    last_name: string;
+    is_active: boolean;
+    is_verified: boolean;
+    is_system_user: boolean;
+    roles: string[];
+    access_token?: string;
+    // expires unix timestamp (seconds)
+    expires_at?: number;
   };
 };
 
 export default function NavbarClient({ user }: Props) {
+    // const pathname = usePathname()
+    // console.log("sssssssss",pathname)
   return (
-    <div className="h-16 border-b border-bran-secondary flex justify-between items-center px-4">
-      <div className="flex justify-center items-center">
-        <SidebarTrigger />
+    <div className="h-16 border-b border-bran-secondary flex justify-between items-center px-6">
+      <div className="text-lg font-bold">
+        Welcome KullanDesk
       </div>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-            <Avatar className="h-8 w-8">
+            <Avatar className="h-12 w-12">
               <AvatarImage src={"/avatar.png"} />
               <AvatarFallback className="bg-primary text-primary-foreground">
                 {user.first_name[0]?.toUpperCase() || "A"}
@@ -64,10 +74,7 @@ export default function NavbarClient({ user }: Props) {
               Profile
             </Link>
           </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() => signOut({ callbackUrl: "/Signin" })}
-            className="py-2 cursor-pointer"
-          >
+          <DropdownMenuItem className="py-2 cursor-pointer">
             <LogOut className="mr-2" />
             Sign Out
           </DropdownMenuItem>

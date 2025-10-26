@@ -1,5 +1,6 @@
 import axios from "axios";
 
+
 // Create an axios instance with base URL and default config
 const apiClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
@@ -59,7 +60,7 @@ export const client = {
           headers: {
             "Content-Type": "application/x-www-form-urlencoded",
           },
-        }
+        },
       );
       console.log("ssss", response.data);
       return response.data;
@@ -68,7 +69,7 @@ export const client = {
         // Server responded with error status
         throw new Error(
           error.response.data?.detail ||
-            `Login failed: ${error.response.status}`
+            `Login failed: ${error.response.status}`,
         );
       } else if (error.request) {
         throw new Error("No response from server");
@@ -119,7 +120,7 @@ export const client = {
         error.response?.data?.detail ||
           `Failed to send reset email: ${
             error.response?.status || "network error"
-          }`
+          }`,
       );
     }
   },
@@ -128,7 +129,7 @@ export const client = {
   async changePassword(
     current_password: string,
     new_password: string,
-    token: string
+    token: string,
   ) {
     try {
       const response = await apiClient.post(
@@ -138,13 +139,13 @@ export const client = {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
       return response.data;
     } catch (error: any) {
       console.error("Error changing password:", error);
       throw new Error(
-        error.response?.data?.detail || "Failed to change password"
+        error.response?.data?.detail || "Failed to change password",
       );
     }
   },
@@ -206,7 +207,7 @@ export const client = {
       {},
       {
         headers: { Authorization: `Bearer ${token}` },
-      }
+      },
     );
     return response.data;
   },
@@ -218,7 +219,7 @@ export const client = {
       {},
       {
         headers: { Authorization: `Bearer ${token}` },
-      }
+      },
     );
     console.log("activ:::", response.data);
     return response.data;
@@ -231,7 +232,7 @@ export const client = {
       {},
       {
         headers: { Authorization: `Bearer ${token}` },
-      }
+      },
     );
     return response.data;
   },
@@ -243,7 +244,7 @@ export const client = {
       {},
       {
         headers: { Authorization: `Bearer ${token}` },
-      }
+      },
     );
     return response.data;
   },
@@ -256,7 +257,7 @@ export const client = {
       {},
       {
         headers: { Authorization: `Bearer ${token}` },
-      }
+      },
     );
     console.log("Role:::", response.data);
     return response.data;
@@ -268,7 +269,7 @@ export const client = {
       `/admin/users/${userId}/roles/${roleName}`,
       {
         headers: { Authorization: `Bearer ${token}` },
-      }
+      },
     );
     console.log("revoke", response.data);
     return response.data;
@@ -293,7 +294,7 @@ export const client = {
   // create office
   async createOffice(
     data: { name: string; description: string; location: string },
-    token?: string
+    token?: string,
   ) {
     const response = await apiClient.post("/offices", data, {
       headers: { Authorization: `Bearer ${token}` },
@@ -301,32 +302,40 @@ export const client = {
     return response.data;
   },
   // edit pffice
-  async editOffice(officeId: string, data: Office, token: string) {
+  async editOffice(officeId: string, data: Office, token?: string) {
     const response = await apiClient.patch(`/offices/${officeId}`, data, {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
   },
-    // Delete office
-    async deleteOffice(officeId: string, token?: string) {
-      const response = await apiClient.delete(`/offices/${officeId}`, {
+  // Delete office
+  async deleteOffice(officeId: string, token?: string) {
+    const response = await apiClient.delete(`/offices/${officeId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    console.log("delted data", response.data);
+    return response.data;
+  },
+  // office deactivate
+  async deactivateOffice(officeId: string, token: string) {
+    const response = await apiClient.post(
+      `/offices/${officeId}/deactivate`,
+      {},
+      {
         headers: { Authorization: `Bearer ${token}` },
-      });
-     console.log("delted data", response.data)
-      return response.data;
-    },
-    // office deactivate
-    async deactivateOffice(officeId: string, token: string) {
-      const response = await apiClient.post(`/offices/${officeId}/deactivate`, {}, {
+      },
+    );
+    return response.data;
+  },
+  // office activate
+  async activateOffice(officeId: string, token: string) {
+    const response = await apiClient.post(
+      `/offices/${officeId}/activate`,
+      {},
+      {
         headers: { Authorization: `Bearer ${token}` },
-      });
-      return response.data;
-    },
-        // office activate
-        async activateOffice(officeId: string, token: string) {
-          const response = await apiClient.post(`/offices/${officeId}/activate`, {}, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          return response.data;
-        }
+      },
+    );
+    return response.data;
+  },
 };

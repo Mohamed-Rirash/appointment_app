@@ -14,8 +14,8 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { useDeactivateOffice } from "@/hooks/office/useDeactivateOffice";
 import { useState } from "react";
+import { useDeactivateOffice } from "@/helpers/hooks/office/useDeactivateOffice";
 
 export function DeactivateOfficeButton({
     officeId,

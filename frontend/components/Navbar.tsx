@@ -1,8 +1,12 @@
-import { requireAuth } from "@/helpers/auth-guard";
+import { getSession } from "@/helpers/actions/getsession";
+import { redirect } from "next/navigation";
 import NavbarClient from "./NavbarClient";
 
 export default async function Navbar() {
-  const user = await requireAuth(); 
+  const session = await getSession()
+  if(!session.user){
+    redirect("/Signin")
+  }
 
-  return <NavbarClient user={user} />;
+  return <NavbarClient user={session.user} />;
 }

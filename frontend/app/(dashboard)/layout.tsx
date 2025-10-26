@@ -1,28 +1,16 @@
-import { AppSidebar } from "@/components/app-sidebar";
 import Navbar from "@/components/Navbar";
-import { Toaster } from "react-hot-toast";
-import {
-  SidebarInset,
-  SidebarProvider,
-} from "@/components/ui/sidebar";
+import Sidebar from "@/components/Sidebar";
 
-export default function LayoutDashboard({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return (
-    <>
-      <SidebarProvider>
-        <AppSidebar />
-        <SidebarInset>
-          <main className="">
-            <Navbar />
+
+
+
+export default function DashboardLayout({children}: {children: React.ReactNode}){
+    return(
+        <>
+        <Sidebar>
+            <Navbar/>
             {children}
-            <Toaster />
-          </main>
-        </SidebarInset>
-      </SidebarProvider>
-    </>
-  );
+        </Sidebar>
+        </>
+    )
 }

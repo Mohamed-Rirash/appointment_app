@@ -2,7 +2,6 @@
 
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useDeleteUser } from "@/hooks/useDeleteUser";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,6 +13,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { useDeleteUser } from "@/helpers/hooks/useDeleteUser";
 
 export function DeleteUserButton({
   userId,

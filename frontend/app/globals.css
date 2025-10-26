@@ -4,20 +4,14 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --color-brand:#24C453;
-  --color-brand-primary:#E5F3E9;
-  --color-bran-secondary:#E1E1E1;
-  --color-brand-gray:#999999;
-  --color-brand-black:#2c2c2c;
+  --color-brand: #24c453;
+  --color-brand-primary: #e5f3e9;
+  --color-brand-secondary: #e1e1e1;
+  --color-brand-gray: #999999;
+  --color-brand-black: #2c2c2c;
+  --shadow-gren: 0px 2px 8px -3px rgba(36, 196, 83, 0.25);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  
-  --shadow-gren: 0px 2px 8px -3px rgba(36, 196, 83, 0.25);
-  --background-image-gradient-green: linear-gradient(135deg, #0F9938  0%,  #29E05F 100%);
-  --shadow-inner-gren: inset 4px 4px 8px 0 rgba(255, 255, 255, 0.29);
-  --shadow-inner-gren-top: inset -4px -4px 8px 0 rgba(29, 162, 68, 0.5);
-  /* --font-satoshi: "satoshi"; */
-  --font-family-satoshi: var(--font-satoshi), sans-serif;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --color-sidebar-ring: var(--sidebar-ring);
@@ -131,34 +125,4 @@
   body {
     @apply bg-background text-foreground;
   }
-  .sidebar-menu-button {
-    @apply gap-0 px-0;
-  }
-}
-
-
-
-body{
-  font-family: "satoshi";
-  
-}
-/* 
-.combined-shadow{
-  @apply shadow-gren;
-  @apply shadow-inner-gren;
-  @apply shadow-inner-gren-top
-} */
-
-.combined-shadow {
-  box-shadow: 
-    0px 2px 8px -3px rgba(36, 196, 83, 0.25),
-    inset 4px 4px 8px 0 rgba(255, 255, 255, 0.29),
-    inset -4px -4px 8px 0 rgba(29, 162, 68, 0.5);
-}
-
-.combined-shadow-white {
-  box-shadow: 
-    0px 2px 8px -3px rgba(36, 196, 83, 0.25),
-    inset 2px 2px 4px 0 rgba(36, 196, 83, 0.05),
-    inset -2px -2px 4px 0 rgba(36, 196, 83, 0.1);
 }

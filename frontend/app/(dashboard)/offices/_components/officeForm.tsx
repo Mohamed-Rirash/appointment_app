@@ -89,7 +89,7 @@ export default function CreateOfficeForm({ token }: { token?: string }) {
                 <FormControl>
                   <Textarea
                     placeholder="e.g., Ministry of Health Headquarters, Hargeisa"
-                    className="py-6 pl-4 text-lg rounded-[4px] h-[96px] shadow-gren"
+                    className="py-6 pl-4 text-lg rounded-[4px] h-24 shadow-gren"
                     rows={3}
                     {...field}
                   />

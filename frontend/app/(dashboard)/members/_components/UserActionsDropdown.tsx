@@ -15,12 +15,10 @@ import { RevokeRoleMenuItem } from "./RevokeRoleMenuItem";
 
 export function UserActionsDropdown({
   userId,
-  email,
   token,
   currentRole,
 }: {
   userId: string;
-  email: string;
   token: string;
   currentRole: string;
 }) {
@@ -38,7 +36,6 @@ export function UserActionsDropdown({
         <ResendInviteMenuItem userId={userId} token={token} />
         <ActivateUserMenuItem userId={userId} token={token} />
         <DeactivateUserMenuItem userId={userId} token={token} />
-        {/* <SuspendUserMenuItem userId={userId} token={token} /> */}
         <AssignRoleModal
           userId={userId}
           currentRole={currentRole}
