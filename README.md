@@ -1,239 +1,380 @@
-# Full Stack FastAPI Template
+# Appointment Booking Application
 
-<a href="https://github.com/fastapi/full-stack-fastapi-template/actions?query=workflow%3ATest" target="_blank"><img src="https://github.com/fastapi/full-stack-fastapi-template/workflows/Test/badge.svg" alt="Test"></a>
-<a href="https://coverage-badge.samuelcolvin.workers.dev/redirect/fastapi/full-stack-fastapi-template" target="_blank"><img src="https://coverage-badge.samuelcolvin.workers.dev/fastapi/full-stack-fastapi-template.svg" alt="Coverage"></a>
+A modern, production-ready full-stack web application for managing appointments and office scheduling. Built with FastAPI, Next.js, and PostgreSQL, featuring comprehensive authentication, role-based access control, and a professional admin dashboard.
 
-## Technology Stack and Features
+## 📋 Table of Contents
 
-- ⚡ [**FastAPI**](https://fastapi.tiangolo.com) for the Python backend API.
-  - 🧰 [SQLModel](https://sqlmodel.tiangolo.com) for the Python SQL database interactions (ORM).
-  - 🔍 [Pydantic](https://docs.pydantic.dev), used by FastAPI, for the data validation and settings management.
-  - 💾 [PostgreSQL](https://www.postgresql.org) as the SQL database.
-- 🚀 [React](https://react.dev) for the frontend.
-  - 💃 Using TypeScript, hooks, Vite, and other parts of a modern frontend stack.
-  - 🎨 [Chakra UI](https://chakra-ui.com) for the frontend components.
-  - 🤖 An automatically generated frontend client.
-  - 🧪 [Playwright](https://playwright.dev) for End-to-End testing.
-  - 🦇 Dark mode support.
-- 🐋 [Docker Compose](https://www.docker.com) for development and production.
-- 🔒 Secure password hashing by default.
-- 🔑 JWT (JSON Web Token) authentication.
-- 📫 Email based password recovery.
-- ✅ Tests with [Pytest](https://pytest.org).
-- 📞 [Traefik](https://traefik.io) as a reverse proxy / load balancer.
-- 🚢 Deployment instructions using Docker Compose, including how to set up a frontend Traefik proxy to handle automatic HTTPS certificates.
-- 🏭 CI (continuous integration) and CD (continuous deployment) based on GitHub Actions.
+- [Overview](#overview)
+- [Technology Stack](#technology-stack)
+- [Key Features](#key-features)
+- [Quick Start](#quick-start)
+- [Project Structure](#project-structure)
+- [Documentation](#documentation)
+- [License](#license)
 
-### Dashboard Login
+## Overview
 
-[![API docs](img/login.png)](https://github.com/fastapi/full-stack-fastapi-template)
+This application provides a complete solution for appointment booking and office management with:
 
-### Dashboard - Admin
+- **Multi-tenant office management** with customizable scheduling
+- **Role-based access control (RBAC)** with admin, staff, and user roles
+- **Secure authentication** using JWT tokens with refresh token rotation
+- **Professional admin dashboard** for user and office management
+- **Responsive design** with dark mode support
+- **Production-ready deployment** with Docker and Nginx
 
-[![API docs](img/dashboard.png)](https://github.com/fastapi/full-stack-fastapi-template)
+## Technology Stack
 
-### Dashboard - Create User
+### Backend
+- **[FastAPI](https://fastapi.tiangolo.com)** - Modern Python web framework
+  - **[SQLModel](https://sqlmodel.tiangolo.com)** - SQL ORM with Pydantic integration
+  - **[PostgreSQL](https://www.postgresql.org)** - Relational database
+  - **[Pydantic](https://docs.pydantic.dev)** - Data validation and settings management
+  - **[Alembic](https://alembic.sqlalchemy.org)** - Database migrations
+  - **[Pytest](https://pytest.org)** - Testing framework
 
-[![API docs](img/dashboard-create.png)](https://github.com/fastapi/full-stack-fastapi-template)
+### Frontend
+- **[Next.js](https://nextjs.org)** - React framework with TypeScript
+  - **[React 18+](https://react.dev)** - UI library
+  - **[TanStack Query](https://tanstack.com/query)** - Server state management
+  - **[TanStack Router](https://tanstack.com/router)** - Client-side routing
+  - **[Chakra UI](https://chakra-ui.com)** - Component library
+  - **[NextAuth.js](https://next-auth.js.org)** - Authentication
+  - **[Playwright](https://playwright.dev)** - E2E testing
 
-### Dashboard - Items
+### Infrastructure
+- **[Docker Compose](https://www.docker.com)** - Container orchestration
+- **[Nginx](https://nginx.org)** - Reverse proxy and load balancer
+- **[Redis](https://redis.io)** - Caching and session management
+- **[Mailpit](https://mailpit.axllent.org)** - Email testing (development)
 
-[![API docs](img/dashboard-items.png)](https://github.com/fastapi/full-stack-fastapi-template)
+## Key Features
 
-### Dashboard - User Settings
+### Authentication & Security
+- ✅ JWT-based authentication with secure token refresh
+- ✅ CSRF protection with double-submit cookie pattern
+- ✅ Secure password hashing (bcrypt)
+- ✅ Email-based password recovery
+- ✅ Role-based access control (RBAC)
+- ✅ User verification and activation workflows
 
-[![API docs](img/dashboard-user-settings.png)](https://github.com/fastapi/full-stack-fastapi-template)
+### Admin Dashboard
+- 👥 User management (create, edit, deactivate, suspend)
+- 🏢 Office management with location tracking
+- 📊 User statistics and activity monitoring
+- 🔐 Role and permission assignment
+- 📧 Email invitation system
 
-### Dashboard - Dark Mode
+### Appointment Management
+- 📅 Office-based scheduling
+- 🕐 Time slot management
+- 👤 Host assignment and availability
+- 📝 Appointment tracking and history
 
-[![API docs](img/dashboard-dark.png)](https://github.com/fastapi/full-stack-fastapi-template)
+### Developer Experience
+- 🔄 Hot-reload development environment
+- 📚 Auto-generated API documentation (Swagger UI)
+- 🧪 Comprehensive test suite
+- 🐛 VS Code debugger integration
+- 📝 Structured logging with JSON output
 
-### Interactive API Documentation
+## Quick Start
 
-[![API docs](img/docs.png)](https://github.com/fastapi/full-stack-fastapi-template)
+### Prerequisites
 
-## How To Use It
+- **Docker** and **Docker Compose** (recommended)
+- **Python 3.11+** (for local development)
+- **Node.js 20+** (for frontend development)
+- **uv** (Python package manager, optional but recommended)
 
-You can **just fork or clone** this repository and use it as is.
+### Using Docker Compose (Recommended)
 
-✨ It just works. ✨
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd appointment_app
+   ```
 
-### How to Use a Private Repository
+2. **Configure environment variables**
+   ```bash
+   # Copy the example .env file
+   cp .env.example .env
 
-If you want to have a private repository, GitHub won't allow you to simply fork it as it doesn't allow changing the visibility of forks.
+   # Update critical values in .env:
+   # - SECRET_KEY (generate with: python -c "import secrets; print(secrets.token_urlsafe(32))")
+   # - FIRST_SUPERUSER_PASSWORD
+   # - POSTGRES_PASSWORD
+   ```
 
-But you can do the following:
+3. **Start the application**
+   ```bash
+   docker-compose up -d
+   ```
 
-- Create a new GitHub repo, for example `my-full-stack`.
-- Clone this repository manually, set the name with the name of the project you want to use, for example `my-full-stack`:
+4. **Access the application**
+   - Frontend: http://localhost
+   - API Documentation: http://localhost/docs
+   - Admin Email: admin@gmail.com (default)
+   - Admin Password: Check your `.env` file
+
+### Local Development
+
+#### Backend Setup
 
 ```bash
-git clone git@github.com:fastapi/full-stack-fastapi-template.git my-full-stack
+cd backend
+
+# Install dependencies
+uv sync
+
+# Activate virtual environment
+source .venv/bin/activate
+
+# Run migrations
+alembic upgrade head
+
+# Start development server
+fastapi run --reload app/main.py
 ```
 
-- Enter into the new directory:
+#### Frontend Setup
 
 ```bash
-cd my-full-stack
+cd frontend
+
+# Install dependencies
+pnpm install
+
+# Start development server
+pnpm dev
 ```
 
-- Set the new origin to your new repository, copy it from the GitHub interface, for example:
+## Project Structure
+
+```
+appointment_app/
+├── backend/                    # FastAPI application
+│   ├── app/
+│   │   ├── api/               # API routes
+│   │   ├── auth/              # Authentication & RBAC
+│   │   ├── core/              # Core utilities (security, middleware)
+│   │   ├── models.py          # SQLModel definitions
+│   │   ├── crud.py            # Database operations
+│   │   └── main.py            # Application entry point
+│   ├── tests/                 # Test suite
+│   ├── alembic/               # Database migrations
+│   ├── Dockerfile             # Backend container
+│   └── pyproject.toml         # Python dependencies
+│
+├── frontend/                   # Next.js application
+│   ├── app/                   # Next.js app directory
+│   │   ├── (auth)/            # Authentication pages
+│   │   ├── (dashboard)/       # Protected dashboard pages
+│   │   └── api/               # API routes
+│   ├── components/            # React components
+│   ├── helpers/               # Utilities and API client
+│   ├── hooks/                 # Custom React hooks
+│   ├── Dockerfile             # Frontend container
+│   └── package.json           # Node dependencies
+│
+├── docker-compose.yml         # Service orchestration
+├── nginx.conf                 # Reverse proxy configuration
+└── .env                       # Environment variables
+```
+
+## Documentation
+
+### Detailed Guides
+
+- **[Backend Documentation](./backend/README.md)** - API development, testing, migrations, and deployment
+- **[Frontend Documentation](./frontend/README.md)** - UI development and component usage
+- **[Development Guide](./development.md)** - Local development setup and workflows
+- **[Deployment Guide](./deployment.md)** - Production deployment instructions
+
+### API Documentation
+
+Once the application is running, access the interactive API documentation:
+
+- **Swagger UI**: http://localhost/docs
+- **ReDoc**: http://localhost/redoc
+- **OpenAPI Schema**: http://localhost/openapi.json
+
+### Environment Configuration
+
+Key environment variables to configure:
+
+| Variable | Purpose | Example |
+|----------|---------|---------|
+| `SECRET_KEY` | JWT signing key | `python -c "import secrets; print(secrets.token_urlsafe(32))"` |
+| `ENVIRONMENT` | Deployment environment | `local`, `development`, `staging`, `production` |
+| `FRONTEND_HOST` | Frontend URL for links | `http://localhost` or `https://example.com` |
+| `POSTGRES_PASSWORD` | Database password | Generate a secure password |
+| `FIRST_SUPERUSER` | Admin email | `admin@example.com` |
+| `FIRST_SUPERUSER_PASSWORD` | Admin password | Secure password |
+| `SMTP_HOST` | Email server | `smtp.gmail.com` or `mailpit` (dev) |
+
+See `.env` file for complete configuration options.
+
+## Common Tasks
+
+### Running Tests
 
 ```bash
-git remote set-url origin git@github.com:octocat/my-full-stack.git
+# Backend tests
+cd backend
+bash scripts/test.sh
+
+# Frontend E2E tests
+cd frontend
+pnpm test:e2e
 ```
 
-- Add this repo as another "remote" to allow you to get updates later:
+### Database Migrations
 
 ```bash
-git remote add upstream git@github.com:fastapi/full-stack-fastapi-template.git
+# Create a new migration
+docker compose exec backend alembic revision --autogenerate -m "Description"
+
+# Apply migrations
+docker compose exec backend alembic upgrade head
+
+# Rollback last migration
+docker compose exec backend alembic downgrade -1
 ```
 
-- Push the code to your new repository:
+### Accessing Services
 
 ```bash
-git push -u origin master
+# Backend shell
+docker compose exec backend bash
+
+# Frontend shell
+docker compose exec frontend sh
+
+# Database shell
+docker compose exec db psql -U postgres -d app
+
+# View logs
+docker compose logs -f backend
+docker compose logs -f frontend
 ```
 
-### Update From the Original Template
-
-After cloning the repository, and after doing changes, you might want to get the latest changes from this original template.
-
-- Make sure you added the original repository as a remote, you can check it with:
-
-```bash
-git remote -v
-
-origin    git@github.com:octocat/my-full-stack.git (fetch)
-origin    git@github.com:octocat/my-full-stack.git (push)
-upstream    git@github.com:fastapi/full-stack-fastapi-template.git (fetch)
-upstream    git@github.com:fastapi/full-stack-fastapi-template.git (push)
-```
-
-- Pull the latest changes without merging:
-
-```bash
-git pull --no-commit upstream master
-```
-
-This will download the latest changes from this template without committing them, that way you can check everything is right before committing.
-
-- If there are conflicts, solve them in your editor.
-
-- Once you are done, commit the changes:
-
-```bash
-git merge --continue
-```
-
-### Configure
-
-You can then update configs in the `.env` files to customize your configurations.
-
-Before deploying it, make sure you change at least the values for:
-
-- `SECRET_KEY`
-- `FIRST_SUPERUSER_PASSWORD`
-- `POSTGRES_PASSWORD`
-
-You can (and should) pass these as environment variables from secrets.
-
-Read the [deployment.md](./deployment.md) docs for more details.
-
-### Generate Secret Keys
-
-Some environment variables in the `.env` file have a default value of `changethis`.
-
-You have to change them with a secret key, to generate secret keys you can run the following command:
+### Generating Secret Keys
 
 ```bash
 python -c "import secrets; print(secrets.token_urlsafe(32))"
 ```
 
-Copy the content and use that as password / secret key. And run that again to generate another secure key.
+## Architecture
 
-## How To Use It - Alternative With Copier
+### Authentication Flow
 
-This repository also supports generating a new project using [Copier](https://copier.readthedocs.io).
+1. User logs in with email/password
+2. Backend validates credentials and issues JWT tokens
+3. Access token stored in memory, refresh token in httpOnly cookie
+4. CSRF token issued for double-submit protection
+5. Subsequent requests include access token in Authorization header
+6. Token refresh handled automatically via refresh endpoint
 
-It will copy all the files, ask you configuration questions, and update the `.env` files with your answers.
+### API Architecture
 
-### Install Copier
+- **RESTful API** with standard HTTP methods
+- **Role-based access control** enforced at endpoint level
+- **Request/response validation** using Pydantic models
+- **Structured error responses** with detailed error messages
+- **Rate limiting** on sensitive endpoints
+- **CORS** configured for frontend origin
 
-You can install Copier with:
+### Database Schema
 
+- **Users** - User accounts with roles and permissions
+- **Offices** - Office locations with scheduling configuration
+- **Appointments** - Booking records with time slots
+- **Roles & Permissions** - RBAC configuration
+- **Token Denylist** - Revoked tokens for logout
+
+## Performance & Security
+
+### Performance Optimizations
+- Database query optimization with indexed lookups
+- Redis caching for frequently accessed data
+- Connection pooling for database and Redis
+- Gzip compression for API responses
+- Static asset caching with proper headers
+
+### Security Features
+- HTTPS/TLS in production
+- CSRF protection with double-submit cookies
+- SQL injection prevention via parameterized queries
+- XSS protection via Content Security Policy headers
+- Rate limiting on authentication endpoints
+- Secure password hashing with bcrypt
+- JWT token expiration and refresh rotation
+- CORS configuration for frontend origin only
+
+## Troubleshooting
+
+### Common Issues
+
+**Port already in use**
 ```bash
-pip install copier
+# Find and kill process using port 80
+lsof -i :80
+kill -9 <PID>
 ```
 
-Or better, if you have [`pipx`](https://pipx.pypa.io/), you can run it with:
-
+**Database connection errors**
 ```bash
-pipx install copier
+# Check database is running
+docker compose ps db
+
+# View database logs
+docker compose logs db
 ```
 
-**Note**: If you have `pipx`, installing copier is optional, you could run it directly.
+**Frontend not connecting to API**
+- Verify `NEXT_PUBLIC_API_URL` is set to `/api/v1`
+- Check nginx proxy is running: `docker compose ps nginx`
+- Verify CORS origins in backend `.env`
 
-### Generate a Project With Copier
+**CSRF token errors**
+- Ensure cookies are enabled in browser
+- Check that `X-CSRF-Token` header is being sent
+- Verify cookie domain matches request domain
 
-Decide a name for your new project's directory, you will use it below. For example, `my-awesome-project`.
+### Getting Help
 
-Go to the directory that will be the parent of your project, and run the command with your project's name:
+- Check logs: `docker compose logs -f <service>`
+- Review API docs: http://localhost/docs
+- Check backend README: [backend/README.md](./backend/README.md)
+- Check frontend README: [frontend/README.md](./frontend/README.md)
 
-```bash
-copier copy https://github.com/fastapi/full-stack-fastapi-template my-awesome-project --trust
-```
+## Contributing
 
-If you have `pipx` and you didn't install `copier`, you can run it directly:
+1. Create a feature branch: `git checkout -b feature/your-feature`
+2. Make your changes and commit: `git commit -am 'Add feature'`
+3. Push to branch: `git push origin feature/your-feature`
+4. Submit a pull request
 
-```bash
-pipx run copier copy https://github.com/fastapi/full-stack-fastapi-template my-awesome-project --trust
-```
+### Code Standards
 
-**Note** the `--trust` option is necessary to be able to execute a [post-creation script](https://github.com/fastapi/full-stack-fastapi-template/blob/master/.copier/update_dotenv.py) that updates your `.env` files.
-
-### Input Variables
-
-Copier will ask you for some data, you might want to have at hand before generating the project.
-
-But don't worry, you can just update any of that in the `.env` files afterwards.
-
-The input variables, with their default values (some auto generated) are:
-
-- `project_name`: (default: `"FastAPI Project"`) The name of the project, shown to API users (in .env).
-- `stack_name`: (default: `"fastapi-project"`) The name of the stack used for Docker Compose labels and project name (no spaces, no periods) (in .env).
-- `secret_key`: (default: `"changethis"`) The secret key for the project, used for security, stored in .env, you can generate one with the method above.
-- `first_superuser`: (default: `"admin@example.com"`) The email of the first superuser (in .env).
-- `first_superuser_password`: (default: `"changethis"`) The password of the first superuser (in .env).
-- `smtp_host`: (default: "") The SMTP server host to send emails, you can set it later in .env.
-- `smtp_user`: (default: "") The SMTP server user to send emails, you can set it later in .env.
-- `smtp_password`: (default: "") The SMTP server password to send emails, you can set it later in .env.
-- `emails_from_email`: (default: `"info@example.com"`) The email account to send emails from, you can set it later in .env.
-- `postgres_password`: (default: `"changethis"`) The password for the PostgreSQL database, stored in .env, you can generate one with the method above.
-- `sentry_dsn`: (default: "") The DSN for Sentry, if you are using it, you can set it later in .env.
-
-## Backend Development
-
-Backend docs: [backend/README.md](./backend/README.md).
-
-## Frontend Development
-
-Frontend docs: [frontend/README.md](./frontend/README.md).
-
-## Deployment
-
-Deployment docs: [deployment.md](./deployment.md).
-
-## Development
-
-General development docs: [development.md](./development.md).
-
-This includes using Docker Compose, custom local domains, `.env` configurations, etc.
-
-## Release Notes
-
-Check the file [release-notes.md](./release-notes.md).
+- **Backend**: Follow PEP 8, use type hints, write tests
+- **Frontend**: Use TypeScript, follow ESLint rules, write tests
+- **Commits**: Use conventional commit messages
+- **Documentation**: Update docs for API changes
 
 ## License
 
-The Full Stack FastAPI Template is licensed under the terms of the MIT license.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Support
+
+For issues, questions, or suggestions:
+- Open an issue on GitHub
+- Check existing documentation
+- Review API documentation at http://localhost/docs
+
+---
+
+**Last Updated**: October 2025
+**Version**: 1.0.0
