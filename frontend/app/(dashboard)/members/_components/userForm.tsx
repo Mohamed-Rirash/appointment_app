@@ -58,17 +58,35 @@ export default function UserForm({ token }: { token?: string }) {
 
   async function onSubmit(data: UserFormData) {
     setIsSubmitting(true);
+
+    // Domain validation
+    const allowedDomains = ["gmail.com", "amoud.org"];
+    const domain = email.split("@")[1]?.toLowerCase();
+    console.log("DDD", domain);
+    if (!domain || !allowedDomains.includes(domain)) {
+      setError(
+        "Only email addresses from @gmail.com or @amoud.org are allowed."
+      );
+      setLoading(false);
+      return;
+    }
+
+
     if (data.role === "") {
       setError("Please select a role");
       setIsSubmitting(false);
       return;
     }
+
+
     const userdata = {
       ...data,
       is_active: true,
       is_verified: false,
       send_welcome_email: true,
     };
+
+
 
     try {
       await client.createUser(userdata, token);

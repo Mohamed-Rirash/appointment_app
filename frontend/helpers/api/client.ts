@@ -152,16 +152,18 @@ export const client = {
 
   // Create User (Admin)
   async createUser(data: Userdata, token?: string) {
-    try {
-      const response = await apiClient.post("/admin/users", data, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      return response.data;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.detail || "Failed to create user");
-    }
+    console.log("client shit", data)
+ 
+    // try {
+    //   const response = await apiClient.post("/admin/users", data, {
+    //     headers: {
+    //       Authorization: `Bearer ${token}`,
+    //     },
+    //   });
+    //   return response.data;
+    // } catch (error: any) {
+    //   throw new Error(error.response?.data?.detail || "Failed to create user");
+    // }
   },
 
   // Get Users (Admin)
