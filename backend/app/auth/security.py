@@ -1,5 +1,5 @@
 import base64
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from argon2 import PasswordHasher
 from fastapi.security import OAuth2PasswordBearer
@@ -42,12 +42,12 @@ def get_token_payload(token: str):
             token, settings.JWT_SECRET, algorithms=settings.JWT_ALGORITHM
         )
     except Exception as jwt_exec:
-        logging.debug(f"JWT Error: {str(jwt_exec)}")
+        logging.debug(f"JWT Error: {jwt_exec!s}")
         payload = None
     return payload
 
 
 def generate_token(payload: dict, expiry: timedelta):
-    expire = datetime.now(timezone.utc) + expiry
+    expire = datetime.now(UTC) + expiry
     payload.update({"exp": expire})
     return jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)

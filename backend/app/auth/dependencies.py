@@ -2,7 +2,6 @@
 Authentication and authorization dependencies for FastAPI
 """
 
-from typing import List, Optional
 from uuid import UUID
 
 from databases import Database
@@ -23,7 +22,7 @@ security = HTTPBearer(scheme_name="BearerAuth", auto_error=False)
 class CurrentUser:
     """Current user information"""
 
-    def __init__(self, user_data: dict, permissions: List[dict]):
+    def __init__(self, user_data: dict, permissions: list[dict]):
         self.id = user_data["id"]
         self.email = user_data["email"]
         self.first_name = user_data["first_name"]
@@ -69,9 +68,9 @@ class CurrentUser:
 
 async def get_current_user_from_token(
     request: Request,
-    credentials: Optional[HTTPAuthorizationCredentials] = Security(security),
+    credentials: HTTPAuthorizationCredentials | None = Security(security),
     db: Database = Depends(get_db),
-) -> Optional[CurrentUser]:
+) -> CurrentUser | None:
     """Get current user from JWT token"""
     if not credentials:
         return None
@@ -135,14 +134,14 @@ async def get_current_user_from_token(
 
 async def get_current_user(
     request: Request,
-    token_user: Optional[CurrentUser] = Depends(get_current_user_from_token),
-) -> Optional[CurrentUser]:
+    token_user: CurrentUser | None = Depends(get_current_user_from_token),
+) -> CurrentUser | None:
     """Get current user from either token"""
     return token_user
 
 
 async def require_authentication(
-    current_user: Optional[CurrentUser] = Depends(get_current_user),
+    current_user: CurrentUser | None = Depends(get_current_user),
 ) -> CurrentUser:
     """Require user to be authenticated"""
     if not current_user:

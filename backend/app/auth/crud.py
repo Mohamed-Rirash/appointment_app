@@ -1,5 +1,5 @@
 import uuid
-from typing import Any, List, Optional
+from typing import Any
 
 from databases import Database
 from pydantic import EmailStr
@@ -13,7 +13,7 @@ from .models import permissions, role_permissions, roles, users
 # ------------------------------
 class UserCRUD:
     @staticmethod
-    async def create(session: Database, user_data: dict) -> Optional[dict[str, Any]]:
+    async def create(session: Database, user_data: dict) -> dict[str, Any] | None:
         # Ensure ID exists
         user_data.setdefault("id", uuid.uuid4())
 
@@ -63,7 +63,7 @@ class UserCRUD:
 # ------------------------------
 class RoleCRUD:
     @staticmethod
-    async def create(session: Database, role_data: dict) -> Optional[dict[str, Any]]:
+    async def create(session: Database, role_data: dict) -> dict[str, Any] | None:
         if "id" not in role_data:
             role_data["id"] = uuid.uuid4()
 
@@ -84,7 +84,7 @@ class RoleCRUD:
         return dict(result) if result else None
 
     @staticmethod
-    async def list(session: Database) -> List[dict]:
+    async def list(session: Database) -> list[dict]:
         query = select(roles)
         rows = await session.fetch_all(query)
         return [dict(row) for row in rows]
@@ -102,7 +102,7 @@ class PermissionCRUD:
     @staticmethod
     async def create(
         session: Database, permission_data: dict
-    ) -> Optional[dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         if "id" not in permission_data:
             permission_data["id"] = uuid.uuid4()
 
@@ -111,7 +111,7 @@ class PermissionCRUD:
         return dict(result) if result else None
 
     @staticmethod
-    async def list(session: Database) -> List[dict]:
+    async def list(session: Database) -> list[dict]:
         query = select(permissions)
         rows = await session.fetch_all(query)
         return [dict(row) for row in rows]
@@ -133,7 +133,7 @@ class RolePermissionCRUD:
     @staticmethod
     async def get_permissions_for_role(
         session: Database, role_id: uuid.UUID
-    ) -> List[dict]:
+    ) -> list[dict]:
         query = (
             select(permissions)
             .join(
