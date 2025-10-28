@@ -1,9 +1,8 @@
 import axios from "axios";
 
-
 // Create an axios instance with base URL and default config
 const apiClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
+  baseURL: `${process.env.NEXT_PUBLIC_API_URL}`,
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",
@@ -15,11 +14,8 @@ const apiClient = axios.create({
 interface Userdata {
   email: string;
   first_name: string;
-  is_active: boolean;
-  is_verified: boolean;
   last_name: string;
-  role: string;
-  send_welcome_email: boolean;
+  roles: string;
 }
 
 interface Office {
@@ -152,23 +148,23 @@ export const client = {
 
   // Create User (Admin)
   async createUser(data: Userdata, token?: string) {
-    console.log("client shit", data)
- 
-    // try {
-    //   const response = await apiClient.post("/admin/users", data, {
-    //     headers: {
-    //       Authorization: `Bearer ${token}`,
-    //     },
-    //   });
-    //   return response.data;
-    // } catch (error: any) {
-    //   throw new Error(error.response?.data?.detail || "Failed to create user");
-    // }
+    console.log("CREATE USER",data)
+    try {
+      const response = await apiClient.post("/admin/users", data, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.detail || "Failed to create user");
+    }
   },
 
   // Get Users (Admin)
   async getUsers(token: string, params: Record<string, any>) {
     console.log("Get");
+    console.log("clinettt", process.env.NEXT_PUBLIC_API_URL);
     try {
       const response = await apiClient.get("/admin/users", {
         params,

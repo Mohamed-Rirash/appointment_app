@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import localFont from "next/font/local"; //
+import localFont from "next/font/local";
 import "./globals.css";
 import Provider from "@/helpers/Provider";
 
@@ -40,6 +40,8 @@ const satoshi = localFont({
   variable: "--font-satoshi",
 });
 
+
+
 export const metadata: Metadata = {
   title: "simple",
   description: "governtmetn",
@@ -52,6 +54,18 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+          {/* Load Merriweather from Google Fonts */}
+        <link
+          href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400;1,700;1,900&display=swap"
+          rel="stylesheet"
+        />
+        <style>{`
+          :root {
+            --font-merriweather: 'Merriweather', serif;
+          }
+        `}</style>
+      </head>
       <body className={`${satoshi.className}  antialiased`}>
         <Provider>{children}</Provider>
       </body>

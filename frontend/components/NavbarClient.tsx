@@ -1,6 +1,6 @@
 "use client";
 
-import { LogOut } from "lucide-react";
+import { ChevronRight, LogOut, Settings } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Button } from "./ui/button";
 import {
@@ -13,6 +13,7 @@ import {
 } from "./ui/dropdown-menu";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Signout } from "@/helpers/actions/signout";
 
 type Props = {
   user: {
@@ -23,7 +24,7 @@ type Props = {
     is_active: boolean;
     is_verified: boolean;
     is_system_user: boolean;
-    roles: string[];
+    roles: string;
     access_token?: string;
     // expires unix timestamp (seconds)
     expires_at?: number;
@@ -39,14 +40,16 @@ export default function NavbarClient({ user }: Props) {
         Welcome KullanDesk
       </div>
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-            <Avatar className="h-12 w-12">
+        <DropdownMenuTrigger asChild  >
+          <Button variant="ghost" className="flex items-center mr-4 py-6 ">
+            <Avatar className="h-9 w-9">
               <AvatarImage src={"/avatar.png"} />
               <AvatarFallback className="bg-primary text-primary-foreground">
                 {user.first_name[0]?.toUpperCase() || "A"}
               </AvatarFallback>
+              
             </Avatar>
+            <h3 className="font-medium text-lg text-brand-black"> {user.first_name} </h3>
           </Button>
         </DropdownMenuTrigger>
 
@@ -57,10 +60,10 @@ export default function NavbarClient({ user }: Props) {
         >
           <DropdownMenuLabel className="font-normal">
             <div className="flex flex-col space-y-1">
-              <p className="text-sm font-medium leading-none">
+              <p className="text-[16px] font-medium leading-none">
                 {user.first_name}
               </p>
-              <p className="text-xs leading-none text-muted-foreground">
+              <p className="text-sm leading-none text-muted-foreground">
                 {user.email}
               </p>
             </div>
@@ -71,10 +74,11 @@ export default function NavbarClient({ user }: Props) {
               className=" py-3 font-medium hover:text-brand-primary"
               href="/profile"
             >
+              <Settings className="mr-2"/>
               Profile
             </Link>
           </DropdownMenuItem>
-          <DropdownMenuItem className="py-2 cursor-pointer">
+          <DropdownMenuItem onClick={() =>  Signout()} className="py-2 cursor-pointer">
             <LogOut className="mr-2" />
             Sign Out
           </DropdownMenuItem>

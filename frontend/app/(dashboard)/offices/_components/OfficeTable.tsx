@@ -31,7 +31,7 @@ export interface Office {
 export default function OfficeTable({ token }: { token?: string }) {
   const { offices, isLoading } = useOffices(token);
 
-
+console.log("oooo",offices)
   if (isLoading) {
     return (
       <Table>
@@ -72,7 +72,7 @@ export default function OfficeTable({ token }: { token?: string }) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {offices.length === 0 &&   offices.map((office: Office) => (
+          {   offices.map((office: Office) => (
             <TableRow key={office.id} className="border-t border-[#eeeeee] hover:bg-gray-50">
               <TableCell className="px-4 py-3 font-medium text-brand-black">{office.name}</TableCell>
               <TableCell className="px-4 py-3  text-brand-gray">{office.description}</TableCell>

@@ -1,23 +1,18 @@
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
+import { getSession } from "@/helpers/actions/getsession";
+import DashboardStatsCard from "./_components/DashboardStatsCard";
 
-export default function Sidebar() {
+
+export default async function Dashboard() {
+  const session = await getSession()
   return (
-    <>
-      <main className="flex-1 p-6 overflow-auto">
-        <h1 className="text-5xl font-bold text-purple-500 mb-4">
-          Hello, How are you doing?
-        </h1>
-        <p className="mb-6 text-gray-700">
-          Lorem ipsum dolor sit amet consectetur adipisicing elit. In architecto
-          expedita, rerum corrupti provident sit rem minus similique tenetur.
-          Suscipit ullam, amet nobis repellendus sapiente illo dolorum minima
-          voluptas magni?
-        </p>
-        <Link href="/Signin">
-          <Button className="bg-amber-600 hover:bg-amber-700">Log in</Button>
-        </Link>
-      </main>
-    </>
+    <main className="px-6 pt-12">
+      <div className="">
+        <h1 className="font-bold text-lg">Welcome, {session?.user.first_name} </h1>
+        <p className="text-ms text-brand-gray ">System Overview & Management</p>
+      </div>
+      <section>
+        <DashboardStatsCard token={session?.user.access_token}/>
+      </section>
+    </main>
   );
 }

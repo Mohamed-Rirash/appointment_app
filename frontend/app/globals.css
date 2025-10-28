@@ -4,6 +4,16 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+
+    /* ✅ Gradient background */
+  --background-image-gradient-green: linear-gradient(135deg, #0F9938 0%, #29E05F 100%);
+
+  /* ✅ Outer shadow */
+  --shadow-gren: 0px 2px 8px -3px rgba(36, 196, 83, 0.25);
+
+  /* ✅ Inner shadows */
+  --shadow-inner-gren: inset 4px 4px 8px 0 rgba(255, 255, 255, 0.29);
+  --shadow-inner-gren-top: inset -4px -4px 8px 0 rgba(29, 162, 68, 0.5);
   --color-brand: #24c453;
   --color-brand-primary: #e5f3e9;
   --color-brand-secondary: #e1e1e1;
@@ -125,4 +135,16 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-merriweather);
+}
+
+/* Combined shadow: outer + dual inner */
+.combined-shadow {
+  box-shadow:
+    0px 2px 8px -3px rgba(36, 196, 83, 0.25),
+    inset 4px 4px 8px 0 rgba(255, 255, 255, 0.29),
+    inset -4px -4px 8px 0 rgba(29, 162, 68, 0.5);
 }
