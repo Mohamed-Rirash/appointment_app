@@ -101,6 +101,8 @@ export default function UsersTableClient({ token }: { token?: string }) {
     return user.roles.includes(roleFilter);
   });
 
+  console.log("UUUUSER", filteredUsers);
+
   return (
     <div className=" mb-6">
       {/* Search bar and filters */}
@@ -334,7 +336,6 @@ export default function UsersTableClient({ token }: { token?: string }) {
                         {/* admin actions */}
                         <UserActionsDropdown
                           userId={user.id}
-                        //   email={user.email}
                           token={token!}
                           currentRole={user.roles[0]}
                         />

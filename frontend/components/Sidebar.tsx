@@ -14,7 +14,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 
-export default function Sidebar({ children }: { children: React.ReactNode }) {
+export default function Sidebar({children}: {children:  React.ReactNode}) {
   const [open, setOpen] = useState(true);
   const pathname = usePathname();
   const toggleSidebar = () => setOpen((prev) => !prev);
@@ -36,9 +36,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
         }`}
       >
         {/* Header with Logo and Toggle */}
-        <div
-          className={`flex items-center ${open ? "justify-between" : "justify-center"} py-8 bg-yellow-0 border-b border-[#eeeeee]`}
-        >
+        <div className={`flex items-center ${open ? "justify-between" : "justify-center"} py-8 bg-yellow-0 border-b border-[#eeeeee]`}>
           {open && (
             <div className="flex items-center space-x-2">
               {/* Replace with your actual logo */}
@@ -55,9 +53,9 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
             className={`${open ? "" : "w-full"}`}
           >
             {open ? (
-              <ChevronsLeft className="h-5! w-5! text-brand-black" />
+               <ChevronsLeft className="h-5! w-5! text-brand-black"/>
             ) : (
-              <ChevronsRight className="h-7! w-7! text-brand-black" />
+                 <ChevronsRight className="h-7! w-7! text-brand-black" />
             )}
           </Button>
         </div>
@@ -107,7 +105,9 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto">{children}</main>
+      <main className="flex-1 overflow-auto">
+       {children}
+      </main>
     </div>
   );
 }

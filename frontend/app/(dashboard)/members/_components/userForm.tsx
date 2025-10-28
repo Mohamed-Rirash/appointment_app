@@ -29,13 +29,14 @@ import toast from "react-hot-toast";
 import { Spinner } from "@/components/ui/spinner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 // Validation schema
 const userSchema = z.object({
   first_name: z.string().min(1, "First name is required"),
   last_name: z.string().min(1, "Last name is required"),
   email: z.string().email("Invalid email address"),
-  role: z
+  roles: z
     .enum(["admin", "host", "reception", "secretary", ""])
     .refine((val) => val !== undefined, { message: "Please select a role" }),
 });
@@ -45,6 +46,7 @@ type UserFormData = z.infer<typeof userSchema>;
 export default function UserForm({ token }: { token?: string }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+    const queryClient = useQueryClient();
 
   const form = useForm<UserFormData>({
     resolver: zodResolver(userSchema),
@@ -52,47 +54,25 @@ export default function UserForm({ token }: { token?: string }) {
       first_name: "",
       last_name: "",
       email: "",
-      role: "",
+      roles: "",
     },
   });
 
   async function onSubmit(data: UserFormData) {
     setIsSubmitting(true);
-
-    // Domain validation
-    const allowedDomains = ["gmail.com", "amoud.org"];
-    const domain = email.split("@")[1]?.toLowerCase();
-    console.log("DDD", domain);
-    if (!domain || !allowedDomains.includes(domain)) {
-      setError(
-        "Only email addresses from @gmail.com or @amoud.org are allowed."
-      );
-      setLoading(false);
-      return;
-    }
-
-
-    if (data.role === "") {
+    if (data.roles === "") {
       setError("Please select a role");
       setIsSubmitting(false);
       return;
     }
-
-
-    const userdata = {
-      ...data,
-      is_active: true,
-      is_verified: false,
-      send_welcome_email: true,
-    };
-
-
-
+ 
     try {
-      await client.createUser(userdata, token);
+      const result = await client.createUser(data, token);
       toast.success(
         `User ${data.first_name} ${data.last_name} has been added.`
       );
+      console.log("r",result)
+       queryClient.invalidateQueries({ queryKey: ["users"] });
 
       form.reset();
     } catch (err: any) {
@@ -184,7 +164,7 @@ export default function UserForm({ token }: { token?: string }) {
           {/* Role */}
           <FormField
             control={form.control}
-            name="role"
+            name="roles"
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="text-[16px] font-medium text-brand-black">

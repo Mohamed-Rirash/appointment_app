@@ -1,5 +1,3 @@
-// app/offices/[id]/page.tsx
-
 import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, ArrowLeft, PlusIcon } from "lucide-react";
@@ -24,7 +22,7 @@ export default async function OfficeDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const session = await getSession()
+  const session = await getSession();
   const token = session?.user.access_token;
   const { id } = await params;
   if (!token) {
@@ -38,7 +36,7 @@ export default async function OfficeDetailPage({
     notFound();
   }
 
-
+  
 
   return (
     <main className="mx-6 my-8">
@@ -54,14 +52,14 @@ export default async function OfficeDetailPage({
       </Link>
 
       {/* Office Details */}
-      <div className="max-w-2xl mx-auto">
+      <div className="">
         <div className="border border-[#eeeeee] rounded-[4px] shadow-gren p-6">
           {/* Header */}
           <div className="">
-            <h1 className="text-3xl font-bold text-brand-black">
+            <h1 className="text-[32px] font-bold text-brand-black">
               {office.name}
             </h1>
-            <p className="text-xl text-brand-gray leading-[20px] mt-1 mb-2">
+            <p className="text-2xl font-medium leading-7 text-brand-gray  mt-1 mb-2 max-w-[455px] w-full">
               {office.description}
             </p>
             <div className="flex items-center justify-between text-sm text-brand-gray mt-4">
@@ -84,7 +82,6 @@ export default async function OfficeDetailPage({
                   {office.is_active ? "active" : "inactive"}
                 </Badge>
               </div>
-
             </div>
           </div>
 

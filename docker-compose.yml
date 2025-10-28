@@ -156,12 +156,12 @@ services:
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     container_name: frontend
     env_file:
       - frontend/.env.local
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=development
       # Client-side API URL (browser) - relative path via nginx proxy
       - NEXT_PUBLIC_API_URL=/api/v1
       # Server-side API URL (Next.js server) - internal Docker network URL
@@ -169,10 +169,7 @@ services:
       # Force Next.js standalone server to listen on all interfaces
       - HOSTNAME=0.0.0.0
       - PORT=3000
-      # NextAuth.js configuration
-      - AUTH_SECRET=${SECRET_KEY}
-      - AUTH_URL=${FRONTEND_HOST}
-      - AUTH_TRUST_HOST=true
+    # command: npm run dev
     depends_on:
       - backend
     restart: unless-stopped

@@ -21,13 +21,15 @@ import { useRouter } from "next/navigation";
 import { Spinner } from "@/components/ui/spinner";
 import axios from "axios";
 
+const API = process.env.NEXT_PUBLIC_API_FRONT;
+
 // define the form schema
 const formSchema = z.object({
   email: z.email({ message: "Invalid email" }),
   password: z.string().min(8),
 });
 export default function Signin() {
-  console.log("Hello guys");
+  console.log("Hello guys",API);
   const [loading, setLoading] = useState(false);
 
   // define the form
@@ -42,64 +44,59 @@ export default function Signin() {
   const router = useRouter();
 
   interface LoginResponse {
-  message?: string;
-  error?: string;
-  user?: any;
-  token?: string;
-}
-async function Submit(values: z.infer<typeof formSchema>) {
-  form.clearErrors();
-  setLoading(true);
-  
-  try {
-    const { data } = await axios.post<LoginResponse>(
-      "http://localhost:80/api/auth/login", 
-      values
-    );
+    success: boolean;
+    error?: string;
+  }
+  async function Submit(values: z.infer<typeof formSchema>) {
+    form.clearErrors();
+    setLoading(true);
+      console.log("Api",API)
+
+    try {
+       const { data } = await axios.post<LoginResponse>(`/api/auth/login`, values);
+
     
-    console.log("Response data:", data);
-    
-    if (data.message === "success") {
-      router.push("/");
-    } else if (data.error) {
+
+      console.log("Response data:", data);
+      if (data.success) {
+        router.push("/");
+      } else if (data.error) {
+        // Set error on both email and password fields
+        form.setError("password", {
+          type: "manual",
+          message: data.error,
+        });
+        form.setError("email", {
+          type: "manual",
+          message: data.error,
+        });
+      }
+    } catch (error: any) {
+      console.error("Login error:", error);
+
+      let errorMessage = "Login failed. Please try again.";
+
+      if (axios.isAxiosError(error)) {
+        errorMessage = error.response?.data?.error || error.message;
+      }
+
       // Set error on both email and password fields
       form.setError("password", {
         type: "manual",
-        message: data.error,
+        message: errorMessage,
       });
       form.setError("email", {
-        type: "manual", 
-        message: data.error,
+        type: "manual",
+        message: errorMessage,
       });
+    } finally {
+      setLoading(false);
     }
-    
-  } catch (error: any) {
-    console.error("Login error:", error);
-    
-    let errorMessage = "Login failed. Please try again.";
-    
-    if (axios.isAxiosError(error)) {
-      errorMessage = error.response?.data?.error || error.message;
-    }
-    
-    // Set error on both email and password fields
-    form.setError("password", {
-      type: "manual",
-      message: errorMessage,
-    });
-    form.setError("email", {
-      type: "manual",
-      message: errorMessage,
-    });
-    
-  } finally {
-    setLoading(false);
   }
-}
 
   return (
-    <div className="flex justify-center items-center h-screen">
-      <div className=" w-full max-w-[468px] sm:border border-[#e1e1e1] p-4 sm:p-8 rounded-[8px]">
+    <div className="flex justify-center items-center h-screen ">
+      <div className=" w-full max-w-[468px] sm:border border-brand-secondary p-4 sm:p-8 rounded-[8px]">
         <div className="flex flex-col  justify-center items-center">
           <Image src={logo} width={258} height={32} alt="logo" />
         </div>
