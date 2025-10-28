@@ -4,13 +4,13 @@ Error handling middleware for FastAPI application with Loguru integration
 
 import traceback
 import uuid
-from typing import Callable, Union
+from collections.abc import Callable
 
 from fastapi import HTTPException, Request, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
-from sqlalchemy.exc import SQLAlchemyError, IntegrityError, DatabaseError
+from sqlalchemy.exc import DatabaseError, IntegrityError, SQLAlchemyError
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.config import get_settings
@@ -32,7 +32,7 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
         except HTTPException as e:
             # FastAPI HTTP exceptions - pass through with logging
             logger.info(
-                f"HTTP exception",
+                "HTTP exception",
                 path=request.url.path,
                 method=request.method,
                 status_code=e.status_code,
@@ -56,7 +56,7 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
         except ValidationError as e:
             # Pydantic validation errors
             logger.warning(
-                f"Validation error",
+                "Validation error",
                 path=request.url.path,
                 method=request.method,
                 errors=e.errors()
@@ -140,7 +140,7 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
         except ValueError as e:
             # Value errors (often from business logic)
             logger.warning(
-                f"Value error",
+                "Value error",
                 path=request.url.path,
                 method=request.method,
                 error=str(e)
@@ -156,7 +156,7 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
         except PermissionError as e:
             # Permission errors
             logger.warning(
-                f"Permission error",
+                "Permission error",
                 path=request.url.path,
                 method=request.method,
                 error=str(e)
@@ -209,7 +209,7 @@ def create_error_response(
     status_code: int,
     message: str,
     error_type: str = "error",
-    details: Union[dict, list, str, None] = None,
+    details: dict | list | str | None = None,
     error_id: str | None = None,
 ) -> JSONResponse:
     """Helper function to create standardized error responses"""

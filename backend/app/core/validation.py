@@ -2,8 +2,6 @@
 Core validation utilities for the application
 """
 
-from typing import List
-
 from app.config import get_settings
 
 settings = get_settings()
@@ -118,8 +116,8 @@ def get_email_requirements() -> dict:
 
 
 def validate_user_input(
-    email: str = None,
-    password: str = None,
+    email: str = "",
+    password: str = "",
     skip_email_domain: bool = False,
     skip_password_strength: bool = False,
 ) -> dict:
@@ -147,7 +145,7 @@ def validate_user_input(
                 validate_email_domain(email)
         except ValueError as e:
             results["email_valid"] = False
-            results["errors"].append(f"Email: {str(e)}")
+            results["errors"].append(f"Email: {e!s}")
 
     # Validate password
     if password is not None:
@@ -156,7 +154,7 @@ def validate_user_input(
                 validate_password_strength(password)
         except ValueError as e:
             results["password_valid"] = False
-            results["errors"].append(f"Password: {str(e)}")
+            results["errors"].append(f"Password: {e!s}")
 
     # Overall validation status
     results["valid"] = results["email_valid"] and results["password_valid"]

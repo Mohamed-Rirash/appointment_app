@@ -4,9 +4,9 @@ Response caching middleware for FastAPI application
 
 import asyncio
 import hashlib
-import json
-from datetime import timedelta
-from typing import Any, Callable, Dict, List, Optional, Set
+from collections.abc import Callable
+from datetime import UTC
+from typing import Any
 
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -25,8 +25,8 @@ class ResponseCachingMiddleware(BaseHTTPMiddleware):
         self,
         app,
         default_ttl: int = 300,  # 5 minutes
-        cacheable_methods: Set[str] = None,
-        cacheable_status_codes: Set[int] = None,
+        cacheable_methods: set[str] = None,  # pyright: ignore[reportArgumentType]
+        cacheable_status_codes: set[int] = None,  # pyright: ignore[reportArgumentType]
         cache_private: bool = False,
         respect_decorator: bool = True,
     ):
@@ -80,7 +80,12 @@ class ResponseCachingMiddleware(BaseHTTPMiddleware):
                 resp_304 = Response(status_code=304)
                 # propagate cache-relevant headers
                 for hk, hv in cached_response.get("headers", {}).items():
-                    if hk.lower() in {"cache-control", "expires", "etag", "vary"}:
+                    if hk.lower() in {
+                        "cache-control",
+                        "expires",
+                        "etag",
+                        "vary",
+                    }:
                         resp_304.headers[hk] = hv
                 resp_304.headers["X-Cache"] = "HIT"
                 log_cache_event("get", cache_key, hit=True)
@@ -132,7 +137,7 @@ class ResponseCachingMiddleware(BaseHTTPMiddleware):
 
         return response
 
-    def _get_route_cache_config(self, request: Request) -> Dict[str, Any]:
+    def _get_route_cache_config(self, request: Request) -> dict[str, Any]:
         """Extract cache config from endpoint decorator if available."""
         if not self.respect_decorator:
             return {}
@@ -143,7 +148,10 @@ class ResponseCachingMiddleware(BaseHTTPMiddleware):
         return cfg or {}
 
     def _generate_cache_key(
-        self, request: Request, route_cfg: Dict[str, Any], vary_headers: List[str]
+        self,
+        request: Request,
+        route_cfg: dict[str, Any],
+        vary_headers: list[str],
     ) -> str:
         """Generate a cache key for the request"""
         # Include method, path, and query parameters
@@ -163,7 +171,7 @@ class ResponseCachingMiddleware(BaseHTTPMiddleware):
         # Include relevant headers from global defaults, per-route, and persisted Vary
         relevant_headers = ["accept", "accept-language", "accept-encoding"]
         vary_on_headers = route_cfg.get("vary_on_headers") if route_cfg else []
-        for h in vary_on_headers:
+        for h in vary_on_headers:  # pyright: ignore[reportOptionalIterable]
             if h.lower() not in relevant_headers:
                 relevant_headers.append(h.lower())
         for h in vary_headers:
@@ -181,7 +189,7 @@ class ResponseCachingMiddleware(BaseHTTPMiddleware):
         return f"response:{cache_key}"
 
     def _is_cacheable_response(
-        self, request: Request, response: Response, route_cfg: Dict[str, Any]
+        self, request: Request, response: Response, route_cfg: dict[str, Any]
     ) -> bool:
         """Check if response should be cached"""
         # Check status code
@@ -210,7 +218,7 @@ class ResponseCachingMiddleware(BaseHTTPMiddleware):
 
         return True
 
-    def _get_cache_ttl(self, response: Response, route_cfg: Dict[str, Any]) -> int:
+    def _get_cache_ttl(self, response: Response, route_cfg: dict[str, Any]) -> int:
         """Get cache TTL from response headers or use default"""
         cache_control = response.headers.get("cache-control", "")
 
@@ -230,9 +238,9 @@ class ResponseCachingMiddleware(BaseHTTPMiddleware):
                 from email.utils import parsedate_to_datetime
 
                 expires_dt = parsedate_to_datetime(expires)
-                from datetime import datetime, timezone
+                from datetime import datetime
 
-                now = datetime.now(timezone.utc)
+                now = datetime.now(UTC)
                 ttl = int((expires_dt - now).total_seconds())
                 return max(0, ttl)
             except Exception:
@@ -251,7 +259,7 @@ class ResponseCachingMiddleware(BaseHTTPMiddleware):
         # Read response body
         body = b""
         body_chunks = []
-        async for chunk in response.body_iterator:
+        async for chunk in response.body_iterator:  # pyright: ignore[reportAttributeAccessIssue]
             body += chunk
             body_chunks.append(chunk)
 
@@ -260,7 +268,7 @@ class ResponseCachingMiddleware(BaseHTTPMiddleware):
             for chunk in body_chunks:
                 yield chunk
 
-        response.body_iterator = recreate_body_iterator()
+        response.body_iterator = recreate_body_iterator()  # pyright: ignore[reportAttributeAccessIssue]
 
         return {
             "status_code": response.status_code,
@@ -296,7 +304,7 @@ class ResponseCachingMiddleware(BaseHTTPMiddleware):
 
         return response
 
-    def _compute_etag_bytes(self, raw_bytes: bytes) -> Optional[str]:
+    def _compute_etag_bytes(self, raw_bytes: bytes) -> str | None:
         try:
             import hashlib as _hl
 
@@ -305,8 +313,8 @@ class ResponseCachingMiddleware(BaseHTTPMiddleware):
             return None
 
     def _extract_vary_headers(
-        self, response: Response, route_cfg: Dict[str, Any]
-    ) -> List[str]:
+        self, response: Response, route_cfg: dict[str, Any]
+    ) -> list[str]:
         # Combine decorator-provided varies with response Vary header
         varies = []
         vary_on_headers = route_cfg.get("vary_on_headers") if route_cfg else []
@@ -321,7 +329,7 @@ class ResponseCachingMiddleware(BaseHTTPMiddleware):
         return varies
 
     async def _store_vary_headers(
-        self, base_key: str, vary_headers: List[str], ttl: int
+        self, base_key: str, vary_headers: list[str], ttl: int
     ) -> None:
         try:
             meta_key = f"{base_key}:meta"
@@ -329,7 +337,7 @@ class ResponseCachingMiddleware(BaseHTTPMiddleware):
         except Exception:
             pass
 
-    async def _load_vary_headers(self, base_key: str) -> List[str]:
+    async def _load_vary_headers(self, base_key: str) -> list[str]:
         try:
             meta_key = f"{base_key}:meta"
             meta = await cache_manager.get(meta_key)
@@ -345,10 +353,10 @@ class ResponseCachingMiddleware(BaseHTTPMiddleware):
 
 
 def cache_response(
-    ttl: Optional[int] = None,
-    key_prefix: Optional[str] = None,
+    ttl: int | None = None,
+    key_prefix: str | None = None,
     vary_on_user: bool = False,
-    vary_on_headers: Optional[list[str]] = None,
+    vary_on_headers: list[str] | None = None,
 ):
     """
     Decorator for caching endpoint responses
