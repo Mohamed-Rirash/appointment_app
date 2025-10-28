@@ -86,9 +86,10 @@ async def create_test_user(
     Returns:
         Dictionary with user data including id, email, and password
     """
+    import uuid
+
     from app.auth.models import users
     from app.core.security import get_password_hash
-    import uuid
 
     if email is None:
         email = random_email()
@@ -110,7 +111,7 @@ async def create_test_user(
 
     # Assign role if specified
     if role:
-        from app.auth.models import user_roles, roles
+        from app.auth.models import roles, user_roles
 
         # Get role id
         role_query = roles.select().where(roles.c.name == role)
