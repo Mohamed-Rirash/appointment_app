@@ -4,7 +4,6 @@ Enhanced Pydantic schemas for authentication
 
 import uuid
 from datetime import datetime
-from typing import List, Optional
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
@@ -40,14 +39,14 @@ class UserRead(UserBase):
     is_verified: bool
     is_system_user: bool = False
     created_at: datetime
-    updated_at: Optional[datetime] = None
+    updated_at: datetime | None = None
 
 
 class UserUpdate(BaseModel):
-    first_name: Optional[str] = Field(None, min_length=1, max_length=100)
-    last_name: Optional[str] = Field(None, min_length=1, max_length=100)
-    email: Optional[EmailStr] = None
-    is_active: Optional[bool] = None
+    first_name: str | None = Field(None, min_length=1, max_length=100)
+    last_name: str | None = Field(None, min_length=1, max_length=100)
+    email: EmailStr | None = None
+    is_active: bool | None = None
 
 
 class UserProfile(UserBase):
@@ -56,8 +55,8 @@ class UserProfile(UserBase):
     is_verified: bool
     is_system_user: bool = False
     created_at: datetime
-    roles: List[str] = []
-    permissions: List[str] = []
+    roles: list[str] = []
+    permissions: list[str] = []
 
 
 # Authentication schemas
@@ -130,8 +129,8 @@ class VerifyUserRequest(BaseModel):
 
 # Token schemas
 class UserTokenBase(BaseModel):
-    access_key: Optional[str] = None
-    refresh_key: Optional[str] = None
+    access_key: str | None = None
+    refresh_key: str | None = None
     expires_at: datetime
 
 

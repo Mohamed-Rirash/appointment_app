@@ -1,9 +1,8 @@
-from app.auth.constants import USER_VERIFY_ACCOUNT, USER_INVITE
+from app.auth.constants import USER_VERIFY_ACCOUNT
 from app.auth.security import hash_password
 from app.auth.utils import get_context_string
 from app.config import get_settings
 from app.core.emails.services import send_email
-from app.core.security import create_access_token
 
 settings = get_settings()
 

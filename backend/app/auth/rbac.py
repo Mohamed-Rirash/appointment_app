@@ -4,7 +4,6 @@ Role-Based Access Control (RBAC) system implementation
 
 import uuid
 from datetime import datetime
-from typing import List, Optional
 from uuid import UUID
 
 from databases import Database
@@ -16,25 +15,21 @@ from app.auth.models import permissions, role_permissions, roles, user_roles
 class RBACError(Exception):
     """Base RBAC exception"""
 
-    pass
 
 
 class PermissionDeniedError(RBACError):
     """Permission denied exception"""
 
-    pass
 
 
 class RoleNotFoundError(RBACError):
     """Role not found exception"""
 
-    pass
 
 
 class PermissionNotFoundError(RBACError):
     """Permission not found exception"""
 
-    pass
 
 
 class RoleCRUD:
@@ -43,7 +38,7 @@ class RoleCRUD:
     @staticmethod
     async def create(
         db: Database, role_data: dict, created_by: UUID
-    ) -> Optional[dict | None]:
+    ) -> dict | None | None:
         """Create a new role"""
         # Generate UUID if not provided
         if "id" not in role_data:
@@ -57,28 +52,28 @@ class RoleCRUD:
         return dict(result) if result else None
 
     @staticmethod
-    async def get_by_id(db: Database, role_id: UUID) -> Optional[dict]:
+    async def get_by_id(db: Database, role_id: UUID) -> dict | None:
         """Get role by ID"""
         query = select(roles).where(roles.c.id == role_id)
         result = await db.fetch_one(query)
         return dict(result) if result else None
 
     @staticmethod
-    async def get_roleid_by_user_id(db: Database, user_id: UUID) -> Optional[UUID]:
+    async def get_roleid_by_user_id(db: Database, user_id: UUID) -> UUID | None:
         """Get role id by user id"""
         query = select(user_roles).where(user_roles.c.user_id == user_id)
         result = await db.fetch_one(query)
         return result["role_id"] if result else None
 
     @staticmethod
-    async def get_by_name(db: Database, name: str) -> Optional[dict]:
+    async def get_by_name(db: Database, name: str) -> dict | None:
         """Get role by name"""
         query = select(roles).where(roles.c.name == name)
         result = await db.fetch_one(query)
         return dict(result) if result else None
 
     @staticmethod
-    async def list_all(db: Database, active_only: bool = True) -> List[dict]:
+    async def list_all(db: Database, active_only: bool = True) -> list[dict]:
         """List all roles"""
         query = select(roles)
         if active_only:
@@ -91,7 +86,7 @@ class RoleCRUD:
     @staticmethod
     async def update(
         db: Database, role_id: UUID, updates: dict, updated_by: UUID
-    ) -> Optional[dict]:
+    ) -> dict | None:
         """Update a role"""
         # Don't allow updating system roles' core properties
         role = await RoleCRUD.get_by_id(db, role_id)
@@ -142,7 +137,7 @@ class PermissionCRUD:
     @staticmethod
     async def create(
         db: Database, permission_data: dict, created_by: UUID
-    ) -> Optional[dict | None]:
+    ) -> dict | None | None:
         """Create a new permission"""
         # Generate name from resource and action if not provided
         if "name" not in permission_data:
@@ -162,21 +157,21 @@ class PermissionCRUD:
         return dict(result) if result else None
 
     @staticmethod
-    async def get_by_id(db: Database, permission_id: UUID) -> Optional[dict]:
+    async def get_by_id(db: Database, permission_id: UUID) -> dict | None:
         """Get permission by ID"""
         query = select(permissions).where(permissions.c.id == permission_id)
         result = await db.fetch_one(query)
         return dict(result) if result else None
 
     @staticmethod
-    async def get_by_name(db: Database, name: str) -> Optional[dict]:
+    async def get_by_name(db: Database, name: str) -> dict | None:
         """Get permission by name"""
         query = select(permissions).where(permissions.c.name == name)
         result = await db.fetch_one(query)
         return dict(result) if result else None
 
     @staticmethod
-    async def list_all(db: Database, active_only: bool = True) -> List[dict]:
+    async def list_all(db: Database, active_only: bool = True) -> list[dict]:
         """List all permissions"""
         query = select(permissions)
         if active_only:
@@ -187,7 +182,7 @@ class PermissionCRUD:
         return [dict(row) for row in results]
 
     @staticmethod
-    async def list_by_resource(db: Database, resource: str) -> List[dict]:
+    async def list_by_resource(db: Database, resource: str) -> list[dict]:
         """List permissions for a specific resource"""
         query = (
             select(permissions)
@@ -213,7 +208,7 @@ class RBACCRUD:
         user_id: UUID,
         role_id: UUID,
         assigned_by: UUID,
-        expires_at: Optional[datetime] = None,
+        expires_at: datetime | None = None,
     ) -> bool:
         """Assign a role to a user"""
         # Check if assignment already exists
@@ -341,7 +336,7 @@ class RBACCRUD:
     #     return [dict(row) for row in results]
 
     @staticmethod
-    async def get_user_roles(db: Database, user_id: UUID) -> List[dict]:
+    async def get_user_roles(db: Database, user_id: UUID) -> list[dict]:
         """Get all active roles for a user"""
         query = (
             select(
@@ -371,7 +366,7 @@ class RBACCRUD:
         return [dict(row) for row in results]
 
     @staticmethod
-    async def get_user_permissions(db: Database, user_id: UUID) -> List[dict]:
+    async def get_user_permissions(db: Database, user_id: UUID) -> list[dict]:
         """Get all permissions for a user through their roles"""
         query = (
             select(

@@ -1,13 +1,12 @@
 # Service layer for authentication logic
 
+import secrets
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from fastapi import HTTPException, status
-import secrets
 
 from app.auth.config import get_auth_settings
-from app.config import get_settings
 from app.auth.constants import USER_VERIFY_ACCOUNT
 from app.auth.crud import UserCRUD
 from app.auth.rbac import RBACCRUD
@@ -18,6 +17,7 @@ from app.auth.user_emails import (
     send_password_reset_email,
 )
 from app.auth.utils import get_context_string
+from app.config import get_settings
 from app.core.security import (
     TokenError,
     create_access_token,
@@ -262,7 +262,7 @@ async def _generate_tokens(user, session, response):
     refresh_token = create_refresh_token(subject=user["id"], expires_delta=rt_expires)
 
     # Persist/rotate refresh token in DB (single active token per user)
-    expiry_time = datetime.now(timezone.utc) + rt_expires
+    expiry_time = datetime.now(UTC) + rt_expires
 
     # Determine cookie settings based on environment
     # For local/development over HTTP, use lax samesite and no secure flag
