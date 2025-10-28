@@ -8,7 +8,6 @@ This module provides pytest fixtures for testing with:
 - Authentication helpers
 """
 
-import os
 from collections.abc import AsyncGenerator, Generator
 from pathlib import Path
 from typing import Any

@@ -1,12 +1,12 @@
 from unittest.mock import patch
 
+from app.core.config import settings
+from app.crud import create_user
+from app.models import UserCreate
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
-from app.core.config import settings
 from app.core.security import verify_password
-from app.crud import create_user
-from app.models import UserCreate
 from app.utils import generate_password_reset_token
 from tests.utils.user import user_authentication_headers
 from tests.utils.utils import random_email, random_lower_string
