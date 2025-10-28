@@ -3,30 +3,19 @@ Admin module CRUD operations
 """
 
 import uuid
-from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional, Tuple
+from datetime import UTC, datetime, timedelta
+from typing import Any
 from uuid import UUID
 
 from databases import Database
-from sqlalchemy import and_, asc, delete, desc, func, insert, or_, select, update
-from sqlalchemy.sql import Select
+from sqlalchemy import and_, asc, desc, func, insert, or_, select, update
 
-from app.admin.exceptions import RoleNotFoundError, UserNotFoundError
+from app.admin.exceptions import UserNotFoundError
 from app.admin.models import (
     admin_audit_logs,
-    admin_notifications,
-    admin_preferences,
-    admin_sessions,
-    bulk_operations,
-    data_exports,
-    system_alerts,
-    system_backups,
-    system_config,
-    system_metrics,
     user_activities,
 )
 from app.admin.schemas import (
-    AdminActionType,
     AdminActivityFilters,
     PaginationParams,
     SortOrder,
@@ -42,8 +31,8 @@ class AdminUserCRUD:
     async def get_users_paginated(
         db: Database,
         pagination: PaginationParams,
-        filters: Optional[UserSearchFilters] = None,
-    ) -> Tuple[List[Dict[str, Any]], int]:
+        filters: UserSearchFilters | None = None,
+    ) -> tuple[list[dict[str, Any]], int]:
         """Get paginated list of users with filters"""
 
         # Base query
@@ -108,7 +97,7 @@ class AdminUserCRUD:
     @staticmethod
     async def get_user_with_roles(
         db: Database, user_id: UUID
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Get user with their roles and permissions"""
 
         # Get user
@@ -150,8 +139,8 @@ class AdminUserCRUD:
 
     @staticmethod
     async def create_user(
-        db: Database, user_data: Dict[str, Any], created_by: UUID
-    ) -> Dict[str, Any]:
+        db: Database, user_data: dict[str, Any], created_by: UUID
+    ) -> dict[str, Any]:
         """Create a new user"""
 
         user_data["id"] = uuid.uuid4()
@@ -164,8 +153,8 @@ class AdminUserCRUD:
 
     @staticmethod
     async def update_user(
-        db: Database, user_id: UUID, user_data: Dict[str, Any], updated_by: UUID
-    ) -> Dict[str, Any]:
+        db: Database, user_id: UUID, user_data: dict[str, Any], updated_by: UUID
+    ) -> dict[str, Any]:
         """Update user"""
 
         # Note: updated_by is tracked in audit logs, not in users table
@@ -196,7 +185,7 @@ class AdminUserCRUD:
         query = (
             update(users)
             .where(users.c.id == user_id)
-            .values(is_active=False, updated_at=datetime.now(timezone.utc))
+            .values(is_active=False, updated_at=datetime.now(UTC))
         )
 
         await db.execute(query)
@@ -205,13 +194,13 @@ class AdminUserCRUD:
     @staticmethod
     async def bulk_update_users(
         db: Database,
-        user_ids: List[UUID],
-        update_data: Dict[str, Any],
+        user_ids: list[UUID],
+        update_data: dict[str, Any],
         updated_by: UUID,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Bulk update users"""
 
-        update_data["updated_at"] = datetime.now(timezone.utc)
+        update_data["updated_at"] = datetime.now(UTC)
         # Note: updated_by is tracked in audit logs, not in users table
 
         query = update(users).where(users.c.id.in_(user_ids)).values(**update_data)
@@ -227,7 +216,7 @@ class AdminRoleCRUD:
     @staticmethod
     async def get_roles_paginated(
         db: Database, pagination: PaginationParams, include_user_count: bool = True
-    ) -> Tuple[List[Dict[str, Any]], int]:
+    ) -> tuple[list[dict[str, Any]], int]:
         """Get paginated list of roles"""
 
         if include_user_count:
@@ -269,7 +258,7 @@ class AdminRoleCRUD:
     @staticmethod
     async def get_role_with_permissions(
         db: Database, role_id: UUID
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Get role with its permissions"""
 
         # Get role
@@ -306,8 +295,8 @@ class AdminAuditCRUD:
     async def get_audit_logs_paginated(
         db: Database,
         pagination: PaginationParams,
-        filters: Optional[AdminActivityFilters] = None,
-    ) -> Tuple[List[Dict[str, Any]], int]:
+        filters: AdminActivityFilters | None = None,
+    ) -> tuple[list[dict[str, Any]], int]:
         """Get paginated audit logs with filters"""
 
         # Base query with admin info
@@ -373,7 +362,7 @@ class AdminSystemCRUD:
     """CRUD operations for system management"""
 
     @staticmethod
-    async def get_system_stats(db: Database) -> Dict[str, Any]:
+    async def get_system_stats(db: Database) -> dict[str, Any]:
         """Get system statistics"""
 
         # User statistics
@@ -407,7 +396,7 @@ class AdminSystemCRUD:
         )
 
         # Recent activity (last 24 hours)
-        yesterday = datetime.now(timezone.utc) - timedelta(days=1)
+        yesterday = datetime.now(UTC) - timedelta(days=1)
         recent_logins = await db.fetch_val(
             select(func.count())
             .select_from(user_activities)

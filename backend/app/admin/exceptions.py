@@ -10,7 +10,6 @@ from fastapi import HTTPException, status
 class EmailDomainNotAllowedError(Exception):
     """Raised when user tries to create an account with an email domain not allowed."""
 
-    pass
 
 
 class AdminException(HTTPException):

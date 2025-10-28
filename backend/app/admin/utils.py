@@ -5,23 +5,22 @@ Admin module utilities and helper functions
 import csv
 import json
 import uuid
-from datetime import datetime, timedelta, timezone
-from typing import List, Dict, Any, Optional, Union
-from io import StringIO, BytesIO
+from datetime import UTC, datetime, timedelta
+from io import BytesIO, StringIO
+from typing import Any
 from uuid import UUID
 
 import xlsxwriter
 from databases import Database
 
-from app.admin.schemas import ExportFormat, AdminActionType
-from app.admin.config import get_admin_config
+from app.admin.schemas import ExportFormat
 
 
 class DataExporter:
     """Utility class for exporting data in various formats"""
 
     @staticmethod
-    def export_to_csv(data: List[Dict[str, Any]], filename: str = None) -> str:
+    def export_to_csv(data: list[dict[str, Any]], filename: str = None) -> str:
         """Export data to CSV format"""
 
         if not data:
@@ -53,7 +52,7 @@ class DataExporter:
         return output.getvalue()
 
     @staticmethod
-    def export_to_json(data: List[Dict[str, Any]], filename: str = None) -> str:
+    def export_to_json(data: list[dict[str, Any]], filename: str = None) -> str:
         """Export data to JSON format"""
 
         # Convert complex types for JSON serialization
@@ -72,7 +71,7 @@ class DataExporter:
         return json.dumps(processed_data, indent=2, default=str)
 
     @staticmethod
-    def export_to_xlsx(data: List[Dict[str, Any]], filename: str = None) -> bytes:
+    def export_to_xlsx(data: list[dict[str, Any]], filename: str = None) -> bytes:
         """Export data to Excel format"""
 
         if not data:
@@ -114,10 +113,10 @@ class AdminPermissionChecker:
 
     @staticmethod
     def can_perform_action(
-        admin_roles: List[str],
-        admin_permissions: List[str],
+        admin_roles: list[str],
+        admin_permissions: list[str],
         required_permission: str,
-        target_user_roles: Optional[List[str]] = None,
+        target_user_roles: list[str] | None = None,
     ) -> bool:
         """Check if admin can perform action on target user"""
 
@@ -145,7 +144,7 @@ class AdminPermissionChecker:
         return False
 
     @staticmethod
-    def get_accessible_users_filter(admin_roles: List[str]) -> Dict[str, Any]:
+    def get_accessible_users_filter(admin_roles: list[str]) -> dict[str, Any]:
         """Get filter conditions for users accessible to admin"""
 
         # System admins can access all users
@@ -173,11 +172,11 @@ class BulkOperationProcessor:
     @staticmethod
     async def process_bulk_operation(
         operation_type: str,
-        appointments: List[UUID],
+        appointments: list[UUID],
         operation_func,
         batch_size: int = 100,
         max_errors: int = 10,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Process bulk operation with batching and error handling"""
 
         total_appointments = len(appointments)
@@ -200,7 +199,7 @@ class BulkOperationProcessor:
                         {
                             "item_id": str(item_id),
                             "error": str(e),
-                            "timestamp": datetime.now(timezone.utc).isoformat(),
+                            "timestamp": datetime.now(UTC).isoformat(),
                         }
                     )
 
@@ -229,14 +228,15 @@ class AdminAnalytics:
     @staticmethod
     async def get_user_registration_trend(
         db: Database, days: int = 30
-    ) -> List[Dict[str, Union[str, int]]]:
+    ) -> list[dict[str, str | int]]:
         """Get user registration trend over specified days"""
 
-        from sqlalchemy import select, func, text
+        from sqlalchemy import func, select
+
         from app.auth.models import users
 
         # Generate date range
-        end_date = datetime.now(timezone.utc).date()
+        end_date = datetime.now(UTC).date()
         start_date = end_date - timedelta(days=days)
 
         query = (
@@ -260,10 +260,11 @@ class AdminAnalytics:
         ]
 
     @staticmethod
-    async def get_role_distribution(db: Database) -> List[Dict[str, Union[str, int]]]:
+    async def get_role_distribution(db: Database) -> list[dict[str, str | int]]:
         """Get distribution of users across roles"""
 
-        from sqlalchemy import select, func
+        from sqlalchemy import func, select
+
         from app.auth.models import roles, user_roles
 
         query = (
@@ -291,7 +292,7 @@ class AdminAnalytics:
         ]
 
     @staticmethod
-    def calculate_system_health_score(metrics: Dict[str, Any]) -> float:
+    def calculate_system_health_score(metrics: dict[str, Any]) -> float:
         """Calculate overall system health score"""
 
         score = 100.0
@@ -346,11 +347,12 @@ class AdminNotificationManager:
         severity: str,
         title: str,
         description: str,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
     ) -> UUID:
         """Create system alert"""
 
         from sqlalchemy import insert
+
         from app.admin.models import system_alerts
 
         alert_id = uuid.uuid4()
@@ -377,15 +379,15 @@ class AdminNotificationManager:
         message: str,
         notification_type: str = "info",
         priority: str = "normal",
-        action_url: Optional[str] = None,
-        action_label: Optional[str] = None,
-    ) -> List[UUID]:
+        action_url: str | None = None,
+        action_label: str | None = None,
+    ) -> list[UUID]:
         """Send notification to all admins"""
 
         from sqlalchemy import insert, select
+
         from app.admin.models import admin_notifications
-        from app.auth.models import users
-        from app.auth.models import user_roles, roles
+        from app.auth.models import roles, user_roles, users
 
         # Get all admin users
         admin_query = (
@@ -415,7 +417,7 @@ class AdminNotificationManager:
                 priority=priority,
                 action_url=action_url,
                 action_label=action_label,
-                created_at=datetime.now(timezone.utc),
+                created_at=datetime.now(UTC),
             )
 
             await db.execute(query)
@@ -425,8 +427,8 @@ class AdminNotificationManager:
 
 
 def mask_sensitive_data(
-    data: Dict[str, Any], sensitive_fields: List[str] = None
-) -> Dict[str, Any]:
+    data: dict[str, Any], sensitive_fields: list[str] = None
+) -> dict[str, Any]:
     """Mask sensitive fields in data for logging"""
 
     if sensitive_fields is None:
@@ -457,7 +459,7 @@ def mask_sensitive_data(
 
 
 def generate_admin_report_filename(
-    report_type: str, format_type: ExportFormat, timestamp: Optional[datetime] = None
+    report_type: str, format_type: ExportFormat, timestamp: datetime | None = None
 ) -> str:
     """Generate standardized filename for admin reports"""
 
