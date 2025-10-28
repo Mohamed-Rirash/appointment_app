@@ -1,12 +1,9 @@
-"""
-Redis-based caching system for FastAPI application
-"""
-
 import json
 import pickle
+from collections.abc import Callable
 from datetime import timedelta
 from functools import wraps
-from typing import Any, Callable, Optional, Union
+from typing import Any
 
 import redis.asyncio as redis
 from loguru import logger
@@ -20,7 +17,7 @@ class CacheManager:
     """Redis cache manager with async support"""
 
     def __init__(self):
-        self._redis: Optional[redis.Redis] = None
+        self._redis: redis.Redis | None = None
         self._connected = False
 
     async def connect(self):
@@ -65,7 +62,7 @@ class CacheManager:
         """Create a prefixed cache key"""
         return f"{settings.CACHE_PREFIX}:{key}"
 
-    async def get(self, key: str) -> Optional[Any]:
+    async def get(self, key: str) -> Any | None:
         """Get a value from cache"""
         if not self.is_connected:
             return None
@@ -90,7 +87,7 @@ class CacheManager:
             return None
 
     async def set(
-        self, key: str, value: Any, ttl: Optional[Union[int, timedelta]] = None
+        self, key: str, value: Any, ttl: int | timedelta | None = None
     ) -> bool:
         """Set a value in cache"""
         if not self.is_connected:
@@ -165,7 +162,7 @@ class CacheManager:
             logger.warning(f"Cache exists check failed for key {key}: {e}")
             return False
 
-    async def increment(self, key: str, amount: int = 1) -> Optional[int]:
+    async def increment(self, key: str, amount: int = 1) -> int | None:
         """Increment a numeric value in cache"""
         if not self.is_connected:
             return None
@@ -177,7 +174,7 @@ class CacheManager:
             logger.warning(f"Cache increment failed for key {key}: {e}")
             return None
 
-    async def expire(self, key: str, ttl: Union[int, timedelta]) -> bool:
+    async def expire(self, key: str, ttl: int | timedelta) -> bool:
         """Set expiration for a key"""
         if not self.is_connected:
             return False
@@ -243,8 +240,8 @@ cache_manager = CacheManager()
 
 def cache(
     key_prefix: str,
-    ttl: Optional[Union[int, timedelta]] = None,
-    key_builder: Optional[Callable] = None,
+    ttl: int | timedelta | None = None,
+    key_builder: Callable | None = None,
 ):
     """
     Decorator for caching function results
@@ -264,7 +261,7 @@ def cache(
             else:
                 # Default key building from function name and args
                 args_str = "_".join(str(arg) for arg in args)
-                kwargs_str = "_".join(f"{k}={v}" for k, v in kwargs.appointments())
+                kwargs_str = "_".join(f"{k}={v}" for k, v in kwargs.items())
                 cache_key = f"{key_prefix}:{func.__name__}:{args_str}:{kwargs_str}"
 
             # Try to get from cache
@@ -282,7 +279,7 @@ def cache(
     return decorator
 
 
-def cache_key_for_user(user_id: Union[str, int], suffix: str = "") -> str:
+def cache_key_for_user(user_id: str | int, suffix: str = "") -> str:
     """Generate a cache key for user-specific data"""
     key = f"user:{user_id}"
     if suffix:
@@ -290,9 +287,7 @@ def cache_key_for_user(user_id: Union[str, int], suffix: str = "") -> str:
     return key
 
 
-def cache_key_for_model(
-    model_name: str, model_id: Union[str, int], suffix: str = ""
-) -> str:
+def cache_key_for_model(model_name: str, model_id: str | int, suffix: str = "") -> str:
     """Generate a cache key for model-specific data"""
     key = f"{model_name}:{model_id}"
     if suffix:
@@ -300,13 +295,13 @@ def cache_key_for_model(
     return key
 
 
-async def invalidate_user_cache(user_id: Union[str, int]):
+async def invalidate_user_cache(user_id: str | int):
     """Invalidate all cache entries for a specific user"""
     pattern = cache_key_for_user(user_id, "*")
     await cache_manager.delete_pattern(pattern)
 
 
-async def invalidate_model_cache(model_name: str, model_id: Union[str, int]):
+async def invalidate_model_cache(model_name: str, model_id: str | int):
     """Invalidate all cache entries for a specific model"""
     pattern = cache_key_for_model(model_name, model_id, "*")
     await cache_manager.delete_pattern(pattern)

@@ -1,14 +1,15 @@
 """
 Request logging middleware with Loguru integration
 """
+
 import time
-from typing import Callable
+from collections.abc import Callable
 
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.config import get_settings
-from app.loggs import structured_logger, log_request, get_logger
+from app.loggs import get_logger, log_request, structured_logger
 
 settings = get_settings()
 logger = get_logger(__name__)
@@ -19,7 +20,13 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         # Skip logging for health check and metrics endpoints
-        if request.url.path in ["/health", "/metrics", "/docs", "/redoc", "/openapi.json"]:
+        if request.url.path in [
+            "/health",
+            "/metrics",
+            "/docs",
+            "/redoc",
+            "/openapi.json",
+        ]:
             return await call_next(request)
 
         if not settings.REQUEST_LOGGING:
@@ -74,10 +81,11 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
                 url=url,
                 status_code=response.status_code,
                 duration=duration,
+                # pyright: ignore[reportArgumentType]
                 request_size=request_size,
                 response_size=response_size,
                 user_agent=user_agent,
-                ip_address=ip_address
+                ip_address=ip_address,
             )
 
             # Add request ID to response headers for tracing
@@ -86,12 +94,12 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             # Log additional context for slow requests
             if duration > 1.0:  # Log slow requests (> 1 second)
                 logger.warning(
-                    f"Slow request detected",
+                    "Slow request detected",
                     path=path,
                     method=method,
                     duration_ms=round(duration * 1000, 2),
                     status_code=response.status_code,
-                    user_id=user_id
+                    user_id=user_id,
                 )
 
             return response
@@ -102,14 +110,14 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 
             # Log failed request with error details
             logger.error(
-                f"Request failed with exception",
+                "Request failed with exception",
                 path=path,
                 method=method,
                 duration_ms=round(duration * 1000, 2),
                 error=str(e),
                 error_type=type(e).__name__,
                 ip_address=ip_address,
-                user_id=user_id
+                user_id=user_id,
             )
 
             # Also log using the standard log_request function
@@ -118,9 +126,10 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
                 url=url,
                 status_code=500,
                 duration=duration,
+                # pyright: ignore[reportArgumentType]
                 request_size=request_size,
                 user_agent=user_agent,
-                ip_address=ip_address
+                ip_address=ip_address,
             )
 
             raise
@@ -136,7 +145,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             "x-forwarded-for",
             "x-real-ip",
             "cf-connecting-ip",  # Cloudflare
-            "true-client-ip",    # Cloudflare Enterprise
+            "true-client-ip",  # Cloudflare Enterprise
             "x-client-ip",
         ]
 

@@ -1,20 +1,14 @@
-"""
-Enhanced security utilities for FastAPI application
-"""
+import os
 import secrets
 import string
-from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, Optional, Union
+from datetime import UTC, datetime, timedelta
+from typing import Any
 from uuid import UUID
 
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
-from fastapi import HTTPException, status
 from jose import JWTError, jwt
 from loguru import logger
-import secrets
-import string
-import os
 
 from app.config import get_settings
 from app.core.cache import cache_manager
@@ -25,12 +19,10 @@ ph = PasswordHasher()
 
 class SecurityError(Exception):
     """Base security exception"""
-    pass
 
 
 class TokenError(SecurityError):
     """Token-related security exception"""
-    pass
 
 
 async def hash_password(password: str) -> str:
@@ -70,7 +62,7 @@ def generate_password(length: int = 12) -> str:
         secrets.choice(lowercase),
         secrets.choice(uppercase),
         secrets.choice(digits),
-        secrets.choice(special)
+        secrets.choice(special),
     ]
 
     # Fill the rest with random characters from all sets
@@ -81,13 +73,13 @@ def generate_password(length: int = 12) -> str:
     # Shuffle the password list
     secrets.SystemRandom().shuffle(password)
 
-    return ''.join(password)
+    return "".join(password)
 
 
 def generate_secure_token(length: int = 32) -> str:
     """Generate a cryptographically secure random token"""
     alphabet = string.ascii_letters + string.digits
-    return ''.join(secrets.choice(alphabet) for _ in range(length))
+    return "".join(secrets.choice(alphabet) for _ in range(length))
 
 
 def generate_api_key(prefix: str = "ak", length: int = 32) -> str:
@@ -96,10 +88,14 @@ def generate_api_key(prefix: str = "ak", length: int = 32) -> str:
     return f"{prefix}_{token}"
 
 
-def _base_jwt_claims(subject: Union[str, UUID], expires_delta: Optional[timedelta]) -> Dict[str, Any]:
-    now = datetime.now(timezone.utc)
-    exp = now + (expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES))
-    claims: Dict[str, Any] = {
+def _base_jwt_claims(
+    subject: str | UUID, expires_delta: timedelta | None
+) -> dict[str, Any]:
+    now = datetime.now(UTC)
+    exp = now + (
+        expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    )
+    claims: dict[str, Any] = {
         "sub": str(subject),
         "iat": int(now.timestamp()),
         "nbf": int(now.timestamp()),
@@ -117,9 +113,9 @@ def _base_jwt_claims(subject: Union[str, UUID], expires_delta: Optional[timedelt
 
 
 def create_access_token(
-    subject: Union[str, UUID],
-    expires_delta: Optional[timedelta] = None,
-    additional_claims: Optional[Dict[str, Any]] = None
+    subject: str | UUID,
+    expires_delta: timedelta | None = None,
+    additional_claims: dict[str, Any] | None = None,
 ) -> str:
     """Create a JWT access token with hardened defaults."""
     to_encode = _base_jwt_claims(subject, expires_delta)
@@ -134,8 +130,7 @@ def create_access_token(
 
 
 def create_refresh_token(
-    subject: Union[str, UUID],
-    expires_delta: Optional[timedelta] = None
+    subject: str | UUID, expires_delta: timedelta | None = None
 ) -> str:
     """Create a JWT refresh token with hardened defaults."""
     if not expires_delta:
@@ -149,10 +144,10 @@ def create_refresh_token(
         raise TokenError("Refresh token creation failed")
 
 
-def verify_token(token: str, token_type: str = "access") -> Dict[str, Any]:
+def verify_token(token: str, token_type: str = "access") -> dict[str, Any]:
     """Verify and decode a JWT token with issuer/audience enforcement if configured."""
     try:
-        decode_kwargs: Dict[str, Any] = {
+        decode_kwargs: dict[str, Any] = {
             "key": settings.SECRET_KEY,
             "algorithms": [settings.ALGORITHM],
             "options": {"verify_aud": bool(getattr(settings, "JWT_AUDIENCE", None))},
@@ -161,14 +156,16 @@ def verify_token(token: str, token_type: str = "access") -> Dict[str, Any]:
         aud = getattr(settings, "JWT_AUDIENCE", None)
         if aud:
             decode_kwargs["audience"] = aud
-        payload = jwt.decode(token, **decode_kwargs)  # jose verifies exp, iat, nbf by default
+        payload = jwt.decode(
+            token, **decode_kwargs
+        )  # jose verifies exp, iat, nbf by default
         if iss and payload.get("iss") != iss:
             raise TokenError("Invalid token issuer")
         # Type check
         if payload.get("type") != token_type:
             raise TokenError(f"Invalid token type. Expected {token_type}")
         return payload
-    except JWTError as e:
+    except JWTError:
         logger.warning("JWT verification failed")
         raise TokenError("Invalid token")
     except Exception as e:
@@ -180,11 +177,12 @@ def verify_token(token: str, token_type: str = "access") -> Dict[str, Any]:
 # JWT denylist (jti-based)
 # --------------------
 
+
 def _denylist_key(jti: str) -> str:
     return f"jwt:deny:jti:{jti}"
 
 
-async def is_jti_revoked(jti: Optional[str]) -> bool:
+async def is_jti_revoked(jti: str | None) -> bool:
     """Check if a JWT jti is revoked using Redis denylist."""
     if not jti or not settings.JWT_DENYLIST_ENABLED:
         return False
@@ -195,7 +193,7 @@ async def is_jti_revoked(jti: Optional[str]) -> bool:
         return False
 
 
-async def revoke_token_jti(jti: Optional[str], exp_ts: Optional[int]) -> bool:
+async def revoke_token_jti(jti: str | None, exp_ts: int | None) -> bool:
     """Revoke a JWT by jti until its expiration using Redis denylist.
 
     Args:
@@ -208,7 +206,7 @@ async def revoke_token_jti(jti: Optional[str], exp_ts: Optional[int]) -> bool:
         # Compute TTL from exp
         ttl = None
         if isinstance(exp_ts, int):
-            now = int(datetime.now(timezone.utc).timestamp())
+            now = int(datetime.now(UTC).timestamp())
             ttl = max(0, exp_ts - now)
         # Use small default TTL to avoid permanent entries if exp missing
         if ttl is None:
@@ -218,20 +216,17 @@ async def revoke_token_jti(jti: Optional[str], exp_ts: Optional[int]) -> bool:
         return False
 
 
- 
-
-
-def generate_password_reset_token(user_id: Union[str, UUID]) -> str:
+def generate_password_reset_token(user_id: str | UUID) -> str:
     """Generate a password reset token"""
     expires_delta = timedelta(hours=24)  # 24 hours
     return create_access_token(
         subject=user_id,
         expires_delta=expires_delta,
-        additional_claims={"type": "password_reset"}
+        additional_claims={"type": "password_reset"},
     )
 
 
-def verify_password_reset_token(token: str) -> Optional[str]:
+def verify_password_reset_token(token: str) -> str | None:
     """Verify a password reset token and return user ID"""
     try:
         payload = verify_token(token, token_type="password_reset")
@@ -240,17 +235,17 @@ def verify_password_reset_token(token: str) -> Optional[str]:
         return None
 
 
-def generate_email_verification_token(user_id: Union[str, UUID]) -> str:
+def generate_email_verification_token(user_id: str | UUID) -> str:
     """Generate an email verification token"""
     expires_delta = timedelta(hours=48)  # 48 hours
     return create_access_token(
         subject=user_id,
         expires_delta=expires_delta,
-        additional_claims={"type": "email_verification"}
+        additional_claims={"type": "email_verification"},
     )
 
 
-def verify_email_verification_token(token: str) -> Optional[str]:
+def verify_email_verification_token(token: str) -> str | None:
     """Verify an email verification token and return user ID"""
     try:
         payload = verify_token(token, token_type="email_verification")
@@ -279,11 +274,12 @@ def sanitize_filename(filename: str) -> str:
     return name[:255]
 
 
-def is_safe_url(url: str, allowed_hosts: Optional[list[str]] = None) -> bool:
+def is_safe_url(url: str, allowed_hosts: list[str] | None = None) -> bool:
     """Check if a URL is safe for redirects"""
     if not url:
         return False
     from urllib.parse import urlparse
+
     parsed = urlparse(url)
     # Only allow http/https schemes
     if parsed.scheme and parsed.scheme not in {"http", "https"}:
