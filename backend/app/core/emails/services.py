@@ -1,9 +1,10 @@
-# app/core/email_service.py
-
-from typing import Optional, Union
-
 from fastapi import BackgroundTasks
-from fastapi_mail import ConnectionConfig, FastMail, MessageType, MultipartSubtypeEnum
+from fastapi_mail import (
+    ConnectionConfig,
+    FastMail,
+    MessageType,
+    MultipartSubtypeEnum,
+)
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from pydantic import BaseModel, EmailStr, model_validator
 
@@ -13,21 +14,22 @@ from app.core.emails.email_config import get_email_settings
 
 class FixedMessageSchema(BaseModel):
     """Fixed MessageSchema that works with Pydantic v2 and FastMail"""
+
     recipients: list[EmailStr]
     attachments: list = []
     subject: str = ""
-    body: Optional[Union[str, list]] = None
-    alternative_body: Optional[str] = None
-    template_body: Optional[Union[list, dict, str]] = None
+    body: str | list | None = None
+    alternative_body: str | None = None
+    template_body: list | dict | str | None = None
     cc: list[EmailStr] = []
     bcc: list[EmailStr] = []
     reply_to: list[EmailStr] = []
-    from_email: Optional[EmailStr] = None
-    from_name: Optional[str] = None
+    from_email: EmailStr | None = None
+    from_name: str | None = None
     charset: str = "utf-8"
     subtype: MessageType
     multipart_subtype: MultipartSubtypeEnum = MultipartSubtypeEnum.mixed
-    headers: Optional[dict] = None
+    headers: dict | None = None
 
     @model_validator(mode="after")
     def validate_alternative_body(self):
@@ -68,6 +70,7 @@ class FixedMessageSchema(BaseModel):
 
         return message
 
+
 email_settings = get_email_settings()
 app_settings = get_settings()
 
@@ -86,7 +89,7 @@ conf = ConnectionConfig(
     VALIDATE_CERTS=False,
     MAIL_FROM_NAME=email_settings.MAIL_FROM_NAME,
     MAIL_DEBUG=email_settings.MAIL_DEBUG,
-    TEMPLATE_FOLDER=str(email_settings.TEMPLATE_FOLDER),
+    TEMPLATE_FOLDER=str(email_settings.TEMPLATE_FOLDER),  # pyright: ignore[reportArgumentType]
 )
 
 
@@ -103,12 +106,12 @@ jinja_env = Environment(
 # Send Email Function
 # =====================================================
 async def send_email(
-    recipients: Union[str, list[str]],
+    recipients: str | list[str],
     subject: str,
     context: dict,
     background_tasks: BackgroundTasks,
-    template_name: Optional[str] = None,
-    email_type: Optional[str] = None,
+    template_name: str | None = None,
+    email_type: str | None = None,
 ):
     """
     Send email using FastAPI-Mail with HTML templates
@@ -128,7 +131,9 @@ async def send_email(
             "password_reset": "user/password-reset-inline.html",
             "account_verification_confirmation": "user/account-verification-confirmation-inline.html",
         }
-        template_path = template_mapping.get(email_type, "user/account-invite-inline.html")
+        template_path = template_mapping.get(
+            email_type, "user/account-invite-inline.html"
+        )
     else:
         # Default to account invite template
         template_path = "user/account-invite-inline.html"
@@ -154,8 +159,6 @@ async def send_email(
 
     # Send in background
     background_tasks.add_task(fm.send_message, message)
-
-    print(f"📧 Sending email to {recipients} with subject: '{subject}'")
 
 
 # =====================================================
