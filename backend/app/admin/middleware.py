@@ -3,17 +3,12 @@ Admin module middleware for request logging and audit
 """
 
 import time
-import uuid
-from datetime import datetime, timezone
-from typing import Any, Callable, Dict, Optional
+from collections.abc import Callable
+from typing import Any
 
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
-
-from app.admin.config import AdminAuditConfig
-from app.admin.utils import mask_sensitive_data
-from app.database import database
 
 
 class AdminRateLimitMiddleware(BaseHTTPMiddleware):
@@ -23,7 +18,7 @@ class AdminRateLimitMiddleware(BaseHTTPMiddleware):
         super().__init__(app)
         self.requests_per_minute = requests_per_minute
         self.enabled = enabled
-        self.request_counts: Dict[str, Dict[str, Any]] = {}
+        self.request_counts: dict[str, dict[str, Any]] = {}
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         if not self.enabled:
