@@ -1,5 +1,3 @@
-# app/core/email_config.py
-
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
@@ -57,7 +55,7 @@ class EmailConfig(BaseSettings):
         return bool(v)
 
 
-@lru_cache()
+@lru_cache
 def get_email_settings() -> EmailConfig:
     """Return cached email settings"""
     return EmailConfig()
