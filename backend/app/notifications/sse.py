@@ -1,6 +1,6 @@
 import asyncio
 import json
-from typing import AsyncIterator, Dict, List, Optional
+from collections.abc import AsyncIterator
 
 
 class SSEBroker:
@@ -10,7 +10,7 @@ class SSEBroker:
     """
 
     def __init__(self):
-        self._subscribers: List[asyncio.Queue] = []
+        self._subscribers: list[asyncio.Queue] = []
         self._lock = asyncio.Lock()
 
     async def subscribe(self) -> asyncio.Queue:
@@ -30,7 +30,7 @@ class SSEBroker:
         except Exception:
             pass
 
-    async def publish(self, event: str, data: Dict) -> None:
+    async def publish(self, event: str, data: dict) -> None:
         payload = json.dumps({"event": event, "data": data}, default=str)
         async with self._lock:
             targets = list(self._subscribers)
@@ -45,7 +45,7 @@ class SSEBroker:
         try:
             while True:
                 payload = await q.get()
-                yield f"event: message\n"
+                yield "event: message\n"
                 # Split by lines to comply with SSE format
                 for line in payload.splitlines():
                     yield f"data: {line}\n"
