@@ -1,4 +1,4 @@
-import asyncio  # noqa: I001
+import asyncio
 import json
 from datetime import date, time
 from uuid import UUID
@@ -29,9 +29,9 @@ from app.appointments.services import AppointmentService
 from app.appointments.sms_service import SMSService
 from app.appointments.utils import office_connections
 from app.auth.dependencies import CurrentUser, require_any_role
-from app.database import get_db
-from app.core.emails.services import send_email
 from app.config import get_settings
+from app.core.emails.services import send_email
+from app.database import get_db
 
 settings = get_settings()
 
@@ -70,7 +70,10 @@ async def create_with_citizen(
         # SSE notification is sent automatically by the service layer
         # No SMS or Email notifications are sent on appointment creation
 
-        return {"message": "Appointment created successfully", "appointment_id": str(result.appointment.id)}
+        return {
+            "message": "Appointment created successfully",
+            "appointment_id": str(result.appointment.id),
+        }
 
     except AppointmentNotFound as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -78,22 +81,18 @@ async def create_with_citizen(
     except Exception as e:
         # Log the full error with traceback
         import traceback
+
         error_msg = str(e)
         error_type = type(e).__name__
         error_traceback = traceback.format_exc()
-
-        print(f"Error creating appointment with citizen:")
-        print(f"  Type: {error_type}")
-        print(f"  Message: {error_msg}")
-        print(f"  Traceback:\n{error_traceback}")
 
         raise HTTPException(
             status_code=500,
             detail={
                 "message": "An error occurred while creating appointment",
                 "error_type": error_type,
-                "error": error_msg or "Unknown error occurred"
-            }
+                "error": error_msg or "Unknown error occurred",
+            },
         )
 
 
@@ -109,9 +108,6 @@ async def sse_endpoint(request: Request, office_id: str = Query(...)):
     """
     queue = asyncio.Queue()
     office_connections.setdefault(office_id, []).append(queue)
-
-    print(f"📡 New SSE connection for office {office_id}")
-    print(f"   Total connections for this office: {len(office_connections[office_id])}")
 
     async def event_generator():
         try:
@@ -136,13 +132,9 @@ async def sse_endpoint(request: Request, office_id: str = Query(...)):
 async def decide_appointment(
     appointment_id: UUID,
     status: AppointmentStatus = Query(
-        ...,
-        description="Decision status: approved or denied"
+        ..., description="Decision status: approved or denied"
     ),
-    office_id: UUID = Query(
-        ...,
-        description="Office ID for verification"
-    ),
+    office_id: UUID = Query(..., description="Office ID for verification"),
     reason_data: sch.AppointmentDecisionReason | None = None,
     background_tasks: BackgroundTasks = None,
     db: Database = Depends(get_db),
@@ -171,7 +163,7 @@ async def decide_appointment(
         ]:
             raise HTTPException(
                 status_code=400,
-                detail="Decision must be 'approved' or 'denied'. Use the postpone endpoint for rescheduling."
+                detail="Decision must be 'approved' or 'denied'. Use the postpone endpoint for rescheduling.",
             )
 
         # Extract reason from request body (if provided)
@@ -200,9 +192,15 @@ async def decide_appointment(
                 if appointment_details:
                     citizen_name = f"{appointment_details.citizen_firstname} {appointment_details.citizen_lastname}"
                     appointment_datetime = appointment_details.appointment_date
-                    appointment_date_str = appointment_datetime.strftime("%B %d, %Y")  # e.g., "October 25, 2025"
-                    appointment_time_str = appointment_datetime.strftime("%I:%M %p")  # e.g., "10:00 AM"
-                    appointment_datetime_str = appointment_datetime.strftime("%Y-%m-%d %H:%M")
+                    appointment_date_str = appointment_datetime.strftime(
+                        "%B %d, %Y"
+                    )  # e.g., "October 25, 2025"
+                    appointment_time_str = appointment_datetime.strftime(
+                        "%I:%M %p"
+                    )  # e.g., "10:00 AM"
+                    appointment_datetime_str = appointment_datetime.strftime(
+                        "%Y-%m-%d %H:%M"
+                    )
 
                     if status == AppointmentStatus.APPROVED:
                         # Send SMS notification
@@ -224,7 +222,11 @@ async def decide_appointment(
                                 "appointment_date": appointment_date_str,
                                 "appointment_time": appointment_time_str,
                                 "purpose": appointment_details.purpose,
-                                "office_name": getattr(appointment_details, "office_name", "Government Office"),
+                                "office_name": getattr(
+                                    appointment_details,
+                                    "office_name",
+                                    "Government Office",
+                                ),
                             }
 
                             background_tasks.add_task(
@@ -235,7 +237,9 @@ async def decide_appointment(
                                 background_tasks=background_tasks,
                                 template_name="appointments/appointment-approved-inline.html",
                             )
-                            print(f"📧 Approval email notification queued for {appointment_details.citizen_email}")
+                            print(
+                                f"📧 Approval email notification queued for {appointment_details.citizen_email}"
+                            )
 
                     elif status == AppointmentStatus.DENIED:
                         # Send SMS notification
@@ -267,17 +271,21 @@ async def decide_appointment(
                                 background_tasks=background_tasks,
                                 template_name="appointments/appointment-denied-inline.html",
                             )
-                            print(f"📧 Denial email notification queued for {appointment_details.citizen_email}")
+                            print(
+                                f"📧 Denial email notification queued for {appointment_details.citizen_email}"
+                            )
             except Exception as e:
                 # Log error but don't fail the request
-                print(f"Failed to queue notifications: {str(e)}")
+                print(f"Failed to queue notifications: {e!s}")
 
         return updated_appointment
 
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except AppointmentNotFound as e:
-        raise HTTPException(status_code=404, detail=str(e) if str(e) else "Appointment not found")
+        raise HTTPException(
+            status_code=404, detail=str(e) if str(e) else "Appointment not found"
+        )
     except AppointmentAlreadyApproved:
         raise HTTPException(status_code=400, detail="Appointment already decided")
     except AppointmentDecisionNotAllowed as e:
@@ -286,8 +294,6 @@ async def decide_appointment(
 
 @appointment_router.post(
     "/{appointment_id}/postpone",
-    deprecated=True,
-    description="DEPRECATED: Use PATCH /{appointment_id}/decision with status='postponed' instead"
 )
 async def postpone_appointment(
     appointment_id: UUID,
@@ -297,16 +303,23 @@ async def postpone_appointment(
     current_user: CurrentUser = Depends(require_any_role("host", "secretary")),
 ):
     """
-    DEPRECATED: Use PATCH /{appointment_id}/decision with status='postponed' instead.
+    Postpone an appointment to a new date/time and mark it as approved.
 
-    This endpoint is kept for backward compatibility but will be removed in future versions.
+    This endpoint reschedules a pending appointment to a new date and time,
+    then marks it as APPROVED. The citizen will receive a notification with
+    the new appointment details.
+
+    **Request Body:**
+    - `new_appointment_date`: New appointment date/time (required)
+    - `new_time_slot`: New time slot (required)
+    - `reason`: Optional reason for the postponement
     """
     try:
         updated_appointment = await AppointmentService.postpone_appointment(
             db, appointment_id, decision, current_user.id
         )
 
-        # Send SMS and Email notifications in background for postponed appointment
+        # Send SMS and Email notifications in background for rescheduled appointment
         if background_tasks and updated_appointment:
             try:
                 # Get appointment details with citizen info for notifications
@@ -316,61 +329,54 @@ async def postpone_appointment(
                 if appointment_details:
                     citizen_name = f"{appointment_details.citizen_firstname} {appointment_details.citizen_lastname}"
 
-                    # Format old date/time
-                    old_datetime = appointment_details.appointment_date
-                    old_date_str = old_datetime.strftime("%B %d, %Y")  # e.g., "October 25, 2025"
-                    old_time_str = old_datetime.strftime("%I:%M %p")  # e.g., "10:00 AM"
-                    old_datetime_str = old_datetime.strftime("%Y-%m-%d %H:%M")
+                    # Format new appointment date/time (current appointment_date is now the new date)
+                    new_datetime = appointment_details.appointment_date
+                    new_date_str = new_datetime.strftime(
+                        "%B %d, %Y"
+                    )  # e.g., "October 25, 2025"
+                    new_time_str = new_datetime.strftime("%I:%M %p")  # e.g., "10:00 AM"
+                    new_datetime_str = new_datetime.strftime("%Y-%m-%d %H:%M")
 
-                    # Format new date/time
-                    if decision.new_appointment_date:
-                        new_datetime = decision.new_appointment_date
-                        new_date_str = new_datetime.strftime("%B %d, %Y")
-                        new_time_str = new_datetime.strftime("%I:%M %p")
-                        new_datetime_str = new_datetime.strftime("%Y-%m-%d %H:%M")
-                    else:
-                        new_date_str = "To Be Determined"
-                        new_time_str = "To Be Determined"
-                        new_datetime_str = "TBD"
-
-                    # Send SMS notification
+                    # Send SMS notification for approved appointment with new date
                     background_tasks.add_task(
-                        SMSService.send_appointment_postponed_sms,
+                        SMSService.send_appointment_approved_sms,
                         str(appointment_id),
                         appointment_details.citizen_phone,
                         citizen_name,
-                        old_datetime_str,
                         new_datetime_str,
-                        decision.reason,  # pyright: ignore[reportArgumentType]
+                        getattr(appointment_details, "office_name", "Office"),
                     )
 
-                    # Send Email notification
+                    # Send Email notification for approved appointment with new date
                     if appointment_details.citizen_email:
                         email_context = {
                             "app_name": settings.PROJECT_NAME,
                             "citizen_name": citizen_name,
                             "appointment_id": str(appointment_id),
-                            "old_appointment_date": old_date_str,
-                            "old_appointment_time": old_time_str,
-                            "new_appointment_date": new_date_str,
-                            "new_appointment_time": new_time_str,
+                            "appointment_date": new_date_str,
+                            "appointment_time": new_time_str,
                             "purpose": appointment_details.purpose,
-                            "office_name": getattr(appointment_details, "office_name", "Government Office"),
-                            "reason": decision.reason or "Schedule conflict",
+                            "office_name": getattr(
+                                appointment_details,
+                                "office_name",
+                                "Government Office",
+                            ),
                         }
 
                         background_tasks.add_task(
                             send_email,
                             recipients=appointment_details.citizen_email,
-                            subject=f"Appointment Rescheduled - {settings.PROJECT_NAME}",
+                            subject=f"Appointment Approved - {settings.PROJECT_NAME}",
                             context=email_context,
                             background_tasks=background_tasks,
-                            template_name="appointments/appointment-postponed-inline.html",
+                            template_name="appointments/appointment-approved-inline.html",
                         )
-                        print(f"📧 Postponement email notification queued for {appointment_details.citizen_email}")
+                        print(
+                            f"📧 Approval email notification queued for {appointment_details.citizen_email}"
+                        )
             except Exception as e:
                 # Log error but don't fail the request
-                print(f"Failed to queue notifications: {str(e)}")
+                print(f"Failed to queue notifications: {e!s}")
 
         return updated_appointment
 
@@ -382,9 +388,16 @@ async def postpone_appointment(
         raise HTTPException(
             status_code=400, detail="Can only postpone pending appointments"
         )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
-@appointment_router.put("/{appointment_id}", response_model=sch.AppointmentRead, status_code=status.HTTP_200_OK, summary="Edit appointment details")
+@appointment_router.put(
+    "/{appointment_id}",
+    response_model=sch.AppointmentRead,
+    status_code=status.HTTP_200_OK,
+    summary="Edit appointment details",
+)
 async def edit_appointment(
     appointment_id: UUID,
     update_data: sch.AppointmentUpdate,
@@ -403,7 +416,7 @@ async def edit_appointment(
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         # Unexpected server error: log and return 500
-        print(f"Unexpected error editing appointment {appointment_id}: {str(e)}")
+        print(f"Unexpected error editing appointment {appointment_id}: {e!s}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -441,7 +454,7 @@ async def cancel_appointment(
                     )
             except Exception as e:
                 # Log error but don't fail the request
-                print(f"Failed to queue SMS notification: {str(e)}")
+                print(f"Failed to queue SMS notification: {e!s}")
 
         return updated_appointment
 
