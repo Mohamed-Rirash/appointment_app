@@ -8,7 +8,7 @@ import uuid
 from contextvars import ContextVar
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 from loguru import logger
 from starlette.requests import Request
@@ -18,8 +18,8 @@ from app.config import get_settings
 settings = get_settings()
 
 # Context variables for request tracing
-request_id_var: ContextVar[Optional[str]] = ContextVar("request_id", default=None)
-user_id_var: ContextVar[Optional[str]] = ContextVar("user_id", default=None)
+request_id_var: ContextVar[str | None] = ContextVar("request_id", default=None)
+user_id_var: ContextVar[str | None] = ContextVar("user_id", default=None)
 
 
 class StructuredLogger:
@@ -105,7 +105,7 @@ class StructuredLogger:
 
         return json.dumps(log_entry)
 
-    def bind_request(self, request: Request, user_id: Optional[str] = None):
+    def bind_request(self, request: Request, user_id: str | None = None):
         """Bind request context to logger"""
         request_id = str(uuid.uuid4())
         request_id_var.set(request_id)
@@ -139,10 +139,10 @@ def log_request(
     url: str,
     status_code: int,
     duration: float,
-    request_size: Optional[int] = None,
-    response_size: Optional[int] = None,
-    user_agent: Optional[str] = None,
-    ip_address: Optional[str] = None,
+    request_size: int | None = None,
+    response_size: int | None = None,
+    user_agent: str | None = None,
+    ip_address: str | None = None,
 ):
     """Log HTTP request details"""
     log_data = {
@@ -170,11 +170,11 @@ def log_request(
 
 def log_auth_event(
     event_type: str,
-    user_id: Optional[str] = None,
-    email: Optional[str] = None,
+    user_id: str | None = None,
+    email: str | None = None,
     success: bool = True,
-    reason: Optional[str] = None,
-    ip_address: Optional[str] = None,
+    reason: str | None = None,
+    ip_address: str | None = None,
 ):
     """Log authentication events"""
     log_data = {
@@ -204,9 +204,9 @@ def log_auth_event(
 def log_security_event(
     event_type: str,
     severity: str = "medium",
-    details: Optional[Dict[str, Any]] = None,
-    ip_address: Optional[str] = None,
-    user_id: Optional[str] = None,
+    details: dict[str, Any] | None = None,
+    ip_address: str | None = None,
+    user_id: str | None = None,
 ):
     """Log security-related events"""
     log_data = {
@@ -237,8 +237,8 @@ def log_database_event(
     table: str,
     duration: float,
     success: bool = True,
-    error: Optional[str] = None,
-    affected_rows: Optional[int] = None,
+    error: str | None = None,
+    affected_rows: int | None = None,
 ):
     """Log database operations"""
     log_data = {
@@ -264,9 +264,9 @@ def log_database_event(
 def log_cache_event(
     operation: str,
     key: str,
-    hit: Optional[bool] = None,
-    duration: Optional[float] = None,
-    size: Optional[int] = None,
+    hit: bool | None = None,
+    duration: float | None = None,
+    size: int | None = None,
 ):
     """Log cache operations"""
     log_data = {

@@ -4,15 +4,16 @@ FastAPI application with comprehensive security, RBAC, and middleware
 
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request, status
+from fastapi import FastAPI
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
-from fastapi.responses import JSONResponse
+
 # from app.admin.middleware import AdminRateLimitMiddleware
 # from app.admin.router import router as admin_router
 from loguru import logger
 
 from app.admin.router import router as admin_router
 from app.appointments.routers import appointment_router
+
 # Router imports
 from app.auth.router import router as auth_router
 from app.config import get_settings
@@ -21,36 +22,52 @@ from app.config import get_settings
 try:
     import sentry_sdk
     from sentry_sdk.integrations.fastapi import FastApiIntegration
-    from sentry_sdk.integrations.starlette import StarletteIntegration
-    from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
-    from sentry_sdk.integrations.redis import RedisIntegration
     from sentry_sdk.integrations.loguru import LoguruIntegration
+    from sentry_sdk.integrations.redis import RedisIntegration
+    from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+    from sentry_sdk.integrations.starlette import StarletteIntegration
+
     SENTRY_AVAILABLE = True
 except ImportError:
     SENTRY_AVAILABLE = False
     logger.warning("Sentry SDK not installed. Error tracking disabled.")
 from app.core.cache import cache_manager
 from app.core.middleware.caching import ResponseCachingMiddleware
+
 # Middleware imports
 from app.core.middleware.cors import setup_cors
 from app.core.middleware.error_handling import (
-    AuthenticationError, AuthorizationError, BusinessLogicError, ConflictError,
-    ErrorHandlingMiddleware, ResourceNotFoundError, RateLimitError,
-    authentication_error_handler, authorization_error_handler,
-    business_logic_error_handler, conflict_error_handler,
-    resource_not_found_error_handler, rate_limit_error_handler)
+    AuthenticationError,
+    AuthorizationError,
+    BusinessLogicError,
+    ConflictError,
+    ErrorHandlingMiddleware,
+    RateLimitError,
+    ResourceNotFoundError,
+    authentication_error_handler,
+    authorization_error_handler,
+    business_logic_error_handler,
+    conflict_error_handler,
+    rate_limit_error_handler,
+    resource_not_found_error_handler,
+)
 from app.core.middleware.logging import RequestLoggingMiddleware
-from app.core.middleware.security import (ProxyHeadersMiddleware,
-                                          RequestSizeMiddleware,
-                                          RequestTimeoutMiddleware,
-                                          SecurityHeadersMiddleware)
+from app.core.middleware.security import (
+    ProxyHeadersMiddleware,
+    RequestSizeMiddleware,
+    RequestTimeoutMiddleware,
+    SecurityHeadersMiddleware,
+)
 from app.database import database
+
 # from app.items.router import router as items_router
-from app.loggs import get_logger, structured_logger
 from app.office_mgnt.router import hostavailableroutes
 from app.office_mgnt.router import router as office_mgnt_router
-from app.rate_limiting import (EndpointRateLimitMiddleware,
-                               RateLimitMiddleware, rate_limiter)
+from app.rate_limiting import (
+    EndpointRateLimitMiddleware,
+    RateLimitMiddleware,
+    rate_limiter,
+)
 
 # from app.superadmin.router import router as superadmin_router
 
@@ -92,12 +109,13 @@ def init_sentry():
             # Adjust this value in production to reduce overhead.
             send_default_pii=False,  # Don't send personally identifiable information
             attach_stacktrace=True,  # Attach stack traces to messages
-            debug=settings.ENVIRONMENT == "local",  # Enable debug mode in local environment
+            debug=settings.ENVIRONMENT
+            == "local",  # Enable debug mode in local environment
             release=f"{settings.PROJECT_NAME}@1.0.0",  # Track releases
             before_send=before_send_sentry,  # Filter events before sending
         )
         logger.info(
-            f"Sentry initialized successfully",
+            "Sentry initialized successfully",
             environment=settings.SENTRY_ENVIRONMENT or settings.ENVIRONMENT,
             traces_sample_rate=settings.SENTRY_TRACES_SAMPLE_RATE,
         )
@@ -253,17 +271,12 @@ def create_application() -> FastAPI:
     app.add_middleware(ErrorHandlingMiddleware)
 
     # Add exception handlers for custom exceptions
-    app.add_exception_handler(BusinessLogicError, business_logic_error_handler)
-    app.add_exception_handler(AuthenticationError, authentication_error_handler)
-    app.add_exception_handler(AuthorizationError, authorization_error_handler)
-    app.add_exception_handler(ResourceNotFoundError, resource_not_found_error_handler)
-    app.add_exception_handler(ConflictError, conflict_error_handler)
-    app.add_exception_handler(RateLimitError, rate_limit_error_handler)
-    # app.add_exception_handler(BusinessLogicError, business_logic_error_handler)
-    # app.add_exception_handler(AuthenticationError, authentication_error_handler)
-    # app.add_exception_handler(AuthorizationError, authorization_error_handler)
-    # app.add_exception_handler(ResourceNotFoundError, resource_not_found_error_handler)
-    # app.add_exception_handler(ConflictError, conflict_error_handler)
+    app.add_exception_handler(BusinessLogicError, business_logic_error_handler)  # pyright: ignore[reportArgumentType]
+    app.add_exception_handler(AuthenticationError, authentication_error_handler)  # pyright: ignore[reportArgumentType]
+    app.add_exception_handler(AuthorizationError, authorization_error_handler)  # pyright: ignore[reportArgumentType]
+    app.add_exception_handler(ResourceNotFoundError, resource_not_found_error_handler)  # pyright: ignore[reportArgumentType]
+    app.add_exception_handler(ConflictError, conflict_error_handler)  # pyright: ignore[reportArgumentType]
+    app.add_exception_handler(RateLimitError, rate_limit_error_handler)  # pyright: ignore[reportArgumentType]
 
     return app
 

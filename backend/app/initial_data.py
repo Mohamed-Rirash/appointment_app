@@ -15,14 +15,12 @@ sys.path.append(str(Path(__file__).parent.parent))
 from sqlalchemy import insert, select
 
 from app.auth.constants import DEFAULT_ROLE_PERMISSIONS, DEFAULT_ROLES
-from app.auth.crud import PermissionCRUD, RoleCRUD, RolePermissionCRUD, UserCRUD
+from app.auth.crud import RoleCRUD, RolePermissionCRUD, UserCRUD
 from app.auth.models import (
     DEFAULT_PERMISSIONS,
     permissions,
-    role_permissions,
     roles,
     user_roles,
-    users,
 )
 from app.auth.security import hash_password
 from app.config import get_settings

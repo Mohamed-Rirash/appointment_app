@@ -6,15 +6,12 @@ This module provides reusable utility functions that can be used across all modu
 import hashlib
 import re
 import uuid
-from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional, Tuple, Union
-from uuid import UUID
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from databases import Database
 from fastapi import HTTPException, status
-from sqlalchemy import and_, func, or_, select
-
-from app.auth.models import users
+from sqlalchemy import and_, func, select
 
 # ================================
 # String and Text Utils
@@ -43,13 +40,13 @@ def truncate_text(text: str, max_length: int = 100, suffix: str = "...") -> str:
     return text[: max_length - len(suffix)] + suffix
 
 
-def extract_mentions(text: str) -> List[str]:
+def extract_mentions(text: str) -> list[str]:
     """Extract @mentions from text"""
     mention_pattern = r"@(\w+)"
     return re.findall(mention_pattern, text)
 
 
-def extract_hashtags(text: str) -> List[str]:
+def extract_hashtags(text: str) -> list[str]:
     """Extract #hashtags from text"""
     hashtag_pattern = r"#(\w+)"
     return re.findall(hashtag_pattern, text)
@@ -92,7 +89,7 @@ def validate_phone(phone: str) -> bool:
     return re.match(phone_pattern, cleaned_phone) is not None
 
 
-def validate_password_strength(password: str) -> Dict[str, Any]:
+def validate_password_strength(password: str) -> dict[str, Any]:
     """Validate password strength and return detailed feedback"""
     result = {
         "is_valid": True,
@@ -143,7 +140,7 @@ def validate_url(url: str) -> bool:
 
 def check_resource_permission(
     user: User,
-    resource: Dict[str, Any],
+    resource: dict[str, Any],
     required_permission: str,
     owner_field: str = "owner_id",
 ) -> bool:
@@ -170,10 +167,10 @@ def check_resource_permission(
 
 def get_user_accessible_resources(
     user: User,
-    all_resources: List[Dict[str, Any]],
+    all_resources: list[dict[str, Any]],
     owner_field: str = "owner_id",
     public_field: str = "is_public",
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """Filter resources based on user access permissions"""
 
     accessible_resources = []
@@ -198,7 +195,7 @@ def get_user_accessible_resources(
 
 
 def calculate_permission_level(
-    user: User, resource: Dict[str, Any], owner_field: str = "owner_id"
+    user: User, resource: dict[str, Any], owner_field: str = "owner_id"
 ) -> str:
     """Calculate user's permission level for a resource"""
 
@@ -229,8 +226,8 @@ def calculate_permission_level(
 
 
 def paginate_results(
-    appointments: List[Any], page: int, size: int
-) -> Tuple[List[Any], Dict[str, Any]]:
+    appointments: list[Any], page: int, size: int
+) -> tuple[list[Any], dict[str, Any]]:
     """Paginate a list of appointments and return metadata"""
 
     total = len(appointments)
@@ -253,8 +250,8 @@ def paginate_results(
 
 
 def group_by_field(
-    appointments: List[Dict[str, Any]], field: str
-) -> Dict[str, List[Dict[str, Any]]]:
+    appointments: list[dict[str, Any]], field: str
+) -> dict[str, list[dict[str, Any]]]:
     """Group appointments by a specific field"""
     grouped = {}
 
@@ -268,8 +265,8 @@ def group_by_field(
 
 
 def sort_appointments(
-    appointments: List[Dict[str, Any]], sort_by: str, sort_order: str = "desc"
-) -> List[Dict[str, Any]]:
+    appointments: list[dict[str, Any]], sort_by: str, sort_order: str = "desc"
+) -> list[dict[str, Any]]:
     """Sort appointments by a field"""
 
     reverse = sort_order.lower() == "desc"
@@ -282,8 +279,8 @@ def sort_appointments(
 
 
 def filter_appointments(
-    appointments: List[Dict[str, Any]], filters: Dict[str, Any]
-) -> List[Dict[str, Any]]:
+    appointments: list[dict[str, Any]], filters: dict[str, Any]
+) -> list[dict[str, Any]]:
     """Filter appointments based on criteria"""
 
     filtered_appointments = appointments
@@ -340,7 +337,7 @@ def get_file_extension(filename: str) -> str:
     return filename.split(".")[-1].lower() if "." in filename else ""
 
 
-def is_allowed_file_type(filename: str, allowed_extensions: List[str]) -> bool:
+def is_allowed_file_type(filename: str, allowed_extensions: list[str]) -> bool:
     """Check if file type is allowed"""
     extension = get_file_extension(filename)
     return extension in [ext.lower().lstrip(".") for ext in allowed_extensions]
@@ -385,7 +382,7 @@ def parse_datetime(
 def get_time_ago(dt: datetime) -> str:
     """Get human readable time ago string"""
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     diff = now - dt
 
     if diff.days > 365:
@@ -469,14 +466,13 @@ async def check_record_exists(db: Database, table: Any, field: str, value: Any) 
 
 
 async def get_or_create_record(
-    db: Database, table: Any, defaults: Dict[str, Any], **lookup_fields
-) -> Tuple[Dict[str, Any], bool]:
+    db: Database, table: Any, defaults: dict[str, Any], **lookup_fields
+) -> tuple[dict[str, Any], bool]:
     """Get existing record or create new one"""
 
     # Try to get existing record
     conditions = [
-        getattr(table.c, field) == value
-        for field, value in lookup_fields.appointments()
+        getattr(table.c, field) == value for field, value in lookup_fields.items()
     ]
     query = select(table).where(and_(*conditions))
 
@@ -503,8 +499,8 @@ async def get_or_create_record(
 
 def create_error_response(
     message: str,
-    error_code: Optional[str] = None,
-    details: Optional[Dict[str, Any]] = None,
+    error_code: str | None = None,
+    details: dict[str, Any] | None = None,
     status_code: int = status.HTTP_400_BAD_REQUEST,
 ) -> HTTPException:
     """Create standardized error response"""
@@ -513,7 +509,7 @@ def create_error_response(
         "message": message,
         "error_code": error_code,
         "details": details or {},
-        "timestamp": datetime.now(datetime.timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     }
 
     return HTTPException(status_code=status_code, detail=error_detail)
