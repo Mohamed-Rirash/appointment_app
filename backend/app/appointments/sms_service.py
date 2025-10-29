@@ -1,7 +1,6 @@
 from app.notifications.sms_provider import notify_user
 
 
-
 class SMSService:
     """Main SMS service that handles appointment notifications"""
 
