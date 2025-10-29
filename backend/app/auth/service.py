@@ -1,6 +1,5 @@
 # Service layer for authentication logic
 
-import secrets
 import uuid
 from datetime import UTC, datetime, timedelta
 
@@ -136,10 +135,15 @@ async def logout_user_service(session, request, response, current_user) -> None:
         except Exception:
             pass
 
-    # Clear refresh and CSRF cookies (match set-cookie attributes)
+    # Clear refresh token cookie
     refresh_path = f"{app_settings.API_V1_STR}/users/refresh"
-    response.delete_cookie("refresh_token", path=refresh_path)
-    response.delete_cookie("csrf_token", path="/")
+    response.delete_cookie(
+        "refresh_token",
+        path=refresh_path,
+        secure=True,  # Must match how the cookie was set
+        httponly=True,
+        samesite="lax"
+    )
 
 
 async def get_current_user_profile_service(session, current_user):
@@ -252,57 +256,39 @@ async def resend_verification_email_service(session, request, background_tasks):
 
 
 async def _generate_tokens(user, session, response):
-    # Use the new token system for consistency
+    # Token expiration settings
     at_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     rt_expires = timedelta(minutes=settings.REFRESH_TOKEN_EXPIRE_MINUTES)
-
-    # Create tokens using the new system
-    access_token = create_access_token(subject=user["id"], expires_delta=at_expires)
-
-    refresh_token = create_refresh_token(subject=user["id"], expires_delta=rt_expires)
-
-    # Persist/rotate refresh token in DB (single active token per user)
     expiry_time = datetime.now(UTC) + rt_expires
 
-    # Determine cookie settings based on environment
-    # For local/development over HTTP, use lax samesite and no secure flag
-    # For production over HTTPS, use none samesite and secure flag
-    is_local = settings.ENVIRONMENT in ["local", "development"]
-    cookie_samesite = "lax" if is_local else "none"
-    cookie_secure = not is_local
+    # Create tokens
+    access_token = create_access_token(subject=user["id"], expires_delta=at_expires)
+    refresh_token = create_refresh_token(subject=user["id"], expires_delta=rt_expires)
 
-    # Set refresh token as httpOnly cookie, scoped to refresh endpoint only
+    # Set refresh token cookie with security settings
     refresh_path = f"{app_settings.API_V1_STR}/users/refresh"
-    response.set_cookie(
-        key="refresh_token",
-        value=refresh_token,
-        httponly=True,
-        max_age=int(rt_expires.total_seconds()),
-        expires=expiry_time.strftime("%a, %d-%b-%Y %H:%M:%S GMT"),
-        samesite=cookie_samesite,
-        secure=cookie_secure,
-        path=refresh_path,
-    )
+    cookie_kwargs = {
+        "key": "refresh_token",
+        "value": refresh_token,
+        "max_age": int(rt_expires.total_seconds()),
+        "expires": expiry_time.strftime("%a, %d-%b-%Y %H:%M:%S GMT"),
+        "path": refresh_path,
+    }
 
-    # Issue CSRF token cookie (readable by JS) for double submit protection
-    csrf_token = secrets.token_urlsafe(32)
-    response.set_cookie(
-        key="csrf_token",
-        value=csrf_token,
-        httponly=False,
-        max_age=int(rt_expires.total_seconds()),
-        expires=expiry_time.strftime("%a, %d-%b-%Y %H:%M:%S GMT"),
-        samesite=cookie_samesite,
-        secure=cookie_secure,
-        path="/",
-    )
+    # Only apply strict security settings in production
+    if settings.ENVIRONMENT == "production":
+        cookie_kwargs.update({
+            "httponly": True,  # Prevent XSS attacks
+            "secure": True,     # Only sent over HTTPS
+            "samesite": "lax",  # Provides CSRF protection
+        })
+
+    response.set_cookie(**cookie_kwargs)
 
     return {
         "access_token": access_token,
         "expires_in": int(at_expires.total_seconds()),
         "token_type": "bearer",
-        # Optionally return CSRF token so SPA can store header immediately (also available via cookie)
-        "csrf_token": csrf_token,
     }
 
 
