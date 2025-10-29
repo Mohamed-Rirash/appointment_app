@@ -1,10 +1,13 @@
 # Router for authentication endpoints
 
+import logging
 
 from databases import Database
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
 from fastapi.responses import Response
 from fastapi.security import OAuth2PasswordRequestForm
+
+logger = logging.getLogger(__name__)
 
 from app.auth.dependencies import CurrentUser, require_authentication
 from app.auth.schemas import (
@@ -65,7 +68,18 @@ async def refresh_token(
     if cookie_token:
         csrf_cookie = request.cookies.get("csrf_token")
         csrf_header = request.headers.get("x-csrf-token") or request.headers.get("X-CSRF-Token")
+
+        # Debug logging
+        logger.info(f"CSRF Cookie present: {bool(csrf_cookie)}")
+        logger.info(f"CSRF Header present: {bool(csrf_header)}")
+        if csrf_cookie:
+            logger.info(f"CSRF Cookie value (first 20 chars): {csrf_cookie[:20]}...")
+        if csrf_header:
+            logger.info(f"CSRF Header value (first 20 chars): {csrf_header[:20]}...")
+        logger.info(f"CSRF tokens match: {csrf_cookie == csrf_header if csrf_cookie and csrf_header else 'N/A'}")
+
         if not csrf_cookie or not csrf_header or csrf_cookie != csrf_header:
+            logger.warning(f"CSRF validation failed - Cookie: {bool(csrf_cookie)}, Header: {bool(csrf_header)}, Match: {csrf_cookie == csrf_header if csrf_cookie and csrf_header else 'N/A'}")
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="CSRF token invalid or missing")
 
     # Fallback to JSON body for non-cookie clients (API clients, mobile apps, etc.)
