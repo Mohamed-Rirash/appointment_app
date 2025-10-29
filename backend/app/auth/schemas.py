@@ -69,6 +69,7 @@ class LoginResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     expires_in: int
+    csrf_token: str | None = None
 
 
 class RefreshTokenRequest(BaseModel):
@@ -79,6 +80,7 @@ class RefreshTokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     expires_in: int
+    csrf_token: str | None = None
 
 
 class PasswordChangeRequest(BaseModel):
