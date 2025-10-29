@@ -1,5 +1,5 @@
 from databases import Database
-from sqlalchemy import and_, func, insert, or_, select, update
+from sqlalchemy import and_, func, insert, select, update
 
 from app.appointments.models import appointments, citizen_info, time_slot
 from app.appointments.view import appointment_details

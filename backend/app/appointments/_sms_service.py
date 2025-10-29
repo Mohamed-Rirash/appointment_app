@@ -1,12 +1,9 @@
 """
 SMS Service for appointment notifications
 """
-import asyncio
 import logging
-from abc import ABC, abstractmethod
-from typing import Dict, List, Optional
 
-from app.appointments.sms_providers import SMSProvider, MockSMSProvider, DockerSMSCatcherProvider, TwilioSMSProvider
+from app.appointments.sms_providers import MockSMSProvider, SMSProvider
 from app.appointments.sms_types import SMSConfig
 
 logger = logging.getLogger(__name__)
@@ -15,7 +12,7 @@ logger = logging.getLogger(__name__)
 class SMSService:
     """Main SMS service that handles appointment notifications"""
 
-    def __init__(self, provider: Optional[SMSProvider] = None):
+    def __init__(self, provider: SMSProvider | None = None):
         self.provider = provider or MockSMSProvider()
 
     def set_provider(self, provider: SMSProvider):
@@ -35,7 +32,7 @@ class SMSService:
         return await self.provider.send_sms(citizen_phone, message)
 
     async def send_appointment_denied(self, citizen_phone: str, citizen_name: str,
-                                    reason: Optional[str] = None) -> bool:
+                                    reason: str | None = None) -> bool:
         """Send SMS notification for denied appointment"""
         message = (
             f"❌ Your appointment request has been DENIED.\n\n"
@@ -51,7 +48,7 @@ class SMSService:
         return await self.provider.send_sms(citizen_phone, message)
 
     async def send_appointment_postponed(self, citizen_phone: str, citizen_name: str,
-                                       old_date: str, new_date: str, reason: Optional[str] = None) -> bool:
+                                       old_date: str, new_date: str, reason: str | None = None) -> bool:
         """Send SMS notification for postponed appointment"""
         message = (
             f"📅 Your appointment has been POSTPONED.\n\n"
@@ -79,7 +76,7 @@ class SMSService:
             )
             print(f"✅ SMS notification sent for approved appointment {appointment_id}")
         except Exception as e:
-            print(f"❌ Failed to send SMS notification for approved appointment {appointment_id}: {str(e)}")
+            print(f"❌ Failed to send SMS notification for approved appointment {appointment_id}: {e!s}")
 
     async def send_appointment_denied_task(self, appointment_id: str, citizen_phone: str, citizen_name: str, reason: str = None):
         """Background task wrapper for denied appointment SMS"""
@@ -92,7 +89,7 @@ class SMSService:
             )
             print(f"✅ SMS notification sent for denied appointment {appointment_id}")
         except Exception as e:
-            print(f"❌ Failed to send SMS notification for denied appointment {appointment_id}: {str(e)}")
+            print(f"❌ Failed to send SMS notification for denied appointment {appointment_id}: {e!s}")
 
     async def send_appointment_postponed_task(self, appointment_id: str, citizen_phone: str, citizen_name: str, old_date: str, new_date: str, reason: str = None):
         """Background task wrapper for postponed appointment SMS"""
@@ -107,7 +104,7 @@ class SMSService:
             )
             print(f"✅ SMS notification sent for postponed appointment {appointment_id}")
         except Exception as e:
-            print(f"❌ Failed to send SMS notification for postponed appointment {appointment_id}: {str(e)}")
+            print(f"❌ Failed to send SMS notification for postponed appointment {appointment_id}: {e!s}")
 
     async def send_appointment_cancelled_task(self, appointment_id: str, citizen_phone: str, citizen_name: str, reason: str):
         """Background task wrapper for cancelled appointment SMS"""
@@ -120,7 +117,7 @@ class SMSService:
             )
             print(f"✅ SMS notification sent for cancelled appointment {appointment_id}")
         except Exception as e:
-            print(f"❌ Failed to send SMS notification for cancelled appointment {appointment_id}: {str(e)}")
+            print(f"❌ Failed to send SMS notification for cancelled appointment {appointment_id}: {e!s}")
 
 
 # Global SMS service instance

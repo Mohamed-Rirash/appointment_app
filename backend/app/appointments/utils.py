@@ -1,6 +1,5 @@
 import asyncio
 import json
-from enum import Enum
 
 # office_id -> list of queues
 office_connections: dict[str, list[asyncio.Queue]] = {}
@@ -30,13 +29,13 @@ async def broadcast_event(office_id: str, event: dict):
                     try:
                         await queue.put(data)
                     except Exception as e:
-                        print(f"   ❌ Failed to send to queue: {str(e)}")
+                        print(f"   ❌ Failed to send to queue: {e!s}")
             else:
                 print(f"   ⚠️  No active connections for office {office_id}")
         else:
             print(f"   ⚠️  Office {office_id} not in connections dict")
             print(f"   Available offices: {list(office_connections.keys())}")
     except Exception as e:
-        print(f"❌ Error broadcasting event: {str(e)}")
+        print(f"❌ Error broadcasting event: {e!s}")
         import traceback
         traceback.print_exc()

@@ -25,6 +25,11 @@ appointment_details = Table(
     Column("reason", Text),  # Note: NOT canceled_reason
     Column("issued_by", UUID(as_uuid=True)),
     Column("office_id", UUID(as_uuid=True)),
+    # Decision information
+    Column("decision_reason", Text),
+    Column("decided_at", DateTime(timezone=True)),
+    Column("decided_by", UUID(as_uuid=True)),
+    Column("new_appointment_date", DateTime(timezone=True)),
     # Citizen information
     Column("citizen_id", UUID(as_uuid=True)),
     Column("citizen_firstname", Text),
