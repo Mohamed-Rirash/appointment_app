@@ -1,5 +1,4 @@
 from datetime import date
-from typing import List, Optional
 from uuid import UUID
 
 from databases import Database
@@ -17,7 +16,6 @@ from app.database import get_db
 from app.office_mgnt import schemas as sch
 from app.office_mgnt.services import (
     AvailabilityService,
-    EnhancedOfficeService,
     HostAssignmentService,
     OfficeMembershipService,
     OfficeSearchService,
@@ -33,7 +31,7 @@ router = APIRouter(
 
 @router.get(
     "/unassigned",
-    response_model=List[UserRead],
+    response_model=list[UserRead],
     summary="Get unassigned users",
     status_code=status.HTTP_200_OK,
 )
@@ -69,7 +67,7 @@ async def create_office(
 
 @router.get(
     "/",
-    response_model=List[sch.OfficeRead],
+    response_model=list[sch.OfficeRead],
     summary="List offices",
     description="Retrieve all offices. Optionally filter by status (`active` or `deactivated`).",
     responses={
@@ -78,7 +76,7 @@ async def create_office(
     },
 )
 async def list_offices(
-    status_filter: Optional[str] = Query(
+    status_filter: str | None = Query(
         None,
         regex="^(active|deactivated)$",
         description="Filter offices by status (active or deactivated).",
@@ -190,6 +188,8 @@ async def activate_office(
 # --------------------------------------------------
 # memberships
 # --------------------------------------------------
+
+
 @router.post(
     "/{office_id}/memberships",
     status_code=status.HTTP_201_CREATED,
@@ -200,6 +200,7 @@ async def activate_office(
         404: {"description": "Office or user not found"},
         403: {"description": "Forbidden: Only admins can assign users"},
     },
+
 )
 async def assign_user_to_office(
     office_id: UUID,
@@ -214,7 +215,7 @@ async def assign_user_to_office(
 
 @router.get(
     "/{office_id}/memberships",
-    response_model=List[sch.MembershipRead],
+    response_model=list[sch.MembershipRead],
     summary="List office members",
     description="Retrieve all members assigned to a specific office. Only admins are allowed.",
     responses={
@@ -233,7 +234,7 @@ async def get_office_members(
 
 @router.get(
     "/{office_id}/hosts",
-    response_model=List[sch.MembershipRead],
+    response_model=list[sch.MembershipRead],
     summary="List office hosts",
     description="Retrieve all hosts assigned to a specific office. Accessible by any authenticated user.",
     responses={
@@ -298,7 +299,7 @@ async def remove_office_member(
 # --------------------------------------------------
 @router.get(
     "/users/{user_id}/offices",
-    response_model=List[sch.MembershipRead],
+    response_model=list[sch.MembershipRead],
     summary="List offices of a user",
     description="Retrieve all offices a specific user is assigned to. Only admins can view this.",
     responses={
@@ -338,7 +339,7 @@ async def assign_host_to_office(
 
 @router.post(
     "/hosts/bulk-assign",
-    response_model=List[sch.HostAssignmentRead],
+    response_model=list[sch.HostAssignmentRead],
     summary="Bulk assign multiple hosts to offices",
 )
 async def bulk_assign_hosts(
@@ -354,13 +355,13 @@ async def bulk_assign_hosts(
 
 @router.get(
     "/hosts",
-    response_model=List[sch.HostAssignmentRead],
+    response_model=list[sch.HostAssignmentRead],
     summary="List host assignments",
     description="List host assignments with optional filtering by office or host",
 )
 async def list_host_assignments(
-    office_id: Optional[UUID] = Query(None),
-    host_id: Optional[UUID] = Query(None),
+    office_id: UUID | None = Query(None),
+    host_id: UUID | None = Query(None),
     db: Database = Depends(get_db),
     admin: CurrentUser = Depends(require_role(AdminLevel.ADMIN)),
 ):
@@ -370,42 +371,56 @@ async def list_host_assignments(
     )
 
 
-@router.put(
-    "/hosts/{host_id}/office/{office_id}",
-    response_model=sch.HostAssignmentRead,
-    summary="Update host assignment",
-)
-async def update_host_assignment(
-    host_id: UUID,
-    office_id: UUID,
-    payload: sch.HostAssignmentUpdate,
-    db: Database = Depends(get_db),
-    admin: CurrentUser = Depends(require_role(AdminLevel.ADMIN)),
-):
-    """Update host assignment (primary status, active status)"""
-    return await HostAssignmentService.update_host_assignment(
-        db, host_id, office_id, payload
-    )
+# @router.put(
+#     "/hosts/{host_id}/office/{office_id}",
+#     response_model=sch.HostAssignmentRead,
+#     summary="Update host assignment",
+# )
+# async def update_host_assignment(
+#     host_id: UUID,
+#     office_id: UUID,
+#     payload: sch.HostAssignmentUpdate,
+#     db: Database = Depends(get_db),
+#     admin: CurrentUser = Depends(require_role(AdminLevel.ADMIN)),
+# ):
+#     """Update host assignment (primary status, active status)"""
+#     return await HostAssignmentService.update_host_assignment(
+#         db, host_id, office_id, payload
+#     )
 
 
-@router.delete(
-    "/hosts/{host_id}/office/{office_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
-    summary="Remove host from office",
-)
-async def remove_host_from_office(
-    host_id: UUID,
-    office_id: UUID,
-    db: Database = Depends(get_db),
-    admin: CurrentUser = Depends(require_role(AdminLevel.ADMIN)),
-):
-    """Remove host from office"""
-    await HostAssignmentService.remove_host_from_office(db, host_id, office_id)
+# @router.delete(
+#     "/hosts/{host_id}/office/{office_id}",
+#     status_code=status.HTTP_204_NO_CONTENT,
+#     summary="Remove host from office",
+# )
+# async def remove_host_from_office(
+#     host_id: UUID,
+#     office_id: UUID,
+#     db: Database = Depends(get_db),
+#     admin: CurrentUser = Depends(require_role(AdminLevel.ADMIN)),
+# ):
+#     """Remove host from office"""
+#     await HostAssignmentService.remove_host_from_office(db, host_id, office_id)
 
 
 # =============================================================================
 # STATISTICS AND REPORTS
 # =============================================================================
+
+
+@router.get(
+    "/stats/all",
+    response_model=list[sch.OfficeStats],
+    summary="Get all office statistics",
+    description="Get statistics for all offices",
+)
+async def get_all_office_stats(
+    db: Database = Depends(get_db),
+    admin: CurrentUser = Depends(require_role(AdminLevel.ADMIN)),
+):
+    """Get statistics for all offices"""
+    return await OfficeStatsService.get_all_office_stats(db)
 
 
 @router.get(
@@ -423,20 +438,6 @@ async def get_office_stats(
     return await OfficeStatsService.get_office_stats(db, office_id)
 
 
-@router.get(
-    "/stats/all",
-    response_model=List[sch.OfficeStats],
-    summary="Get all office statistics",
-    description="Get statistics for all offices",
-)
-async def get_all_office_stats(
-    db: Database = Depends(get_db),
-    admin: CurrentUser = Depends(require_role(AdminLevel.ADMIN)),
-):
-    """Get statistics for all offices"""
-    return await OfficeStatsService.get_all_office_stats(db)
-
-
 # =============================================================================
 # SEARCH ENDPOINTS
 # =============================================================================
@@ -444,7 +445,7 @@ async def get_all_office_stats(
 
 @router.get(
     "/search",
-    response_model=List[sch.OfficeRead],
+    response_model=list[sch.OfficeRead],
     summary="Search offices by name",
     description="Search for offices by name or description",
 )
@@ -454,25 +455,15 @@ async def search_offices(
     _user: CurrentUser = Depends(require_authentication),
 ):
     """
-    Search for offices by name.
+    Search for offices by name or description.
     Returns matching offices.
     """
-    from sqlalchemy import or_
-    from app.office_mgnt.models import offices
-
-    search_query = select(offices).where(
-        or_(
-            offices.c.name.ilike(f"%{query}%"),
-            offices.c.description.ilike(f"%{query}%") if offices.c.description else False,
-        )
-    )
-    result = await db.fetch_all(search_query)
-    return [dict(row) for row in result]
+    return await OfficeSearchService.search_offices_by_name_or_description(db, query)
 
 
 @router.get(
     "/search/hosts",
-    response_model=List[sch.HostSearchResult],
+    response_model=list[sch.HostSearchResult],
     summary="Search hosts by name",
     description="Search for hosts by their name and get their office and position information",
 )
@@ -490,7 +481,7 @@ async def search_hosts_by_name(
 
 @router.get(
     "/search/by-office",
-    response_model=List[sch.OfficeSearchResult],
+    response_model=list[sch.OfficeSearchResult],
     summary="Search offices and get all hosts",
     description="Search for offices by name and get all hosts/positions in those offices",
 )
@@ -508,7 +499,7 @@ async def search_offices_with_hosts(
 
 @router.get(
     "/search/by-position",
-    response_model=List[sch.HostSearchResult],
+    response_model=list[sch.HostSearchResult],
     summary="Search hosts by position",
     description="Search for hosts by their position/title",
 )
@@ -529,35 +520,35 @@ async def search_hosts_by_position(
 # =============================================================================
 
 
-@router.get(
-    "/users/{user_id}/host-status",
-    response_model=sch.UserHostStatus,
-    summary="Get user's host status",
-    description="Get user's host status and available offices",
-)
-async def get_user_host_status(
-    user_id: UUID,
-    db: Database = Depends(get_db),
-    admin: CurrentUser = Depends(require_role(AdminLevel.ADMIN)),
-):
-    """Get user's host status and available offices"""
-    # Get user's current host assignments
-    assignments = await HostAssignmentService.get_host_assignments(db, host_id=user_id)
+# @router.get(
+#     "/users/{user_id}/host-status",
+#     response_model=sch.UserHostStatus,
+#     summary="Get user's host status",
+#     description="Get user's host status and available offices",
+# )
+# async def get_user_host_status(
+#     user_id: UUID,
+#     db: Database = Depends(get_db),
+#     admin: CurrentUser = Depends(require_role(AdminLevel.ADMIN)),
+# ):
+#     """Get user's host status and available offices"""
+#     # Get user's current host assignments
+#     assignments = await HostAssignmentService.get_host_assignments(db, host_id=user_id)
 
-    # Get all active offices for reference
-    offices = await EnhancedOfficeService.get_all_offices(db)
-    active_offices = [o for o in offices if o.is_active]
+#     # Get all active offices for reference
+#     offices = await EnhancedOfficeService.get_all_offices(db)
+#     active_offices = [o for o in offices if o.is_active]
 
-    # Filter out offices where user is already assigned
-    assigned_office_ids = {a.office_id for a in assignments}
-    available_offices = [o for o in active_offices if o.id not in assigned_office_ids]
+#     # Filter out offices where user is already assigned
+#     assigned_office_ids = {a.office_id for a in assignments}
+#     available_offices = [o for o in active_offices if o.id not in assigned_office_ids]
 
-    return sch.UserHostStatus(
-        user_id=user_id,
-        is_host=len(assignments) > 0,
-        assigned_offices=assignments,
-        available_offices=available_offices,
-    )
+#     return sch.UserHostStatus(
+#         user_id=user_id,
+#         is_host=len(assignments) > 0,
+#         assigned_offices=assignments,
+#         available_offices=available_offices,
+#     )
 
 
 # --------------------------------------------------
@@ -582,7 +573,7 @@ async def set_host_availability(
 
 @hostavailableroutes.get(
     "/hosts/{office_id}",
-    response_model=List[sch.HostAvailabilityRead],
+    response_model=list[sch.HostAvailabilityRead],
     summary="Get host availability",
     description="Retrieve availability schedule for a host (recurring + one-time).",
 )
@@ -596,7 +587,7 @@ async def get_host_availability(
 
 @hostavailableroutes.get(
     "/hosts/{office_id}/slots",
-    response_model=List[sch.Slot],
+    response_model=list[sch.Slot],
     summary="Get all slots for a date",
     description="Get all generated 15-min slots for a given date (both booked and available).",
 )
@@ -612,7 +603,7 @@ async def get_slots(
 
 @hostavailableroutes.get(
     "/hosts/{office_id}/slots/available",
-    response_model=List[sch.Slot],
+    response_model=list[sch.Slot],
     summary="Get available (unbooked) slots",
     description="Get only available (unbooked) 15-min slots for a given date.",
 )
