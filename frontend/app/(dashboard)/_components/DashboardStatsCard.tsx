@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { client } from "@/helpers/api/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
+import { CircleAlert, HousePlus, Users } from "lucide-react";
 
 export interface Stats {
   total_users: number;
@@ -52,15 +53,14 @@ export default function DashboardStatsCard({ token }: { token?: string }) {
   //     unverified_users,
   //   } = data || {};
 
-    const {
-      total_users,
-      total_offices,
-      active_offices,
-      inactive_offices,
-      verified_users,
-      unverified_users,
-    } = data || {};
-
+  const {
+    total_users,
+    total_offices,
+    active_offices,
+    inactive_offices,
+    verified_users,
+    unverified_users,
+  } = data || {};
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -68,7 +68,7 @@ export default function DashboardStatsCard({ token }: { token?: string }) {
       <StatCard
         title="Total Users"
         value={total_users}
-        icon={<UserIcon />}
+        icon={<Users className="h-6 w-6 text-brand-black" />}
         subtitle={
           <span className="text-green-600 text-xs font-medium">All Online</span>
         }
@@ -78,7 +78,7 @@ export default function DashboardStatsCard({ token }: { token?: string }) {
       <StatCard
         title="Total Offices"
         value={total_offices}
-        icon={<OfficeIcon />}
+        icon={<HousePlus className="h-6 w-6 text-brand-black" />}
         subtitle={
           <span className="text-green-600 text-xs font-medium">All Online</span>
         }
@@ -88,9 +88,9 @@ export default function DashboardStatsCard({ token }: { token?: string }) {
       <StatCard
         title="All Status"
         value=""
-        icon={<StatusIcon />}
+        icon={<CircleAlert className="h-6 w-6 text-[#F2B749]" />}
         content={
-          <div className="flex gap-2">
+          <div className="flex mt-4 gap-2">
             <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
               {active_offices} active
             </span>
@@ -105,9 +105,8 @@ export default function DashboardStatsCard({ token }: { token?: string }) {
       <StatCard
         title="Verification Status"
         value=""
-        icon={<CheckIcon />}
         content={
-          <div className="flex gap-2">
+          <div className="flex mt-4 gap-2">
             <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
               {verified_users} active
             </span>
@@ -116,6 +115,7 @@ export default function DashboardStatsCard({ token }: { token?: string }) {
             </span>
           </div>
         }
+        icon={<CircleAlert className="h-6 w-6 text-[#F2B749]" />}
       />
     </div>
   );
@@ -136,93 +136,20 @@ function StatCard({
   content?: React.ReactNode;
 }) {
   return (
-    <div className="bg-white p-4 rounded-lg shadow-gren border border-[#eeeeee] flex items-center gap-4">
-      <div className="bg-green-100 p-3 rounded-lg">{icon}</div>
+    <div className="bg-white p-6 rounded-[4px] h-[120px] shadow-gren border border-[#eeeeee] flex items-center justify-between">
       <div>
-        <div className="text-sm text-gray-500">{title}</div>
+        <h1 className="text-sm text-brand-gray font-normal">{title}</h1>
         {value && <div className="text-xl font-bold">{value}</div>}
         {subtitle && <div>{subtitle}</div>}
         {content && <div>{content}</div>}
       </div>
+      <div
+        className={`${
+          content ? "bg-[#F3ECE0]" : "bg-brand-primary"
+        } h-12 w-12 p-3 rounded-lg`}
+      >
+        {icon}
+      </div>
     </div>
-  );
-}
-
-// Icons
-function UserIcon() {
-  return (
-    <svg
-      className="h-6 w-6 text-green-600"
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M17 20h-8v-2c0-2.21 1.79-4 4-4s4 1.79 4 4v2z"
-      />
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M5 8h14M5 8a2 2 0 012-2h10a2 2 0 012 2M5 8V6m0 2v6m0 0v6h14v-6m0 6a2 2 0 002-2H5a2 2 0 002 2z"
-      />
-    </svg>
-  );
-}
-
-function OfficeIcon() {
-  return (
-    <svg
-      className="h-6 w-6 text-green-600"
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0v-2a2 2 0 00-2-2H9M9 19v2a2 2 0 002 2h2a2 2 0 002-2v-2"
-      />
-    </svg>
-  );
-}
-
-function StatusIcon() {
-  return (
-    <svg
-      className="h-6 w-6 text-yellow-600"
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M13 16h-1v-4h1m0-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-      />
-    </svg>
-  );
-}
-
-function CheckIcon() {
-  return (
-    <svg
-      className="h-6 w-6 text-yellow-600"
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M9 12l2 2 4-4m6 6v-2a3 3 0 00-5.356-2.357A24.5 24.5 0 00 12 12c1.357 0 2.693.055 4 .162"
-      />
-    </svg>
   );
 }
