@@ -1,9 +1,8 @@
 import html
 from datetime import date, datetime, time
-from typing import Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field, field_validator, validator
+from pydantic import BaseModel, Field, field_validator
 
 from app.office_mgnt.utils import Daysofweek
 
@@ -22,7 +21,7 @@ class OfficeBase(BaseModel):
         description="Description of the office",
         examples=["Ministry of Health Headquarters"],
     )
-    location: Optional[str] = Field(
+    location: str | None = Field(
         default=None,
         max_length=1000,
         description="Location of the office, or office building",
@@ -79,7 +78,7 @@ class OfficeBase(BaseModel):
     # Location validation
     @field_validator("location")
     @classmethod
-    def validate_location(cls, v: Optional[str]) -> Optional[str]:
+    def validate_location(cls, v: str | None) -> str | None:
         if v is None:
             return None
         v = v.strip()
@@ -113,7 +112,7 @@ class OfficeRead(OfficeBase):
 
 class MembershipBase(BaseModel):
     user_id: UUID
-    position: Optional[str] = None
+    position: str | None = None
     is_primary: bool = False
 
 
@@ -122,10 +121,10 @@ class MembershipCreate(MembershipBase):
 
 
 class MembershipUpdate(BaseModel):
-    position: Optional[str] = None
-    is_primary: Optional[bool] = None
-    is_active: Optional[bool] = None
-    ended_at: Optional[datetime] = None
+    position: str | None = None
+    is_primary: bool | None = None
+    is_active: bool | None = None
+    ended_at: datetime | None = None
 
 
 class MembershipRead(BaseModel):
@@ -143,14 +142,10 @@ class MembershipRead(BaseModel):
     membership_active: bool
 
 
-import html
-from datetime import date, datetime, time
-from typing import Optional, List
+from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, Field, field_validator, validator
-
-from app.office_mgnt.utils import Daysofweek
+from pydantic import BaseModel, Field, field_validator
 
 
 class OfficeBase(BaseModel):
@@ -167,7 +162,7 @@ class OfficeBase(BaseModel):
         description="Description of the office",
         examples=["Ministry of Health Headquarters"],
     )
-    location: Optional[str] = Field(
+    location: str | None = Field(
         default=None,
         max_length=1000,
         description="Location of the office, or office building",
@@ -224,7 +219,7 @@ class OfficeBase(BaseModel):
     # Location validation
     @field_validator("location")
     @classmethod
-    def validate_location(cls, v: Optional[str]) -> Optional[str]:
+    def validate_location(cls, v: str | None) -> str | None:
         if v is None:
             return None
         v = v.strip()
@@ -246,10 +241,10 @@ class OfficeCreate(OfficeBase):
 
 
 class OfficeUpdate(OfficeBase):
-    name: Optional[str] = Field(None, min_length=2, max_length=100)
-    description: Optional[str] = Field(None, max_length=1000)
-    location: Optional[str] = Field(None, max_length=1000)
-    is_active: Optional[bool] = None
+    name: str | None = Field(None, min_length=2, max_length=100)
+    description: str | None = Field(None, max_length=1000)
+    location: str | None = Field(None, max_length=1000)
+    is_active: bool | None = None
 
 
 class OfficeRead(OfficeBase):
@@ -261,7 +256,7 @@ class OfficeRead(OfficeBase):
 
 class MembershipBase(BaseModel):
     user_id: UUID = Field(..., description="ID of the user to assign to office")
-    position: Optional[str] = Field(None, max_length=100, description="Position/role in the office")
+    position: str | None = Field(None, max_length=100, description="Position/role in the office")
     is_primary: bool = Field(False, description="Whether this user is the primary contact")
 
 
@@ -270,10 +265,10 @@ class MembershipCreate(MembershipBase):
 
 
 class MembershipUpdate(BaseModel):
-    position: Optional[str] = Field(None, max_length=100)
-    is_primary: Optional[bool] = None
-    is_active: Optional[bool] = None
-    ended_at: Optional[datetime] = None
+    position: str | None = Field(None, max_length=100)
+    is_primary: bool | None = None
+    is_active: bool | None = None
+    ended_at: datetime | None = None
 
 
 class MembershipRead(BaseModel):
@@ -313,8 +308,8 @@ class OfficeMemberDetailRead(BaseModel):
 
 
 class HostAvailabilityCreate(BaseModel):
-    daysofweek: Optional[Daysofweek] = None
-    specific_date: Optional[date] = None
+    daysofweek: Daysofweek | None = None
+    specific_date: date | None = None
     start_time: time
     end_time: time
     is_recurring: bool = True
@@ -328,8 +323,8 @@ class HostAvailabilityCreate(BaseModel):
 
 class HostAvailabilityRead(BaseModel):
     id: UUID
-    daysofweek: Optional[Daysofweek]
-    specific_date: Optional[date]
+    daysofweek: Daysofweek | None
+    specific_date: date | None
     start_time: time
     end_time: time
     is_recurring: bool
@@ -346,8 +341,8 @@ class HostAssignmentCreate(HostAssignmentBase):
 
 
 class HostAssignmentUpdate(BaseModel):
-    is_primary: Optional[bool] = None
-    is_active: Optional[bool] = None
+    is_primary: bool | None = None
+    is_active: bool | None = None
 
 
 class HostAssignmentRead(BaseModel):
@@ -376,19 +371,19 @@ class Slot(BaseModel):
 class OfficeWithMembersRead(OfficeRead):
     total_members: int = Field(0, description="Total number of active members")
     active_members: int = Field(0, description="Number of active members")
-    primary_contact: Optional[dict] = Field(None, description="Primary contact information")
-    hosts: List[HostAssignmentRead] = Field(default_factory=list, description="List of hosts assigned to this office")
+    primary_contact: dict | None = Field(None, description="Primary contact information")
+    hosts: list[HostAssignmentRead] = Field(default_factory=list, description="List of hosts assigned to this office")
 
 
 class UserHostStatus(BaseModel):
     user_id: UUID
     is_host: bool
-    assigned_offices: List[HostAssignmentRead] = Field(default_factory=list)
-    available_offices: List[OfficeRead] = Field(default_factory=list)
+    assigned_offices: list[HostAssignmentRead] = Field(default_factory=list)
+    available_offices: list[OfficeRead] = Field(default_factory=list)
 
 
 class BulkHostAssignment(BaseModel):
-    assignments: List[HostAssignmentCreate] = Field(..., min_items=1, max_items=50)
+    assignments: list[HostAssignmentCreate] = Field(..., min_items=1, max_items=50)
     assigned_by: UUID = Field(..., description="ID of the admin making the assignment")
 
 
@@ -424,4 +419,4 @@ class OfficeSearchResult(BaseModel):
     office_name: str
     office_location: str
     office_description: str | None = None
-    hosts: List[HostSearchResult] = []
+    hosts: list[HostSearchResult] = []

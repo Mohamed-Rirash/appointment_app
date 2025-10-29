@@ -8,7 +8,6 @@ from sqlalchemy import (  # only so we can keep the original column order / labe
     DateTime,
     Enum,
     ForeignKey,
-    Integer,
     String,
     Table,
     Text,

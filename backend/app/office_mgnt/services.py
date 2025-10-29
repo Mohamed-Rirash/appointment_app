@@ -4,27 +4,22 @@ Enhanced Office Management Services with Host Assignment
 
 import asyncio
 import uuid
-from datetime import date, datetime
-from typing import Dict, List, Optional
+from datetime import date
 from uuid import UUID
 
 from databases import Database
 from fastapi import HTTPException, status
+from sqlalchemy import and_, select
 
 from app.admin.exceptions import (
-    OfficeNotFoundError,
-    OfficeAlreadyExistsError,
-    InvalidOfficeDataError,
-    HostNotFoundError,
     HostAlreadyAssignedError,
     HostAssignmentError,
-    OfficeMembershipError,
-    InvalidMembershipDataError,
-    DuplicateMembershipError,
+    HostNotFoundError,
+    OfficeAlreadyExistsError,
+    OfficeNotFoundError,
     PrimaryContactRequiredError,
-    UserNotFoundError,
 )
-from app.office_mgnt import schemas
+from app.core.cache import cache_manager
 from app.office_mgnt import schemas as sch
 from app.office_mgnt.crud import (
     AvailabilityCRUD,
@@ -32,31 +27,20 @@ from app.office_mgnt.crud import (
     OfficeMgmtCRUD,
     TimeSlotCRUD,
 )
+from app.office_mgnt.models import offices
 from app.office_mgnt.schemas import (
-    HostAvailabilityCreate,
     MembershipCreate,
     MembershipRead,
     MembershipUpdate,
     OfficeCreate,
     OfficeRead,
     OfficeUpdate,
-    Slot,
-    OfficeWithMembersRead,
-    HostAssignmentCreate,
-    HostAssignmentRead,
-    HostAssignmentUpdate,
-    UserHostStatus,
-    BulkHostAssignment,
-    OfficeStats,
 )
 from app.office_mgnt.utils import generate_slots, has_excluded_role
-from app.core.cache import cache_manager
-from sqlalchemy import and_, select
-from app.office_mgnt.models import offices
 
 
 async def _log_admin_action(
-    db: Database, action: str, resource_id: UUID, details: Dict = None
+    db: Database, action: str, resource_id: UUID, details: dict = None
 ):
     """
     Helper function to log admin actions for audit purposes
@@ -116,7 +100,7 @@ class EnhancedOfficeService:
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Unexpected error creating office: {str(e)}",
+                detail=f"Unexpected error creating office: {e!s}",
             )
 
     @staticmethod
@@ -223,11 +207,11 @@ class EnhancedOfficeService:
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Unexpected error updating office: {str(e)}",
+                detail=f"Unexpected error updating office: {e!s}",
             )
 
     @staticmethod
-    async def delete_office(db: Database, office_id: UUID) -> Dict[str, str]:
+    async def delete_office(db: Database, office_id: UUID) -> dict[str, str]:
         """
         Delete office with comprehensive checks
         """
@@ -281,11 +265,11 @@ class EnhancedOfficeService:
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Unexpected error deleting office: {str(e)}",
+                detail=f"Unexpected error deleting office: {e!s}",
             )
 
     @staticmethod
-    async def get_all_offices(db: Database) -> List[sch.OfficeRead]:
+    async def get_all_offices(db: Database) -> list[sch.OfficeRead]:
         """
         Get all offices with caching - OPTIMIZED
         """
@@ -309,11 +293,11 @@ class EnhancedOfficeService:
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to retrieve offices: {str(e)}",
+                detail=f"Failed to retrieve offices: {e!s}",
             )
 
     @staticmethod
-    async def get_offices_by_status(db: Database, status: str) -> List[sch.OfficeRead]:
+    async def get_offices_by_status(db: Database, status: str) -> list[sch.OfficeRead]:
         """
         Get offices by status (active/deactivated)
         """
@@ -324,7 +308,7 @@ class EnhancedOfficeService:
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to retrieve offices by status: {str(e)}",
+                detail=f"Failed to retrieve offices by status: {e!s}",
             )
 
 
@@ -403,13 +387,13 @@ class HostAssignmentService:
             raise HostAssignmentError(
                 str(assignment_data.host_id),
                 str(assignment_data.office_id),
-                f"Unexpected error: {str(e)}",
+                f"Unexpected error: {e!s}",
             )
 
     @staticmethod
     async def bulk_assign_hosts(
-        db: Database, assignments: List[sch.HostAssignmentCreate], assigned_by: UUID
-    ) -> List[sch.HostAssignmentRead]:
+        db: Database, assignments: list[sch.HostAssignmentCreate], assigned_by: UUID
+    ) -> list[sch.HostAssignmentRead]:
         """
         Bulk assign multiple hosts to offices
         """
@@ -441,8 +425,8 @@ class HostAssignmentService:
 
     @staticmethod
     async def get_host_assignments(
-        db: Database, office_id: Optional[UUID] = None, host_id: Optional[UUID] = None
-    ) -> List[sch.HostAssignmentRead]:
+        db: Database, office_id: UUID | None = None, host_id: UUID | None = None
+    ) -> list[sch.HostAssignmentRead]:
         """
         Get host assignments with optional filtering
         """
@@ -454,7 +438,7 @@ class HostAssignmentService:
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to retrieve host assignments: {str(e)}",
+                detail=f"Failed to retrieve host assignments: {e!s}",
             )
 
     @staticmethod
@@ -511,13 +495,13 @@ class HostAssignmentService:
             raise
         except Exception as e:
             raise HostAssignmentError(
-                str(host_id), str(office_id), f"Unexpected error: {str(e)}"
+                str(host_id), str(office_id), f"Unexpected error: {e!s}"
             )
 
     @staticmethod
     async def remove_host_from_office(
         db: Database, host_id: UUID, office_id: UUID
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         """
         Remove host from office with validation
         """
@@ -569,7 +553,7 @@ class HostAssignmentService:
             raise
         except Exception as e:
             raise HostAssignmentError(
-                str(host_id), str(office_id), f"Unexpected error: {str(e)}"
+                str(host_id), str(office_id), f"Unexpected error: {e!s}"
             )
 
 
@@ -591,13 +575,13 @@ class OfficeStatsService:
             members = await OfficeMembershipService.list_office_members(db, office_id)
             total_members = len(members)
             active_members = len(
-                [m for m in members if m.get("membership_active", True)]
+                [m for m in members if m.membership_active]
             )
 
             # Get host counts
             hosts = await OfficeMembershipService.list_office_hosts(db, office_id)
             total_hosts = len(hosts)
-            active_hosts = len([h for h in hosts if h.get("membership_active", True)])
+            active_hosts = len([h for h in hosts if h.membership_active])
 
             # TODO: Get appointment statistics from appointments module
             # This would require integration with the appointments service
@@ -622,11 +606,11 @@ class OfficeStatsService:
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to get office statistics: {str(e)}",
+                detail=f"Failed to get office statistics: {e!s}",
             )
 
     @staticmethod
-    async def get_all_office_stats(db: Database) -> List[sch.OfficeStats]:
+    async def get_all_office_stats(db: Database) -> list[sch.OfficeStats]:
         """
         Get statistics for all offices - OPTIMIZED with parallel execution
         """
@@ -662,7 +646,7 @@ class OfficeStatsService:
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to get office statistics: {str(e)}",
+                detail=f"Failed to get office statistics: {e!s}",
             )
 
 
@@ -670,13 +654,32 @@ class OfficeSearchService:
     """Service for searching offices and hosts"""
 
     @staticmethod
-    async def search_by_host_name(db: Database, search_term: str) -> List[sch.HostSearchResult]:
+    async def search_offices_by_name_or_description(
+        db: Database, search_term: str
+    ) -> list[sch.OfficeRead]:
+        """
+        Search for offices by name or description
+        """
+        try:
+            offices_data = await OfficeMgmtCRUD.search_by_name_or_description(
+                db, search_term
+            )
+            return [sch.OfficeRead(**office) for office in offices_data] if offices_data else []
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to search offices: {e!s}",
+            )
+
+    @staticmethod
+    async def search_by_host_name(db: Database, search_term: str) -> list[sch.HostSearchResult]:
         """
         Search for hosts by name and return their office and position information
         """
         try:
+            from sqlalchemy import func, or_
+
             from app.office_mgnt.views import office_member_details
-            from sqlalchemy import or_, func
 
             search_pattern = f"%{search_term}%"
 
@@ -714,11 +717,11 @@ class OfficeSearchService:
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to search hosts: {str(e)}"
+                detail=f"Failed to search hosts: {e!s}"
             )
 
     @staticmethod
-    async def search_by_office_name(db: Database, search_term: str) -> List[sch.OfficeSearchResult]:
+    async def search_by_office_name(db: Database, search_term: str) -> list[sch.OfficeSearchResult]:
         """
         Search for offices by name and return all hosts/positions in those offices
         """
@@ -782,11 +785,11 @@ class OfficeSearchService:
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to search offices: {str(e)}"
+                detail=f"Failed to search offices: {e!s}"
             )
 
     @staticmethod
-    async def search_by_position(db: Database, position_term: str) -> List[sch.HostSearchResult]:
+    async def search_by_position(db: Database, position_term: str) -> list[sch.HostSearchResult]:
         """
         Search for hosts by position and return their information
         """
@@ -821,7 +824,7 @@ class OfficeSearchService:
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to search by position: {str(e)}"
+                detail=f"Failed to search by position: {e!s}"
             )
 
 
@@ -908,7 +911,7 @@ class OfficeService:
         return OfficeRead(**updated_office)
 
     @staticmethod
-    async def delete_office(db, office_id: UUID) -> Dict[str, str]:
+    async def delete_office(db, office_id: UUID) -> dict[str, str]:
         """
         Delete an office
         """
@@ -942,7 +945,7 @@ class OfficeService:
         return {"message": f"Office with ID {office_id} deleted successfully"}
 
     @staticmethod
-    async def get_all_offices(db) -> List[OfficeRead]:
+    async def get_all_offices(db) -> list[OfficeRead]:
         """
         Get all offices
         """
@@ -954,7 +957,7 @@ class OfficeService:
         return [OfficeRead(**office) for office in offices]
 
     @staticmethod
-    async def get_offices_by_status(db, status: str) -> List[OfficeRead]:
+    async def get_offices_by_status(db, status: str) -> list[OfficeRead]:
         """
         Get only active offices
         """
@@ -1060,7 +1063,7 @@ class OfficeMembershipService:
         return {"message": "User assigned to office successfully"}
 
     @staticmethod
-    async def list_office_members(db, office_id: UUID) -> List[MembershipRead]:
+    async def list_office_members(db, office_id: UUID) -> list[MembershipRead]:
         """
         List all members of a given office.
         """
@@ -1069,7 +1072,7 @@ class OfficeMembershipService:
         return [MembershipRead(**m) for m in members] if members else []
 
     @staticmethod
-    async def list_office_hosts(db, office_id: UUID) -> List[MembershipRead]:
+    async def list_office_hosts(db, office_id: UUID) -> list[MembershipRead]:
         """
         List all members of a given office, excluding secretaries and receptions by role.
         """
@@ -1107,7 +1110,7 @@ class OfficeMembershipService:
     @staticmethod
     async def remove_office_member(
         db, office_id: UUID, user_id: UUID
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         """
         Soft delete a membership from an office by office_id and user_id.
         """
@@ -1130,7 +1133,7 @@ class OfficeMembershipService:
         return {"message": f"Membership for user {user_id} in office {office_id} removed successfully"}
 
     @staticmethod
-    async def list_user_offices(db, user_id: UUID) -> List[MembershipRead]:
+    async def list_user_offices(db, user_id: UUID) -> list[MembershipRead]:
         """
         List all offices that a user is a member of.
         """
@@ -1141,7 +1144,7 @@ class OfficeMembershipService:
     async def search_office_members(
         db,
         search_term: str,
-    ) -> List[MembershipRead]:
+    ) -> list[MembershipRead]:
         """
         Search memberships by name, position, or office.
         """
@@ -1170,14 +1173,14 @@ class AvailabilityService:
         return sch.HostAvailabilityRead(**record)
 
     @staticmethod
-    async def get_availability(db, office_id: UUID) -> List[sch.HostAvailabilityRead]:
+    async def get_availability(db, office_id: UUID) -> list[sch.HostAvailabilityRead]:
         rows = await AvailabilityCRUD.list_by_host(db, office_id)
         return [sch.HostAvailabilityRead(**r) for r in rows]
 
     @staticmethod
     async def get_slots_for_date(
         db, office_id: UUID, target_date: date
-    ) -> List[sch.Slot]:
+    ) -> list[sch.Slot]:
         # 1. Check if slots already generated
         existing_slots = await TimeSlotCRUD.get_slots_by_date(
             db, office_id, target_date
@@ -1215,7 +1218,7 @@ class AvailabilityService:
     @staticmethod
     async def get_available_slots_for_date(
         db, office_id: UUID, target_date: date
-    ) -> List[sch.Slot]:
+    ) -> list[sch.Slot]:
         """
         Get only available (unbooked) slots for a specific date.
         This ensures slots are generated if they don't exist, then filters for unbooked ones.
