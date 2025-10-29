@@ -55,6 +55,7 @@ def setup_cors(app: FastAPI) -> None:
                 "X-RateLimit-Remaining",
                 "X-RateLimit-Window",
                 "Retry-After",
+                "X-CSRF-Token",
             ],
             max_age=86400,
         )
@@ -72,6 +73,7 @@ def setup_cors(app: FastAPI) -> None:
                 "X-RateLimit-Remaining",
                 "X-RateLimit-Window",
                 "Retry-After",
+                "X-CSRF-Token",
             ],
             max_age=86400,  # 24 hours
         )
@@ -92,6 +94,7 @@ def get_cors_config():
             "X-Requested-With",
             "X-Request-ID",
             "X-API-Key",
+            "X-CSRF-Token",
             "Cache-Control",
             "Pragma",
         ],
@@ -101,6 +104,7 @@ def get_cors_config():
             "X-RateLimit-Remaining",
             "X-RateLimit-Window",
             "Retry-After",
+            "X-CSRF-Token",
         ],
         "max_age": 86400,
     }

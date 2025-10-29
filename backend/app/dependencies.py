@@ -3,7 +3,8 @@ Global dependencies for authentication, authorization, and common functionality
 This module provides reusable dependencies that can be used across all modules
 """
 
-from typing import Any, Callable, Dict, List, Optional
+from collections.abc import Callable
+from typing import Any
 from uuid import UUID
 
 from fastapi import Depends, Header, HTTPException, Path, Query, Request, status
@@ -23,8 +24,8 @@ async def get_current_user_global(
 
 
 async def get_optional_user_global(
-    current_user: Optional[CurrentUser] = Depends(get_current_user),
-) -> Optional[CurrentUser]:
+    current_user: CurrentUser | None = Depends(get_current_user),
+) -> CurrentUser | None:
     """Get optional current user - allows anonymous access"""
     return current_user
 
@@ -98,7 +99,7 @@ def require_permission(permission: str) -> Callable:
     return permission_checker
 
 
-def require_any_role(roles: List[str]) -> Callable:
+def require_any_role(roles: list[str]) -> Callable:
     """Dependency factory for requiring any of the specified roles"""
 
     async def role_checker(
@@ -114,7 +115,7 @@ def require_any_role(roles: List[str]) -> Callable:
     return role_checker
 
 
-def require_any_permission(permissions: List[str]) -> Callable:
+def require_any_permission(permissions: list[str]) -> Callable:
     """Dependency factory for requiring any of the specified permissions"""
 
     async def permission_checker(
@@ -141,9 +142,9 @@ def require_ownership_or_admin(
     """Dependency factory for requiring resource ownership or admin access"""
 
     async def ownership_checker(
-        resource: Dict[str, Any],
+        resource: dict[str, Any],
         current_user: CurrentUser = Depends(get_current_user_global),
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         # Admin override
         if admin_override and current_user.is_admin:
             return resource
@@ -210,7 +211,7 @@ def validate_pagination(max_size: int = 100, default_size: int = 20) -> Callable
         size: int = Query(
             default_size, ge=1, le=max_size, description="appointments per page"
         ),
-    ) -> Dict[str, int]:
+    ) -> dict[str, int]:
         return {"page": page, "size": size}
 
     return pagination_validator
@@ -220,9 +221,9 @@ def validate_date_range() -> Callable:
     """Dependency for date range validation"""
 
     async def date_range_validator(
-        start_date: Optional[str] = Query(None, description="Start date (ISO format)"),
-        end_date: Optional[str] = Query(None, description="End date (ISO format)"),
-    ) -> Dict[str, Any]:
+        start_date: str | None = Query(None, description="Start date (ISO format)"),
+        end_date: str | None = Query(None, description="End date (ISO format)"),
+    ) -> dict[str, Any]:
         from datetime import datetime
 
         parsed_start = None
@@ -236,7 +237,7 @@ def validate_date_range() -> Callable:
         except ValueError as e:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid date format: {str(e)}",
+                detail=f"Invalid date format: {e!s}",
             )
 
         if parsed_start and parsed_end and parsed_start > parsed_end:
@@ -255,7 +256,7 @@ def validate_date_range() -> Callable:
 # ================================
 
 
-async def get_request_context(request: Request) -> Dict[str, Any]:
+async def get_request_context(request: Request) -> dict[str, Any]:
     """Get request context information"""
     return {
         "ip_address": request.client.host if request.client else None,
@@ -266,7 +267,7 @@ async def get_request_context(request: Request) -> Dict[str, Any]:
     }
 
 
-async def get_client_info(request: Request) -> Dict[str, str]:
+async def get_client_info(request: Request) -> dict[str, str]:
     """Get client information from request"""
     return {
         "ip_address": request.client.host if request.client else "unknown",
@@ -287,7 +288,7 @@ def require_confirmation(
     """Dependency factory for requiring confirmation headers"""
 
     async def confirmation_checker(
-        confirmation: Optional[str] = Header(None, alias=header_name),
+        confirmation: str | None = Header(None, alias=header_name),
     ) -> bool:
         if confirmation != required_value:
             raise HTTPException(
@@ -303,7 +304,7 @@ def require_critical_confirmation(operation_name: str) -> Callable:
     """Dependency for critical operations requiring explicit confirmation"""
 
     async def critical_confirmation_checker(
-        confirmation: Optional[str] = Header(
+        confirmation: str | None = Header(
             None, alias="X-Confirm-Critical-Operation"
         ),
     ) -> bool:
@@ -326,7 +327,7 @@ def require_critical_confirmation(operation_name: str) -> Callable:
 
 async def check_rate_limit(
     request: Request,
-    current_user: Optional[CurrentUser] = Depends(get_optional_user_global),
+    current_user: CurrentUser | None = Depends(get_optional_user_global),
 ) -> bool:
     """Basic rate limiting check (placeholder for Redis implementation)"""
 
@@ -350,14 +351,14 @@ async def check_rate_limit(
 
 
 async def get_search_params(
-    search: Optional[str] = Query(
+    search: str | None = Query(
         None, min_length=1, max_length=100, description="Search term"
     ),
-    sort_by: Optional[str] = Query(None, description="Sort field"),
-    sort_order: Optional[str] = Query(
+    sort_by: str | None = Query(None, description="Sort field"),
+    sort_order: str | None = Query(
         "desc", regex="^(asc|desc)$", description="Sort order"
     ),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Get common search and sorting parameters"""
     return {
         "search": search.strip() if search else None,
@@ -367,14 +368,14 @@ async def get_search_params(
 
 
 async def get_filter_params(
-    is_active: Optional[bool] = Query(None, description="Filter by active status"),
-    created_after: Optional[str] = Query(
+    is_active: bool | None = Query(None, description="Filter by active status"),
+    created_after: str | None = Query(
         None, description="Filter by creation date (after)"
     ),
-    created_before: Optional[str] = Query(
+    created_before: str | None = Query(
         None, description="Filter by creation date (before)"
     ),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Get common filtering parameters"""
 
     from datetime import datetime
@@ -395,7 +396,7 @@ async def get_filter_params(
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid date format: {str(e)}",
+            detail=f"Invalid date format: {e!s}",
         )
 
     return {
