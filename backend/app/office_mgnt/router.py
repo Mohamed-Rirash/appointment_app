@@ -32,7 +32,7 @@ router = APIRouter(
 @router.get(
     "/unassigned",
     response_model=list[UserRead],
-    summary="Get unassigned users",
+    summary="Get users that are not assigned to an office (only admins)",
     status_code=status.HTTP_200_OK,
 )
 async def get_unassigned_users(
@@ -49,8 +49,8 @@ async def get_unassigned_users(
     "/",
     status_code=status.HTTP_201_CREATED,
     response_model=sch.OfficeRead,
-    summary="Create a new office",
-    description="Create a new office with details such as name and location. Only admins are allowed.",
+    summary="Register a new office",
+    description="Create a new office with details such as name and location. Only admins are allowed.(only admins)",
     responses={
         201: {"description": "Office created successfully"},
         400: {"description": "Invalid data"},
@@ -68,7 +68,7 @@ async def create_office(
 @router.get(
     "/",
     response_model=list[sch.OfficeRead],
-    summary="List offices",
+    summary="get all the offices we have registered (only admins)",
     description="Retrieve all offices. Optionally filter by status (`active` or `deactivated`).",
     responses={
         200: {"description": "List of offices returned"},
@@ -92,7 +92,7 @@ async def list_offices(
 @router.get(
     "/{office_id}",
     response_model=sch.OfficeRead,
-    summary="Get office details",
+    summary="Get single office details (only admins)",
     description="Retrieve details of a specific office by its ID.",
     responses={
         200: {"description": "Office found"},
@@ -111,7 +111,7 @@ async def read_office(
 @router.patch(
     "/{office_id}",
     response_model=sch.OfficeRead,
-    summary="Update an office",
+    summary="Update an office details (only admins)",
     description="Update office information such as name or status. Only admins can update offices.",
     responses={
         200: {"description": "Office updated successfully"},
@@ -131,7 +131,7 @@ async def update_office(
 @router.delete(
     "/{office_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    summary="Delete an office",
+    summary="Delete an office and all its members (only admins) RISK",
     description="Delete an office by its ID. Only admins are allowed.",
     responses={
         204: {"description": "Office deleted successfully"},
@@ -150,7 +150,7 @@ async def delete_office(
 @router.post(
     "/{office_id}/deactivate",
     response_model=sch.OfficeRead,
-    summary="Deactivate an office",
+    summary="Deactivate an office (only admins)",
     description="Deactivate an active office. Only admins are allowed.",
     responses={
         200: {"description": "Office deactivated"},
@@ -169,7 +169,7 @@ async def deactivate_office(
 @router.post(
     "/{office_id}/activate",
     response_model=sch.OfficeRead,
-    summary="Activate an office",
+    summary="Activate an office (only admins)",
     description="Activate a previously deactivated office. Only admins are allowed.",
     responses={
         200: {"description": "Office activated"},
@@ -193,14 +193,13 @@ async def activate_office(
 @router.post(
     "/{office_id}/memberships",
     status_code=status.HTTP_201_CREATED,
-    summary="Assign a user to an office",
+    summary="Assign a user to an office (only admins)",
     description="Add a user as a member of an office. Only admins are allowed.",
     responses={
         201: {"description": "User assigned to office"},
         404: {"description": "Office or user not found"},
         403: {"description": "Forbidden: Only admins can assign users"},
     },
-
 )
 async def assign_user_to_office(
     office_id: UUID,
@@ -216,7 +215,7 @@ async def assign_user_to_office(
 @router.get(
     "/{office_id}/memberships",
     response_model=list[sch.MembershipRead],
-    summary="List office members",
+    summary="get all members assigned to an office (only admins)",
     description="Retrieve all members assigned to a specific office. Only admins are allowed.",
     responses={
         200: {"description": "List of office members"},
@@ -235,8 +234,8 @@ async def get_office_members(
 @router.get(
     "/{office_id}/hosts",
     response_model=list[sch.MembershipRead],
-    summary="List office hosts",
-    description="Retrieve all hosts assigned to a specific office. Accessible by any authenticated user.",
+    summary="get all host members in this office (hosts, secretaries, receptions)",
+    description="we excluded secretaries of the office to book appointments we only have a meeting host person eg agaasimaha",
     responses={
         200: {"description": "List of office hosts"},
         404: {"description": "Office not found"},
@@ -254,7 +253,7 @@ async def get_office_hosts(
 @router.patch(
     "/{office_id}/memberships/{user_id}",
     response_model=sch.MembershipRead,
-    summary="Update office membership",
+    summary="Update/edit office membershiping (only admins)",
     description="Update membership details (e.g., role). Only admins can perform this action.",
     responses={
         200: {"description": "Membership updated"},
@@ -277,7 +276,7 @@ async def update_office_membership(
 @router.delete(
     "/{office_id}/memberships/{user_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    summary="Remove a member from an office",
+    summary="Remove a member from an office (only admins can perform this action)",
     description="Remove a user from an office membership. Only admins can perform this action.",
     responses={
         204: {"description": "Membership removed"},
@@ -300,7 +299,7 @@ async def remove_office_member(
 @router.get(
     "/users/{user_id}/offices",
     response_model=list[sch.MembershipRead],
-    summary="List offices of a user",
+    summary="get users office by using user_id (only admin)",
     description="Retrieve all offices a specific user is assigned to. Only admins can view this.",
     responses={
         200: {"description": "List of user's offices"},
@@ -325,7 +324,8 @@ async def get_user_offices(
     "/hosts/assign",
     response_model=sch.HostAssignmentRead,
     summary="Assign a host to an office",
-    description="Assign a host to an office with comprehensive validation",
+    deprecated=True,
+    description="we do not need this anymore",
     status_code=status.HTTP_201_CREATED,
 )
 async def assign_host_to_office(
@@ -340,6 +340,7 @@ async def assign_host_to_office(
 @router.post(
     "/hosts/bulk-assign",
     response_model=list[sch.HostAssignmentRead],
+    deprecated=True,
     summary="Bulk assign multiple hosts to offices",
 )
 async def bulk_assign_hosts(
@@ -357,6 +358,7 @@ async def bulk_assign_hosts(
     "/hosts",
     response_model=list[sch.HostAssignmentRead],
     summary="List host assignments",
+    deprecated=True,
     description="List host assignments with optional filtering by office or host",
 )
 async def list_host_assignments(
@@ -413,7 +415,7 @@ async def list_host_assignments(
     "/stats/all",
     response_model=list[sch.OfficeStats],
     summary="Get all office statistics",
-    description="Get statistics for all offices",
+    description="get all office statistics we use it in the dashboard",
 )
 async def get_all_office_stats(
     db: Database = Depends(get_db),
@@ -504,7 +506,9 @@ async def search_offices_with_hosts(
     description="Search for hosts by their position/title",
 )
 async def search_hosts_by_position(
-    position: str = Query(..., min_length=2, description="Position/title to search for"),
+    position: str = Query(
+        ..., min_length=2, description="Position/title to search for"
+    ),
     db: Database = Depends(get_db),
     _user: CurrentUser = Depends(require_authentication),
 ):
@@ -614,4 +618,6 @@ async def get_available_slots(
     _user: CurrentUser = Depends(require_authentication),
 ):
     """Get only available (unbooked) time slots for a specific date"""
-    return await AvailabilityService.get_available_slots_for_date(db, office_id, target_date)
+    return await AvailabilityService.get_available_slots_for_date(
+        db, office_id, target_date
+    )

@@ -574,9 +574,7 @@ class OfficeStatsService:
             # Get member counts
             members = await OfficeMembershipService.list_office_members(db, office_id)
             total_members = len(members)
-            active_members = len(
-                [m for m in members if m.membership_active]
-            )
+            active_members = len([m for m in members if m.membership_active])
 
             # Get host counts
             hosts = await OfficeMembershipService.list_office_hosts(db, office_id)
@@ -664,7 +662,11 @@ class OfficeSearchService:
             offices_data = await OfficeMgmtCRUD.search_by_name_or_description(
                 db, search_term
             )
-            return [sch.OfficeRead(**office) for office in offices_data] if offices_data else []
+            return (
+                [sch.OfficeRead(**office) for office in offices_data]
+                if offices_data
+                else []
+            )
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -672,7 +674,9 @@ class OfficeSearchService:
             )
 
     @staticmethod
-    async def search_by_host_name(db: Database, search_term: str) -> list[sch.HostSearchResult]:
+    async def search_by_host_name(
+        db: Database, search_term: str
+    ) -> list[sch.HostSearchResult]:
         """
         Search for hosts by name and return their office and position information
         """
@@ -691,10 +695,10 @@ class OfficeSearchService:
                         office_member_details.c.last_name.ilike(search_pattern),
                         func.concat(
                             office_member_details.c.first_name,
-                            ' ',
-                            office_member_details.c.last_name
-                        ).ilike(search_pattern)
-                    )
+                            " ",
+                            office_member_details.c.last_name,
+                        ).ilike(search_pattern),
+                    ),
                 )
             )
 
@@ -710,18 +714,20 @@ class OfficeSearchService:
                     office_name=row["office_name"],
                     office_location=row["office_location"],
                     position=row.get("position"),
-                    is_primary=row.get("is_primary", False)
+                    is_primary=row.get("is_primary", False),
                 )
                 for row in results
             ]
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to search hosts: {e!s}"
+                detail=f"Failed to search hosts: {e!s}",
             )
 
     @staticmethod
-    async def search_by_office_name(db: Database, search_term: str) -> list[sch.OfficeSearchResult]:
+    async def search_by_office_name(
+        db: Database, search_term: str
+    ) -> list[sch.OfficeSearchResult]:
         """
         Search for offices by name and return all hosts/positions in those offices
         """
@@ -733,8 +739,7 @@ class OfficeSearchService:
             # Get all offices matching the search
             office_query = select(offices).where(
                 and_(
-                    offices.c.is_active.is_(True),
-                    offices.c.name.ilike(search_pattern)
+                    offices.c.is_active.is_(True), offices.c.name.ilike(search_pattern)
                 )
             )
 
@@ -750,7 +755,7 @@ class OfficeSearchService:
                 hosts_query = select(office_member_details).where(
                     and_(
                         office_member_details.c.office_id == office["id"],
-                        office_member_details.c.membership_active.is_(True)
+                        office_member_details.c.membership_active.is_(True),
                     )
                 )
 
@@ -766,7 +771,7 @@ class OfficeSearchService:
                         office_name=row["office_name"],
                         office_location=row["office_location"],
                         position=row.get("position"),
-                        is_primary=row.get("is_primary", False)
+                        is_primary=row.get("is_primary", False),
                     )
                     for row in hosts_results
                 ]
@@ -777,7 +782,7 @@ class OfficeSearchService:
                         office_name=office["name"],
                         office_location=office["location"],
                         office_description=office.get("description"),
-                        hosts=hosts
+                        hosts=hosts,
                     )
                 )
 
@@ -785,11 +790,13 @@ class OfficeSearchService:
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to search offices: {e!s}"
+                detail=f"Failed to search offices: {e!s}",
             )
 
     @staticmethod
-    async def search_by_position(db: Database, position_term: str) -> list[sch.HostSearchResult]:
+    async def search_by_position(
+        db: Database, position_term: str
+    ) -> list[sch.HostSearchResult]:
         """
         Search for hosts by position and return their information
         """
@@ -801,7 +808,7 @@ class OfficeSearchService:
             query = select(office_member_details).where(
                 and_(
                     office_member_details.c.membership_active.is_(True),
-                    office_member_details.c.position.ilike(search_pattern)
+                    office_member_details.c.position.ilike(search_pattern),
                 )
             )
 
@@ -817,14 +824,14 @@ class OfficeSearchService:
                     office_name=row["office_name"],
                     office_location=row["office_location"],
                     position=row.get("position"),
-                    is_primary=row.get("is_primary", False)
+                    is_primary=row.get("is_primary", False),
                 )
                 for row in results
             ]
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to search by position: {e!s}"
+                detail=f"Failed to search by position: {e!s}",
             )
 
 
@@ -922,6 +929,7 @@ class OfficeService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Office with ID {office_id} not found",
             )
+        # TODO: check if office has active employees or resources and we delete it
 
         # FIX: what if office has active employees or resources and we delete it
         try:
@@ -1093,8 +1101,10 @@ class OfficeMembershipService:
         Update an existing membership by office_id and user_id.
         """
         # First check if membership exists
-        existing_membership = await OfficeMembershipMgmtCRUD.get_membership_by_user_and_office(
-            db, user_id, office_id
+        existing_membership = (
+            await OfficeMembershipMgmtCRUD.get_membership_by_user_and_office(
+                db, user_id, office_id
+            )
         )
         if not existing_membership:
             raise HTTPException(status_code=404, detail="Membership not found")
@@ -1130,7 +1140,9 @@ class OfficeMembershipService:
                 detail="Failed to remove membership",
             )
 
-        return {"message": f"Membership for user {user_id} in office {office_id} removed successfully"}
+        return {
+            "message": f"Membership for user {user_id} in office {office_id} removed successfully"
+        }
 
     @staticmethod
     async def list_user_offices(db, user_id: UUID) -> list[MembershipRead]:
@@ -1224,7 +1236,9 @@ class AvailabilityService:
         This ensures slots are generated if they don't exist, then filters for unbooked ones.
         """
         # First, ensure slots are generated for this date
-        all_slots = await AvailabilityService.get_slots_for_date(db, office_id, target_date)
+        all_slots = await AvailabilityService.get_slots_for_date(
+            db, office_id, target_date
+        )
 
         # Filter to return only unbooked slots
         available_slots = [slot for slot in all_slots if not slot.is_booked]
