@@ -5,6 +5,8 @@ from databases import Database
 from pydantic import EmailStr
 from sqlalchemy import delete, insert, select, update
 
+from app.office_mgnt.models import office_memberships
+
 from .models import permissions, role_permissions, roles, users
 
 
@@ -12,6 +14,16 @@ from .models import permissions, role_permissions, roles, users
 # USER CRUD
 # ------------------------------
 class UserCRUD:
+    @staticmethod
+    async def get_users_office_by_id(session: Database, user_id: uuid.UUID):
+        query = select(
+            office_memberships.c.office_id, office_memberships.c.position
+        ).where(office_memberships.c.user_id == user_id)
+        result = await session.fetch_one(query)
+        if result is not None:
+            return dict(result)
+        return None
+
     @staticmethod
     async def create(session: Database, user_data: dict) -> dict[str, Any] | None:
         # Ensure ID exists
@@ -100,9 +112,7 @@ class RoleCRUD:
 # ------------------------------
 class PermissionCRUD:
     @staticmethod
-    async def create(
-        session: Database, permission_data: dict
-    ) -> dict[str, Any] | None:
+    async def create(session: Database, permission_data: dict) -> dict[str, Any] | None:
         if "id" not in permission_data:
             permission_data["id"] = uuid.uuid4()
 
@@ -125,7 +135,11 @@ class RolePermissionCRUD:
     async def assign_permission(
         session: Database, role_id: uuid.UUID, permission_id: uuid.UUID
     ):
-        data = {"id": uuid.uuid4(), "role_id": role_id, "permission_id": permission_id}
+        data = {
+            "id": uuid.uuid4(),
+            "role_id": role_id,
+            "permission_id": permission_id,
+        }
         query = insert(role_permissions).values(**data).returning(role_permissions)
         result = await session.fetch_one(query)
         return dict(result) if result else None
@@ -137,7 +151,8 @@ class RolePermissionCRUD:
         query = (
             select(permissions)
             .join(
-                role_permissions, role_permissions.c.permission_id == permissions.c.id
+                role_permissions,
+                role_permissions.c.permission_id == permissions.c.id,
             )
             .where(role_permissions.c.role_id == role_id)
         )

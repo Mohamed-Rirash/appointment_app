@@ -158,6 +158,15 @@ async def get_current_user_profile_service(session, current_user):
         if user_perms
         else []
     )
+    member_offices = await UserCRUD.get_users_office_by_id(session, current_user.id)
+
+    # Initialize with None in case no office is found
+    office_id = None
+    position = None
+
+    if member_offices:
+        office_id = member_offices.get("office_id")
+        position = member_offices.get("position")
 
     return {
         "id": current_user.id,
@@ -169,6 +178,8 @@ async def get_current_user_profile_service(session, current_user):
         "created_at": current_user.created_at,
         "roles": role_names,
         "permissions": perm_names,
+        "office_id": office_id,
+        "position": position,
     }
 
 
