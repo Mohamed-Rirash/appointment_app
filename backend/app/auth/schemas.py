@@ -57,6 +57,8 @@ class UserProfile(UserBase):
     created_at: datetime
     roles: list[str] = []
     permissions: list[str] = []
+    office_id: uuid.UUID | None = None
+    position: str | None = ""
 
 
 # Authentication schemas
