@@ -36,6 +36,12 @@ interface RefreshResponse {
 }
 
 export const client = {
+  // Set Password (first-time setup)
+  async setPassword(data: { token: string; new_password: string }) {
+    const response = await apiClient.post("/users/set-password", data);
+    return response.data;
+  },
+
   // Login
   async Login(email: string, password: string): Promise<LoginResponse> {
     console.log("Email client", email);
@@ -56,7 +62,7 @@ export const client = {
           headers: {
             "Content-Type": "application/x-www-form-urlencoded",
           },
-        },
+        }
       );
       console.log("ssss", response.data);
       return response.data;
@@ -65,7 +71,7 @@ export const client = {
         // Server responded with error status
         throw new Error(
           error.response.data?.detail ||
-            `Login failed: ${error.response.status}`,
+            `Login failed: ${error.response.status}`
         );
       } else if (error.request) {
         throw new Error("No response from server");
@@ -116,7 +122,7 @@ export const client = {
         error.response?.data?.detail ||
           `Failed to send reset email: ${
             error.response?.status || "network error"
-          }`,
+          }`
       );
     }
   },
@@ -125,7 +131,7 @@ export const client = {
   async changePassword(
     current_password: string,
     new_password: string,
-    token: string,
+    token: string
   ) {
     try {
       const response = await apiClient.post(
@@ -135,20 +141,20 @@ export const client = {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        },
+        }
       );
       return response.data;
     } catch (error: any) {
       console.error("Error changing password:", error);
       throw new Error(
-        error.response?.data?.detail || "Failed to change password",
+        error.response?.data?.detail || "Failed to change password"
       );
     }
   },
 
   // Create User (Admin)
   async createUser(data: Userdata, token?: string) {
-    console.log("CREATE USER",data)
+    console.log("CREATE USER", data);
     try {
       const response = await apiClient.post("/admin/users", data, {
         headers: {
@@ -205,7 +211,7 @@ export const client = {
       {},
       {
         headers: { Authorization: `Bearer ${token}` },
-      },
+      }
     );
     return response.data;
   },
@@ -217,7 +223,7 @@ export const client = {
       {},
       {
         headers: { Authorization: `Bearer ${token}` },
-      },
+      }
     );
     console.log("activ:::", response.data);
     return response.data;
@@ -230,7 +236,7 @@ export const client = {
       {},
       {
         headers: { Authorization: `Bearer ${token}` },
-      },
+      }
     );
     return response.data;
   },
@@ -242,7 +248,7 @@ export const client = {
       {},
       {
         headers: { Authorization: `Bearer ${token}` },
-      },
+      }
     );
     return response.data;
   },
@@ -255,7 +261,7 @@ export const client = {
       {},
       {
         headers: { Authorization: `Bearer ${token}` },
-      },
+      }
     );
     console.log("Role:::", response.data);
     return response.data;
@@ -267,7 +273,7 @@ export const client = {
       `/admin/users/${userId}/roles/${roleName}`,
       {
         headers: { Authorization: `Bearer ${token}` },
-      },
+      }
     );
     console.log("revoke", response.data);
     return response.data;
@@ -292,7 +298,7 @@ export const client = {
   // create office
   async createOffice(
     data: { name: string; description: string; location: string },
-    token?: string,
+    token?: string
   ) {
     const response = await apiClient.post("/offices", data, {
       headers: { Authorization: `Bearer ${token}` },
@@ -321,7 +327,7 @@ export const client = {
       {},
       {
         headers: { Authorization: `Bearer ${token}` },
-      },
+      }
     );
     return response.data;
   },
@@ -332,21 +338,20 @@ export const client = {
       {},
       {
         headers: { Authorization: `Bearer ${token}` },
-      },
+      }
     );
     return response.data;
   },
 
-
   // Set host availability
-async setHostAvailability(officeId: string, data: any[]) {
-  // try {
-  //   const response = await apiClient.post(`/offices/${officeId}/availability`, data, {
-  //     headers: { Authorization: `Bearer ${token}` },
-  //   });
-  //   return response.data;
-  // } catch (error: any) {
-  //   throw new Error(error.response?.data?.detail || "Failed to set availability");
-  // }
-}
+  async setHostAvailability(officeId: string, data: any[]) {
+    // try {
+    //   const response = await apiClient.post(`/offices/${officeId}/availability`, data, {
+    //     headers: { Authorization: `Bearer ${token}` },
+    //   });
+    //   return response.data;
+    // } catch (error: any) {
+    //   throw new Error(error.response?.data?.detail || "Failed to set availability");
+    // }
+  },
 };
