@@ -26,7 +26,7 @@ export async function proxy(request: NextRequest) {
     } else if (role === "reception") {
       return NextResponse.redirect(new URL("/reception", request.url));
     } else {
-      return NextResponse.redirect(new URL("/signin", request.url));
+      return NextResponse.redirect(new URL("/Signin", request.url));
     }
   }
 
