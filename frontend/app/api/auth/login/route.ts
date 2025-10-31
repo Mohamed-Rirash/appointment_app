@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
     // 1️⃣ Login request to backend
     const res = await axios.post(
       `${process.env.API_URL}/users/login`,
-      `grant_type=password&username=${email}&password=${password}`, // <– fixed
+      `grant_type=password&username=${email}&password=${password}`,
       {
         headers: {
           Accept: "application/json",

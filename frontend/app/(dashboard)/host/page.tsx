@@ -3,11 +3,14 @@ import DashboardStatsCardhost from "./_components/DashboardStatsCardhost";
 import { AvailabilityDialog } from "./_components/AvailabilityDialog";
 import { Button } from "@/components/ui/button";
 import { Calendar, Clock } from "lucide-react";
-import ManageAvailability from "./_components/ManageAvailability";
+import Link from "next/link";
 
 export default async function page() {
   const session = await getSession();
   const token = session?.user.access_token;
+  if (session?.user.roles[0] !== "host") {
+    return null
+  }
   return (
     <>
       <main className="px-6 pt-12">
@@ -17,20 +20,21 @@ export default async function page() {
               Welcome, {session?.user.first_name}{" "}
             </h1>
             <p className="text-ms text-brand-gray ">
-              System Overview & Management
+              Host Dashboard management
             </p>
           </div>
           <div className="flex gap-4 ">
-            {/* Manage Availability */}
-            <AvailabilityDialog title="Manage Availability">
-              <Button className="bg-gradient-to-r from-[#29E05F] to-[#0F9938] text-white font-bold py-6 px-8 rounded-[4px] shadow-gren">
+
+            <Link href={"/host/availabletime"}>
+              <Button className="bg-linear-to-r from-[#0F9938] to-[#29E05F] text-white font-bold py-6 px-8 rounded-[4px] shadow-gren">
                 <Clock className="h-5 w-5 mr-2" />
                 Manage Availability
               </Button>
-            </AvailabilityDialog>
+            </Link>
+
 
             {/* View Calendar */}
-            <AvailabilityDialog title="View Calendar">
+            <AvailabilityDialog>
               <Button
                 variant="outline"
                 className="font-bold py-6 px-8 rounded-[4px]"
@@ -45,7 +49,7 @@ export default async function page() {
           <DashboardStatsCardhost token={token} />
         </section>
 
-         <ManageAvailability officeId={"akdjfajdsfjasjdf"} />
+
       </main>
     </>
   );
