@@ -7,8 +7,8 @@ export async function proxy(request: NextRequest) {
 
   const session = await getSession();
 
-  if (!session && !pathname.startsWith("/signin")) {
-    return NextResponse.redirect(new URL("/signin", request.url));
+  if (!session && !pathname.startsWith("/Signin")) {
+    return NextResponse.redirect(new URL("/Signin", request.url));
   }
 
   let role: string | null = null;
