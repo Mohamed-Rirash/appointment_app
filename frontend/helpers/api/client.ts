@@ -336,4 +336,17 @@ export const client = {
     );
     return response.data;
   },
+
+
+  // Set host availability
+async setHostAvailability(officeId: string, data: any[]) {
+  // try {
+  //   const response = await apiClient.post(`/offices/${officeId}/availability`, data, {
+  //     headers: { Authorization: `Bearer ${token}` },
+  //   });
+  //   return response.data;
+  // } catch (error: any) {
+  //   throw new Error(error.response?.data?.detail || "Failed to set availability");
+  // }
+}
 };
