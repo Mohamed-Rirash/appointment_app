@@ -823,8 +823,8 @@ class OfficeSearchService:
                     office_id=row["office_id"],
                     office_name=row["office_name"],
                     office_location=row["office_location"],
-                    position=row.get("position"),
-                    is_primary=row.get("is_primary", False),
+                    position=row["position"],
+                    is_primary=row["is_primary"],
                 )
                 for row in results
             ]
@@ -919,31 +919,32 @@ class OfficeService:
 
     @staticmethod
     async def delete_office(db, office_id: UUID) -> dict[str, str]:
-        """
-        Delete an office
-        """
-        # Check if office exists
+        # 1. Check if office exists
         existing_office = await OfficeMgmtCRUD.get_by_id(db, office_id)
         if not existing_office:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Office with ID {office_id} not found",
             )
-        # TODO: check if office has active employees or resources and we delete it
 
-        # FIX: what if office has active employees or resources and we delete it
-        try:
-            users = await OfficeMembershipService.list_office_members(db, office_id)
-            if users:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Office has active members",
-                )
-        except Exception:
-            pass
+        # 2. Block if office still has members
+        members = await OfficeMembershipMgmtCRUD.get_members_by_office(db, office_id)
+        if members:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Office has active members, unassign them first",
+            )
 
+        # 3. Delete availability and time slots if exist
+        office_availability = await AvailabilityCRUD.get_host_availability(
+            db, office_id
+        )
+        if office_availability:
+            await TimeSlotCRUD.delete_by_office_id(db, office_id)
+            await AvailabilityCRUD.delete_by_office_id(db, office_id)
+
+        # 4. Delete office
         success = await OfficeMgmtCRUD.delete(db, office_id)
-
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

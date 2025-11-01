@@ -8,7 +8,11 @@ from sqlalchemy import and_, delete, func, insert, or_, select, update
 
 from app.appointments.models import time_slot
 from app.auth.models import roles, user_roles, users
-from app.office_mgnt.models import host_availability, office_memberships, offices
+from app.office_mgnt.models import (
+    host_availability,
+    office_memberships,
+    offices,
+)
 from app.office_mgnt.views import office_member_details
 
 
@@ -292,18 +296,22 @@ class OfficeMembershipMgmtCRUD:
     async def get_membership_by_id(db, membership_id):
         """Get membership by ID with user details"""
         j = office_memberships.join(users, office_memberships.c.user_id == users.c.id)
-        query = select(
-            users.c.id.label("user_id"),
-            users.c.first_name,
-            users.c.last_name,
-            users.c.email,
-            users.c.is_active.label("user_active"),
-            office_memberships.c.id.label("membership_id"),
-            office_memberships.c.office_id,
-            office_memberships.c.position,
-            office_memberships.c.is_primary,
-            office_memberships.c.is_active.label("membership_active"),
-        ).select_from(j).where(office_memberships.c.id == membership_id)
+        query = (
+            select(
+                users.c.id.label("user_id"),
+                users.c.first_name,
+                users.c.last_name,
+                users.c.email,
+                users.c.is_active.label("user_active"),
+                office_memberships.c.id.label("membership_id"),
+                office_memberships.c.office_id,
+                office_memberships.c.position,
+                office_memberships.c.is_primary,
+                office_memberships.c.is_active.label("membership_active"),
+            )
+            .select_from(j)
+            .where(office_memberships.c.id == membership_id)
+        )
 
         result = await db.fetch_one(query)
         return dict(result) if result else None
@@ -369,6 +377,21 @@ class AvailabilityCRUD:
         )
         await db.execute(query)
 
+    @staticmethod
+    async def get_host_availability(db, office_id):
+        query = select(host_availability).where(
+            host_availability.c.office_id == office_id
+        )
+        rows = await db.fetch_all(query)
+        return [dict(r) for r in rows]
+
+    @staticmethod
+    async def delete_by_office_id(db, office_id):
+        query = delete(host_availability).where(
+            host_availability.c.office_id == office_id
+        )
+        await db.execute(query)
+
 
 class TimeSlotCRUD:
     @staticmethod
@@ -385,3 +408,8 @@ class TimeSlotCRUD:
     async def bulk_insert_slots(db, slots: list[dict]):
         query = insert(time_slot)
         await db.execute_many(query, slots)
+
+    @staticmethod
+    async def delete_by_office_id(db, office_id):
+        query = delete(time_slot).where(time_slot.c.office_id == office_id)
+        await db.execute(query)
