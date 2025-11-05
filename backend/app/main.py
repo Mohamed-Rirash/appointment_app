@@ -17,6 +17,7 @@ from app.appointments.routers import appointment_router
 # Router imports
 from app.auth.router import router as auth_router
 from app.config import get_settings
+from app.views.routes import view_router
 
 # Sentry integration
 try:
@@ -311,3 +312,4 @@ app.include_router(admin_router, prefix=settings.API_V1_STR)
 app.include_router(office_mgnt_router, prefix=settings.API_V1_STR)
 app.include_router(hostavailableroutes, prefix=settings.API_V1_STR)
 app.include_router(appointment_router, prefix=settings.API_V1_STR)
+app.include_router(view_router, prefix=settings.API_V1_STR)
