@@ -497,11 +497,13 @@ async def search_approved_appointments(
         ..., description="Search term for citizen name, phone, or email"
     ),
     db: Database = Depends(get_db),
-    current_user: CurrentUser = Depends(require_any_role("reception", "security")),
+    current_user: CurrentUser = Depends(
+        require_any_role("reception", "admin", "sectretary", "host")
+    ),
 ):
     try:
-        appointments = await AppointmentService.search_approved_appointments(db, search)
-        return appointments
+        return await AppointmentService.search_approved_appointments(db, search)
+
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -549,6 +551,7 @@ async def get_all_appointments(
 @appointment_router.get(
     "/history",
     response_model=list[sch.AppointmentRead],
+    deprecated=True,
     summary="Get appointment history",
     description="Get appointment history with filtering options",
 )
@@ -582,7 +585,8 @@ async def get_appointment_history(
 @appointment_router.get(
     "/all/me",
     response_model=list[sch.AppointmentRead],
-    summary="Get all appointments",
+    deprecated=True,
+    summary="Get all appointments id created by default to days date",
     description="Get all appointments",
 )
 async def get_all_me_appointments(
@@ -597,6 +601,7 @@ async def get_all_me_appointments(
     "/{appointment_id}/print-slip",
     summary="Print appointment slip",
     description="Generate a printable appointment slip with citizen, host, and office information",
+    deprecated=True,
 )
 async def print_appointment_slip(
     appointment_id: UUID,
@@ -612,6 +617,3 @@ async def print_appointment_slip(
         raise HTTPException(status_code=404, detail="Appointment not found")
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
-
-
-# TODO: add complete appointment endpoint and make the status complete and deactivate it
