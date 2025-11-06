@@ -54,7 +54,9 @@ class AppointmentService:
 
                 # Check if booked
                 if slot["is_booked"]:
-                    raise AppointmentNotFound(f"Time slot {slot_time} is already booked.")
+                    raise AppointmentNotFound(
+                        f"Time slot {slot_time} is already booked."
+                    )
 
                 print(f"Marking slot {slot['id']} as booked")
                 # Mark slot booked
@@ -82,6 +84,7 @@ class AppointmentService:
         except Exception as e:
             print(f"Error in create_with_citizen service: {type(e).__name__}: {e!s}")
             import traceback
+
             traceback.print_exc()
             raise
 
@@ -133,7 +136,7 @@ class AppointmentService:
         appointment_id: uuid.UUID,
         decision: sch.AppointmentDecision,
         user_id: uuid.UUID,
-        office_id: uuid.UUID
+        office_id: uuid.UUID,
     ):
         async with db.transaction():
             # 1. Fetch appointment
@@ -151,7 +154,9 @@ class AppointmentService:
 
             # 3. Validate state - can only decide on pending appointments
             # Convert status to string for comparison (in case it's returned as enum or string from DB)
-            status_value = str(appointment.status).lower() if appointment.status else None
+            status_value = (
+                str(appointment.status).lower() if appointment.status else None
+            )
             if status_value != AppointmentStatus.PENDING.value:
                 raise AppointmentAlreadyApproved()
 
@@ -167,12 +172,17 @@ class AppointmentService:
                 update_data["decision_reason"] = decision.reason
 
             # 5. Apply business logic
-            if decision.status == AppointmentStatus.APPROVED or decision.status == AppointmentStatus.DENIED:
+            if (
+                decision.status == AppointmentStatus.APPROVED
+                or decision.status == AppointmentStatus.DENIED
+            ):
                 await AppointmentCrud.update_appointment(
                     db, appointment_id, update_data
                 )
             else:
-                raise AppointmentDecisionNotAllowed("Decision must be approved or denied")
+                raise AppointmentDecisionNotAllowed(
+                    "Decision must be approved or denied"
+                )
 
             # 6. Broadcast event to notify about decision
             await broadcast_event(
@@ -204,7 +214,11 @@ class AppointmentService:
                 raise AppointmentNotFound()
 
             # 2. Validate state - can only postpone pending, approved, or postponed appointments
-            if appointment.status not in [AppointmentStatus.PENDING, AppointmentStatus.APPROVED, AppointmentStatus.POSTPONED]:
+            if appointment.status not in [
+                AppointmentStatus.PENDING,
+                AppointmentStatus.APPROVED,
+                AppointmentStatus.POSTPONED,
+            ]:
                 raise AppointmentPostponementNotAllowed()
 
             # 3. Validate new date and time slot are provided
@@ -222,7 +236,9 @@ class AppointmentService:
                 db, slot_date, slot_time
             )
             if not new_slot:
-                raise AppointmentNotFound(f"No slot found for {slot_time} on {slot_date}.")
+                raise AppointmentNotFound(
+                    f"No slot found for {slot_time} on {slot_date}."
+                )
 
             # Check if new slot is already booked
             if new_slot["is_booked"]:
@@ -478,7 +494,7 @@ class AppointmentService:
     async def search_approved_appointments(db: Database, search_term: str):
         # Search for approved appointments by citizen info
         conditions = [
-            appointment_details.c.status == AppointmentStatus.APPROVED,
+            # appointment_details.c.status == AppointmentStatus.APPROVED,
             appointment_details.c.appointment_active.is_(True),
             or_(
                 appointment_details.c.citizen_firstname.ilike(f"%{search_term}%"),

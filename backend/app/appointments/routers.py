@@ -28,10 +28,11 @@ from app.appointments.exceptions import (
 from app.appointments.services import AppointmentService
 from app.appointments.sms_service import SMSService
 from app.appointments.utils import office_connections
-from app.auth.dependencies import CurrentUser, require_any_role
+from app.auth.dependencies import CurrentUser, require_any_role, require_role
 from app.config import get_settings
 from app.core.emails.services import send_email
 from app.database import get_db
+from app.views.schemas import AppointmentDetails
 
 settings = get_settings()
 
@@ -487,19 +488,17 @@ async def complete_appointment(
 
 
 @appointment_router.get(
-    "/gate/search",
-    response_model=list[sch.AppointmentRead],
+    "/gates/search",
+    response_model=list[AppointmentDetails],
     summary="Search approved appointments for gate security",
-    description="Search approved appointments by citizen name, phone, or email for gate security verification",
+    description="Search approved appointments by citizen name, phone, or email for gate security verification (only reception)",
 )
 async def search_approved_appointments(
     search: str = Query(
         ..., description="Search term for citizen name, phone, or email"
     ),
     db: Database = Depends(get_db),
-    current_user: CurrentUser = Depends(
-        require_any_role("reception", "admin", "sectretary", "host")
-    ),
+    _current_user: CurrentUser = Depends(require_role("reception")),
 ):
     try:
         return await AppointmentService.search_approved_appointments(db, search)
@@ -512,6 +511,7 @@ async def search_approved_appointments(
     "/all",
     response_model=list[sch.AppointmentRead],
     summary="Get all appointments",
+    deprecated=True,
     description="""
     Get all appointments with support for:
     - Filtering by decision (approved, denied, etc.)
