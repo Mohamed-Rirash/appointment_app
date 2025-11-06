@@ -119,3 +119,33 @@ class ViewAppointmentCrud:
         total = await db.fetch_val(total_query)
 
         return [dict(row) for row in rows], total
+
+    @staticmethod
+    async def get_all_appointments_by_status(
+        db,
+        status: str,
+        limit: int = 20,
+        offset: int = 0,
+    ):
+        filters = and_(
+            appointment_details.c.status == status.upper(),
+        )
+
+        data_query = (
+            ViewAppointmentCrud._base_query()
+            .where(filters)
+            .order_by(
+                appointment_details.c.appointment_date.asc(),
+                appointment_details.c.time_slotted.asc(),
+            )
+            .limit(limit)
+            .offset(offset)
+        )
+        rows = await db.fetch_all(data_query)
+
+        total_query = select(func.count()).select_from(
+            ViewAppointmentCrud._base_query().where(filters).alias("subq")
+        )
+        total = await db.fetch_val(total_query)
+
+        return [dict(row) for row in rows], total

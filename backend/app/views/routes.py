@@ -93,7 +93,9 @@ async def get_office_appointments_by_status(
 )
 async def search_office_appointments(
     office_id: UUID,
-    q: str = Query(..., min_length=2, max_length=100, description="Search term"),
+    search: str = Query(
+        ..., description="Search term for citizen name, phone, or email"
+    ),
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
     db: Database = Depends(get_db),
@@ -102,10 +104,45 @@ async def search_office_appointments(
     try:
         return await ViewAppointmentService.search_office_appointments(
             office_id=office_id,
-            query_term=q.strip(),
+            query_term=search.strip(),
             db=db,
             limit=limit,
             offset=offset,
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Search failed: {e}")
+
+
+@view_router.get(
+    "/all/appointments",
+    response_model=PaginatedAppointments,
+    summary="Get all appointments",
+    description=(
+        "Retrieve paginated appointments for all offices filtered by status. "
+        "Supported statuses: pending, approved, cancelled, completed, not_shown, denied, postponed."
+        "this is for recipient"
+    ),
+)
+async def get_all_appointments_by_status(
+    status: AppointmentStatus = Query(
+        AppointmentStatus.PENDING,
+        description="Filter appointments by status",
+    ),
+    limit: int = Query(20, ge=1, le=100, description="Number of items per page"),
+    offset: int = Query(0, ge=0, description="Number of items to skip"),
+    db: Database = Depends(get_db),
+    _user: CurrentUser = Depends(
+        require_any_role("admin", "secretary", "reception", "host")
+    ),
+):
+    try:
+        return await ViewAppointmentService.get_all_appointments_by_status(
+            status=status.value,
+            db=db,
+            limit=limit,
+            offset=offset,
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Failed to fetch appointments: {e}"
+        )
