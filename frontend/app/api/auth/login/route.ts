@@ -21,17 +21,17 @@ export async function POST(req: NextRequest) {
       }
     );
 
-    // 2️⃣ Extract token data
+    // 2 Extract token data
     const data = res.data;
     const token = data.access_token;
 
-    // 3️⃣ Fetch user info
+    // 3 Fetch user info
     const apiResponse = await axios.get(`${process.env.API_URL}/users/me`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     const user = apiResponse.data;
-
-    // 4️⃣ Prepare session payload
+    console.log("UUUU", user);
+    // 4Prepare session payload
     const jwtSession: UserSession = {
       id: user.id,
       email: user.email,
@@ -43,9 +43,11 @@ export async function POST(req: NextRequest) {
       roles: user.roles,
       access_token: token,
       expires_at: Math.floor(Date.now() / 1000) + data.expires_in,
+      office_id: user.office_id,
+      position: user.position,
     };
 
-    // 5️⃣ Save session with iron-session
+    // 5 Save session with iron-session
     const nextRes = NextResponse.json({ success: true });
     const session = (await getIronSession(
       req,

@@ -32,8 +32,6 @@ interface Office {
   description: string;
   location: string;
   is_active: boolean;
-  created_at: string;
-  updated_at: string;
 }
 
 type OfficeFormData = z.infer<typeof officeSchema>;
@@ -73,7 +71,7 @@ export function EditOffice({
           <Button
             variant="ghost"
             size="sm"
-            className="text-green-600 hover:text-green-700"
+            className="text-brand hover:text-brand/90 w-full flex items-center justify-start"
 
           >
             <Pencil className="h-4 w-4 mr-1" />

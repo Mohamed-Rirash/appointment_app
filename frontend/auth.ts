@@ -13,6 +13,8 @@ export type UserSession = {
   access_token?: string;
   // expires unix timestamp (seconds)
   expires_at?: number;
+  office_id: string;
+  position: string;
 };
 
 export const sessionOptions: SessionOptions = {
@@ -25,7 +27,6 @@ export const sessionOptions: SessionOptions = {
     path: "/",
   },
 };
-
 
 // helper type for Request handlers
 declare module "iron-session" {

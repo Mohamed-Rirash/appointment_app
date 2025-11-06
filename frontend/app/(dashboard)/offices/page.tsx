@@ -5,10 +5,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus } from "lucide-react";
+import { Download, Plus } from "lucide-react";
 import CreateOfficeForm from "./_components/officeForm";
-import OfficeTable from "./_components/OfficeTable";
 import { getSession } from "@/helpers/actions/getsession";
+import OfficeCards from "./_components/OfficeStatusCards";
+import { Button } from "@/components/ui/button";
+import OfficeCardsSection from "./_components/OfficeCardsSection";
+
 
 export default async function Offices() {
   const session = await getSession()
@@ -16,8 +19,8 @@ export default async function Offices() {
 
   return (
     <>
-      <main className="mx-8 mt-8">
-        <section className="flex justify-between items-center">
+      <main className="mx-8 mt-6">
+        {/* <section className="flex justify-between items-center">
           <div className="">
             <h1 className="font-bold text-2xl">Offices</h1>
             <p className="text-brand-gray text-lg leading-5 w-full max-w-[247px]">
@@ -49,9 +52,55 @@ export default async function Offices() {
               </DialogContent>
             </Dialog>
           </div>
-        </section>
-        <section className="mt-8">
+        </section> */}
+        {/* <section className="mt-8">
         <OfficeTable token={token}/>
+        </section> */}
+        <section >
+          <OfficeCards />
+        </section>
+        <section className="flex justify-between items-center mt-8">
+          <div className="">
+            <h1 className="text-lg font-bold text-brand-black">Office Management</h1>
+            <p className="text-brand-gray font-medium text-sm max-w-[302px] w-full">Manage office location and member assignment</p>
+          </div>
+          <div className="flex gap-x-4">
+            <Button variant={"outline"} className="py-6  px-4 flex items-center  text-lg font-medium rounded-[4px]">
+              {" "}
+              < Download className={`w-7! h-7! text-brand-gray`} />
+              <span className="text-lg font-bold ml-2 text-brand-gray">
+                {" "}
+                Export CSV
+              </span>
+            </Button>
+            <Dialog>
+              <DialogTrigger asChild>
+                <button className="py-3  px-4 flex items-center combined-shadow text-lg font-bold rounded-[4px] bg-gradient-green">
+                  {" "}
+                  <Plus className={`w-7 h-7 text-brand-primary`} />
+                  <span className="text-lg font-bold ml-2 text-brand-primary">
+                    {" "}
+                    Create Offece
+                  </span>
+                </button>
+              </DialogTrigger>
+              <DialogContent className="p-6 max-w-[368px] w-full">
+                <DialogTitle className="text-lg mb-0 font-bold text-center text-brand-black">
+                  Create New Office
+                </DialogTitle>
+
+                <DialogDescription className="text-[14px] max-w-[320px] w-full mx-auto text-center leading-[16px] text-brand-gray">
+                  Add the office’s name, description, and location to register
+                  it in the system
+                </DialogDescription>
+                <CreateOfficeForm token={token} />
+              </DialogContent>
+            </Dialog>
+          </div>
+        </section>
+        {/* search and status */}
+        <section className="mt-8">
+          <OfficeCardsSection token={token} />
         </section>
       </main>
     </>

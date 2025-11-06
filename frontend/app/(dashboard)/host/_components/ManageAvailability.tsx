@@ -1,4 +1,3 @@
-// app/offices/[id]/components/AvailabilityCalendar.tsx
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -6,14 +5,14 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Button } from "@/components/ui/button";
 import clsx from "clsx";
 import { Save, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
-import { format, addWeeks, subWeeks, startOfWeek, endOfWeek, parseISO } from "date-fns";
+import { format } from "date-fns";
 import toast from "react-hot-toast";
+import { client } from "@/helpers/api/client";
 
 const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const times = [
   "8:00", "8:30", "9:00", "9:30", "10:00", "10:30", "11:00", "11:30",
-  "12:00", "12:30", "13:00", "13:30", "14:00", "14:30", "15:00", "15:30",
-  "16:00", "16:30", "17:00", "17:30", "18:00", "18:30"
+  "12:00", "12:30", "13:00", "13:30", "14:00", "14:30",
 ];
 
 interface AvailabilityRecord {
@@ -27,147 +26,228 @@ interface AvailabilityRecord {
 
 interface AvailabilityCalendarProps {
   officeId: string;
+  token?: string;
 }
 
-export default function AvailabilityCalendar({ officeId }: AvailabilityCalendarProps) {
+export default function AvailabilityCalendar({ officeId, token }: AvailabilityCalendarProps) {
   const [selectedSlots, setSelectedSlots] = useState<Set<string>>(new Set());
+  const [savedSlots, setSavedSlots] = useState<Set<string>>(new Set());
   const [isDragging, setIsDragging] = useState(false);
   const [dragMode, setDragMode] = useState<"add" | "remove">("add");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [currentDate, setCurrentDate] = useState<Date>(new Date());
+
 
   const dayMap: Record<string, string> = {
-    "Mon": "MONDAY", "Tue": "TUESDAY", "Wed": "WEDNESDAY", "Thu": "THURSDAY",
-    "Fri": "FRIDAY", "Sat": "SATURDAY", "Sun": "SUNDAY",
+    Mon: "MONDAY", Tue: "TUESDAY", Wed: "WEDNESDAY", Thu: "THURSDAY",
+    Fri: "FRIDAY", Sat: "SATURDAY", Sun: "SUNDAY",
   };
 
   const reverseDayMap: Record<string, string> = {
-    "MONDAY": "Mon", "TUESDAY": "Tue", "WEDNESDAY": "Wed", "THURSDAY": "Thu",
-    "FRIDAY": "Fri", "SATURDAY": "Sat", "SUNDAY": "Sun",
+    MONDAY: "Mon", TUESDAY: "Tue", WEDNESDAY: "Wed", THURSDAY: "Thu",
+    FRIDAY: "Fri", SATURDAY: "Sat", SUNDAY: "Sun",
   };
 
-  // Get week range for display
-  const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
-  const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
-  const formattedDateRange = `${format(weekStart, 'MMM d')} - ${format(weekEnd, 'MMM d, yyyy')}`;
-
-  // Load availability from backend
+  const today = new Date();
+  const formattedDate = format(today, "EEEE, MMMM dd, yyyy");
+  console.log(new Date().toISOString().split("T")[0])
+  // Load availability from backend - FIXED VERSION
   const loadAvailability = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/v1/availability/hosts/${officeId}`);
-      if (!response.ok) throw new Error('Failed to load availability');
-      const data: AvailabilityRecord[] = await response.json();
+      const response = await client.getHotAvailability(officeId, token);
+      console.log("bakce", response)
+      //  Validate response format
+      if (!response) {
+        console.warn("No data received from backend");
+        setSelectedSlots(new Set());
+        setSavedSlots(new Set());
+        return;
+      }
+
+      if (!Array.isArray(response)) {
+        console.error("❌ Expected array but got:", typeof response, response);
+        toast.error("Invalid data format from server");
+        return;
+      }
+
+      if (response.length === 0) {
+        console.log("📭 No availability data found");
+        setSelectedSlots(new Set());
+        setSavedSlots(new Set());
+        return;
+      }
+
+      const data: AvailabilityRecord[] = response;
       convertFromBackendFormat(data);
+
     } catch (error) {
-      console.error('Failed to load availability:', error);
-      toast.error('Failed to load availability');
+      console.error("❌ Failed to load availability:", error);
+      toast.error("Failed to load availability");
     } finally {
       setLoading(false);
     }
-  }, [officeId]);
+  }, [officeId, token]);
 
-  // Convert backend data to selected slots
+
+  // Convert backend data to selected slots with consistent time formatting
   const convertFromBackendFormat = (availability: AvailabilityRecord[]) => {
     const newSelectedSlots = new Set<string>();
 
-    availability.forEach(record => {
-      if (!record.is_recurring) return; // Only handle recurring for now
+    availability.forEach((record) => {
+      if (!record.is_recurring) {
+        console.log("⏩ Skipping non-recurring record:", record);
+        return;
+      }
 
       const day = reverseDayMap[record.daysofweek];
-      if (!day) return;
+      if (!day) {
+        console.warn("❓ Unknown day:", record.daysofweek);
+        return;
+      }
 
-      const startTime = record.start_time.slice(0, 5); // "HH:MM"
-      const endTime = record.end_time.slice(0, 5);
+      try {
+        //  Convert backend time format to match calendar format
+        const startTime = formatTimeForCalendar(record.start_time);
+        const endTime = formatTimeForCalendar(record.end_time);
 
-      // Find all time slots between start and end
-      let currentTime = startTime;
-      while (currentTime < endTime) {
-        newSelectedSlots.add(`${day}-${currentTime}`);
 
-        // Increment by 30 minutes
-        const [hours, minutes] = currentTime.split(':').map(Number);
-        const nextMinutes = minutes + 30;
-        const nextHours = hours + Math.floor(nextMinutes / 60);
-        currentTime = `${nextHours.toString().padStart(2, '0')}:${(nextMinutes % 60).toString().padStart(2, '0')}`;
+        //  Use proper time comparison instead of string comparison
+        if (compareTimes(startTime, endTime) >= 0) {
+          console.warn(`⏭️ Skipping invalid time range: ${startTime} to ${endTime}`);
+          return;
+        }
+
+        // Use consistent time formatting throughout
+        let currentTime = formatTimeConsistently(startTime);
+        const formattedEndTime = formatTimeConsistently(endTime);
+
+        while (compareTimes(currentTime, formattedEndTime) < 0) {
+          const slotKey = `${day}-${currentTime}`;
+          newSelectedSlots.add(slotKey);
+
+
+          // Increment by 30 minutes with consistent formatting
+          currentTime = incrementTimeBy30Minutes(currentTime);
+        }
+      } catch (error) {
+        console.error("❌ Error processing time:", record.start_time, record.end_time, error);
       }
     });
 
     setSelectedSlots(newSelectedSlots);
+    setSavedSlots(new Set(newSelectedSlots));
   };
 
-  // Group consecutive time slots into blocks
+  //  Helper function to ensure consistent time formatting (single-digit hours)
+  const formatTimeConsistently = (time: string): string => {
+    const [hours, minutes] = time.split(":").map(Number);
+    // Always return single-digit format for hours
+    return `${hours}:${minutes.toString().padStart(2, "0")}`;
+  };
+
+  // Helper function to increment time by 30 minutes with consistent formatting
+  const incrementTimeBy30Minutes = (time: string): string => {
+    const [hours, minutes] = time.split(":").map(Number);
+    const nextMinutes = minutes + 30;
+    const nextHours = hours + Math.floor(nextMinutes / 60);
+    const finalMinutes = nextMinutes % 60;
+
+    // Always return single-digit format for hours
+    return `${nextHours}:${finalMinutes.toString().padStart(2, "0")}`;
+  };
+
+  // Helper function to convert backend time to calendar format
+  const formatTimeForCalendar = (backendTime: string): string => {
+    // Backend time: "08:00:00" or "08:00"
+    // Calendar time: "8:00" (remove leading zeros from hour)
+
+    const timePart = backendTime.slice(0, 5); // Get "HH:MM"
+    const [hours, minutes] = timePart.split(":");
+
+    // Remove leading zero from hours: "08" → "8"
+    const formattedHours = parseInt(hours, 10).toString();
+
+    return `${formattedHours}:${minutes}`;
+  };
+
+  // Helper function to compare times properly
+  const compareTimes = (time1: string, time2: string): number => {
+    const [h1, m1] = time1.split(":").map(Number);
+    const [h2, m2] = time2.split(":").map(Number);
+
+    const totalMinutes1 = h1 * 60 + m1;
+    const totalMinutes2 = h2 * 60 + m2;
+
+    return totalMinutes1 - totalMinutes2;
+  };
+
+  // 🧩 Group consecutive time slots (your existing code is fine)
   const groupConsecutiveTimes = (times: string[]): { start: string; end: string }[] => {
     if (times.length === 0) return [];
-
     const sortedTimes = [...times].sort();
     const blocks: { start: string; end: string }[] = [];
-
     let currentBlock = { start: sortedTimes[0], end: sortedTimes[0] };
 
     for (let i = 1; i < sortedTimes.length; i++) {
-      const currentTime = sortedTimes[i];
-      const prevTime = sortedTimes[i - 1];
+      const [prevH, prevM] = sortedTimes[i - 1].split(":").map(Number);
+      const [curH, curM] = sortedTimes[i].split(":").map(Number);
+      const prevMins = prevH * 60 + prevM;
+      const curMins = curH * 60 + curM;
 
-      // Check if times are consecutive (30 min difference)
-      const [prevHours, prevMinutes] = prevTime.split(':').map(Number);
-      const [currentHours, currentMinutes] = currentTime.split(':').map(Number);
-
-      const prevTotalMinutes = prevHours * 60 + prevMinutes;
-      const currentTotalMinutes = currentHours * 60 + currentMinutes;
-
-      if (currentTotalMinutes - prevTotalMinutes === 30) {
-        currentBlock.end = currentTime;
+      if (curMins - prevMins === 30) {
+        currentBlock.end = sortedTimes[i];
       } else {
         blocks.push({ ...currentBlock });
-        currentBlock = { start: currentTime, end: currentTime };
+        currentBlock = { start: sortedTimes[i], end: sortedTimes[i] };
       }
     }
-
     blocks.push(currentBlock);
     return blocks;
   };
 
-  // Convert selected slots to backend format
-  const convertToBackendFormat = (): AvailabilityRecord[] => {
+  // // Convert selected slots to backend format (your existing code is fine)
+  const convertToBackendFormatFromSlots = (slots: Set<string>): AvailabilityRecord[] => {
     const availabilityRecords: AvailabilityRecord[] = [];
-
-    days.forEach(day => {
-      const daySlots = Array.from(selectedSlots)
-        .filter(slot => slot.startsWith(day))
-        .map(slot => slot.split('-')[1]);
-
+    days.forEach((day) => {
+      const daySlots = Array.from(slots)
+        .filter((slot) => slot.startsWith(day))
+        .map((slot) => slot.split("-")[1]);
       const timeBlocks = groupConsecutiveTimes(daySlots);
-
-      timeBlocks.forEach(block => {
-        // Add 30 minutes to end time to make it inclusive
-        const [endHours, endMinutes] = block.end.split(':').map(Number);
+      timeBlocks.forEach((block) => {
+        const [endHours, endMinutes] = block.end.split(":").map(Number);
         const endTotalMinutes = endHours * 60 + endMinutes + 30;
         const finalEndHours = Math.floor(endTotalMinutes / 60);
         const finalEndMinutes = endTotalMinutes % 60;
-        const endTime = `${finalEndHours.toString().padStart(2, '0')}:${finalEndMinutes.toString().padStart(2, '0')}`;
+
+        const formattedStart = `${block.start.padStart(5, "0")}:00`; // ✅ "08:00:00"
+        const formattedEnd = `${finalEndHours.toString().padStart(2, "0")}:${finalEndMinutes
+          .toString()
+          .padStart(2, "0")}:00`; // ✅ "09:30:00"
+
+        const today = new Date().toISOString().split("T")[0];
 
         availabilityRecords.push({
           daysofweek: dayMap[day],
-          start_time: `${block.start}:00.000Z`,
-          end_time: `${endTime}:00.000Z`,
-          is_recurring: true
+          // specific_date: "null",
+          start_time: formattedStart, // ✅ just time
+          end_time: formattedEnd,     // ✅ just time
+          is_recurring: true,
         });
-      });
+      })
     });
-
     return availabilityRecords;
   };
 
+
+
+
+  //  Drag selection logic (your existing code is fine)
   const toggleSlot = (key: string, value: boolean) => {
-    setSelectedSlots(prev => {
+    setSelectedSlots((prev) => {
       const newSet = new Set(prev);
-      if (value) {
-        newSet.add(key);
-      } else {
-        newSet.delete(key);
-      }
+      if (value) newSet.add(key);
+      else newSet.delete(key);
       return newSet;
     });
   };
@@ -187,52 +267,36 @@ export default function AvailabilityCalendar({ officeId }: AvailabilityCalendarP
 
   const handleMouseUp = () => setIsDragging(false);
 
-  // UPDATED: Send data one record at a time
+  //  Save only new slots (your existing code is fine)
   const handleSaveAvailability = async () => {
     setSaving(true);
     try {
-      const backendData = convertToBackendFormat();
-
-      // Clear existing availability first
-      const clearResponse = await fetch(`/api/v1/availability/hosts/${officeId}`, {
-        method: 'DELETE'
-      });
-
-      if (!clearResponse.ok) {
-        throw new Error('Failed to clear existing availability');
+      const newSlots = new Set([...selectedSlots].filter((slot) => !savedSlots.has(slot)));
+      if (newSlots.size === 0) {
+        toast("No new slots to save");
+        setSaving(false);
+        return;
       }
-
-      // Save each availability record one at a time
+      console.log("newSlots", newSlots)
+      const backendData = convertToBackendFormatFromSlots(newSlots);
+      console.log("backendData", backendData)
       for (const record of backendData) {
-        const response = await fetch(`/api/v1/availability/hosts/${officeId}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(record)
-        });
-
-        if (!response.ok) {
-          throw new Error(`Failed to save availability for ${record.daysofweek}`);
-        }
-
-        // Optional: small delay between requests to avoid overwhelming the server
-        await new Promise(resolve => setTimeout(resolve, 100));
+        console.log("shit", record)
+        await client.setHostAvailability(officeId, record, token);
+        await new Promise((r) => setTimeout(r, 100));
       }
-
-      toast.success('Availability saved successfully!');
-      await loadAvailability(); // Reload to confirm
+      toast.success("New availability saved!");
+      setSavedSlots(new Set(selectedSlots));
+      await loadAvailability();
     } catch (error) {
-      console.error('Failed to save availability:', error);
-      toast.error('Failed to save availability');
+      console.error("Failed to save availability:", error);
+      toast.error("Failed to save availability");
     } finally {
       setSaving(false);
     }
   };
 
-  const clearAll = () => {
-    setSelectedSlots(new Set());
-  };
-
-  // Load availability on component mount
+  // ⏱️ Effects
   useEffect(() => {
     loadAvailability();
   }, [loadAvailability]);
@@ -253,18 +317,20 @@ export default function AvailabilityCalendar({ officeId }: AvailabilityCalendarP
     );
   }
 
+  // 🗓️ UI
   return (
     <Card className="p-6 select-none border border-[#eeeeee] bg-white rounded-lg shadow-sm">
       <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <CardTitle className="text-xl font-bold text-brand-black">Manage Availability</CardTitle>
+          <CardTitle className="text-xl font-bold text-brand-black">
+            Manage Availability
+          </CardTitle>
           <CardDescription className="text-sm text-gray-500">
             Click and drag to create availability blocks
           </CardDescription>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          {/* Weekly toggle */}
           <Button
             variant="outline"
             size="sm"
@@ -273,64 +339,37 @@ export default function AvailabilityCalendar({ officeId }: AvailabilityCalendarP
             Weekly
           </Button>
 
-          {/* Date navigation */}
           <div className="flex items-center gap-2 text-sm font-medium">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => setCurrentDate(subWeeks(currentDate, 1))}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
+            <ChevronLeft className="h-4 w-4" />
             <span className="min-w-[180px] text-center text-brand-black">
-              {formattedDateRange}
+              {formattedDate}
             </span>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => setCurrentDate(addWeeks(currentDate, 1))}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+            <ChevronRight className="h-4 w-4" />
           </div>
 
-          {/* Action buttons */}
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={clearAll}
-              disabled={saving}
-            >
-              Clear All
-            </Button>
-            <Button
-              className="bg-gradient-to-r from-[#29E05F] to-[#0F9938] text-white text-sm font-bold rounded-md px-4 py-2"
-              onClick={handleSaveAvailability}
-              disabled={saving}
-            >
-              {saving ? (
-                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-              ) : (
-                <Save className="mr-1.5 h-4 w-4" />
-              )}
-              {saving ? "Saving..." : "Save Availability"}
-            </Button>
-          </div>
+          <Button
+            className="bg-linear-to-r from-[#29E05F] to-[#0F9938] text-white text-sm font-bold rounded-md px-4 py-2"
+            onClick={handleSaveAvailability}
+            disabled={saving}
+          >
+            {saving ? (
+              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="mr-1.5 h-4 w-4" />
+            )}
+            {saving ? "Saving..." : "Save Availability"}
+          </Button>
         </div>
       </CardHeader>
 
       <CardContent className="mt-6">
-        {/* Legend */}
         <div className="flex justify-between items-center mb-4">
           <div className="text-sm text-gray-600">
             Selected slots: {selectedSlots.size}
           </div>
           <div className="flex items-center gap-4 text-xs text-gray-600">
             <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 bg-[#29E05F] rounded-sm"></div>
+              <div className="w-3 h-3 bg-brand rounded-sm"></div>
               <span>Available</span>
             </div>
             <div className="flex items-center gap-1.5">
@@ -340,12 +379,11 @@ export default function AvailabilityCalendar({ officeId }: AvailabilityCalendarP
           </div>
         </div>
 
-        {/* Calendar Grid */}
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr>
-                <th className="w-16 p-2 text-left text-gray-500 font-medium"></th>
+                <th className="w-16 p-2 text-left text-red-500 font-medium"></th>
                 {days.map((day) => (
                   <th key={day} className="text-center text-gray-600 font-medium py-2">
                     {day}
@@ -356,7 +394,7 @@ export default function AvailabilityCalendar({ officeId }: AvailabilityCalendarP
             <tbody>
               {times.map((time) => (
                 <tr key={time}>
-                  <td className="text-gray-500 pr-2 text-right p-2 text-sm">{time}</td>
+                  <td className="text-sm text-brand-gray pr-2">{time}</td>
                   {days.map((day) => {
                     const key = `${day}-${time}`;
                     const isActive = selectedSlots.has(key);
@@ -366,13 +404,13 @@ export default function AvailabilityCalendar({ officeId }: AvailabilityCalendarP
                         onMouseDown={() => handleMouseDown(day, time)}
                         onMouseEnter={() => handleMouseEnter(day, time)}
                         className={clsx(
-                          "rounded cursor-pointer transition-colors duration-150 border border-transparent",
+                          "border border-[#eeeeee] cursor-pointer transition-colors duration-100",
                           isActive
-                            ? "bg-[#29E05F] hover:bg-[#0F9938]"
-                            : "bg-gray-50 hover:bg-gray-100"
+                            ? "bg-brand hover:bg-brand/90"
+                            : "bg-white hover:bg-gray-50"
                         )}
-                        style={{ height: "40px", width: "100px" }}
-                      />
+                        style={{ height: "32px", width: "100px" }}
+                      ></td>
                     );
                   })}
                 </tr>
@@ -384,3 +422,4 @@ export default function AvailabilityCalendar({ officeId }: AvailabilityCalendarP
     </Card>
   );
 }
+

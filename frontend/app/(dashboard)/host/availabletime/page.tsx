@@ -3,8 +3,11 @@ import { ArrowLeft } from 'lucide-react'
 import ManageAvailability from '../_components/ManageAvailability'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
+import { getSession } from '@/helpers/actions/getsession'
 
-export default function page() {
+export default async function Availability() {
+    const session = await getSession()
+    const token = session?.user.access_token
     return (
         <>
             <main className='px-6 pt-8'>
@@ -20,7 +23,7 @@ export default function page() {
                     </Link>
                 </div>
                 <section className='mt-8'>
-                    <ManageAvailability officeId={"akdjfajdsfjasjdf"} />
+                    <ManageAvailability officeId={session?.user.office_id} token={token} />
                 </section>
             </main>
         </>

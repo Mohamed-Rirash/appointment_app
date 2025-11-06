@@ -35,6 +35,15 @@ interface RefreshResponse {
   expires_in: number;
 }
 
+interface AvailabilityRecord {
+  id?: string;
+  daysofweek: string;
+  specific_date?: string;
+  start_time: string;
+  end_time: string;
+  is_recurring: boolean;
+}
+
 export const client = {
   // Set Password (first-time setup)
   async setPassword(data: { token: string; new_password: string }) {
@@ -279,6 +288,8 @@ export const client = {
     return response.data;
   },
 
+  // OFFICESSS
+
   // Get Offices
   async getOffices(token: string) {
     const response = await apiClient.get("/offices", {
@@ -289,6 +300,17 @@ export const client = {
 
   // Get Office
   async getOffice(token?: string, id?: string) {
+    // Validate id before making the request
+    if (!id || typeof id !== "string") {
+      throw new Error("Office ID is required and must be a string");
+    }
+
+    // Validate token
+    if (!token) {
+      throw new Error("Authentication token is required");
+    }
+    console.log("from client id:", id);
+
     const response = await apiClient.get(`/offices/${id}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -342,16 +364,155 @@ export const client = {
     );
     return response.data;
   },
+  // Get members of an office
+  async getOfficeMembers(officeId: string, token: string) {
+    const response = await apiClient.get(`/offices/${officeId}/memberships`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  },
+  // Get unassigned users
+  async getUnassignedUsers(token: string) {
+    try {
+      const response = await apiClient.get("/offices/unassigned", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(
+        error.response?.data?.detail || "Failed to fetch unassigned users"
+      );
+    }
+  },
+
+  //assing user to office
+
+  async assigntoOffice(
+    data: { user_id: string; position: string },
+    officeId: string,
+    token?: string
+  ) {
+    const response = await apiClient.post(
+      `/offices/${officeId}/memberships`,
+      data,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+    return response.data;
+  },
+  //
+
+  // host availability
+  async getHotAvailability(officeId: string, token?: string) {
+    try {
+      const responce = await apiClient.get(`/availability/hosts/${officeId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return responce.data;
+    } catch (error: any) {
+      error.response?.data?.detail || "Failed to get availability";
+    }
+  },
 
   // Set host availability
-  async setHostAvailability(officeId: string, data: any[]) {
-    // try {
-    //   const response = await apiClient.post(`/offices/${officeId}/availability`, data, {
-    //     headers: { Authorization: `Bearer ${token}` },
-    //   });
-    //   return response.data;
-    // } catch (error: any) {
-    //   throw new Error(error.response?.data?.detail || "Failed to set availability");
-    // }
+  async setHostAvailability(
+    officeId: string,
+    data: AvailabilityRecord,
+    token?: string
+  ) {
+    try {
+      const response = await apiClient.post(
+        `/availability/hosts/${officeId}`,
+        data,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      return response.data;
+    } catch (error: any) {
+      throw new Error(
+        error.response?.data?.detail || "Failed to set availability"
+      );
+    }
+  },
+
+  // Get Slot availability
+
+  async getSlotAvailability(officeId: string, data: string, token?: string) {
+    console.log("OFFICE ID client", officeId);
+
+    console.log("TOKEN client", token);
+    try {
+      const response = await apiClient.get(
+        `/availability/hosts/${officeId}/slots?target_date=${data}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      return response.data;
+    } catch (error: any) {
+      error.response?.data?.detail || "Failed to set availability";
+    }
+  },
+
+  // create appoint
+
+  async createAppointment(data, token?: string) {
+    console.log("OFFICE ID client", data);
+
+    try {
+      const response = await apiClient.post(
+        `/appointments/with-citizen`,
+        data,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      return response.data;
+    } catch (error: any) {
+      error.response?.data?.detail || "Failed to set availability";
+    }
+  },
+
+  // Get host dashboard stats
+  async getHostDashboardStats(token: string) {
+    try {
+      const response = await apiClient.get("/host/dashboard/stats", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(
+        error.response?.data?.detail || "Failed to fetch host dashboard stats"
+      );
+    }
+  },
+
+  // Get appointment queue
+  async getAppointmentQueue(token: string) {
+    try {
+      const response = await apiClient.get("/admin/appointments/queue", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(
+        error.response?.data?.detail || "Failed to fetch appointment queue"
+      );
+    }
+  },
+  // Get today's appointments
+  async getTodaysAppointments(token: string) {
+    try {
+      const response = await apiClient.get("/admin/appointments/today", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(
+        error.response?.data?.detail || "Failed to fetch today's appointments"
+      );
+    }
   },
 };

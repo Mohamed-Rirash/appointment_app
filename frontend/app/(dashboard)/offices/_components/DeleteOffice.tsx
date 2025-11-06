@@ -31,7 +31,7 @@ export function DeleteOffice({
                 <Button
                     variant="ghost"
                     size="sm"
-                    className="text-red-600 hover:text-red-800 hover:bg-red-50 px-2 py-1 text-sm"
+                    className="text-red-600 hover:text-red-800 hover:bg-red-50 w-full flex items-center justify-start"
                     disabled={isDeleting}
                 >
                     <Trash2 className="h-4 w-4 mr-1" />
@@ -56,7 +56,7 @@ export function DeleteOffice({
                         disabled={isDeleting}
                         className="bg-red-600 hover:bg-red-700"
                     >
-                        {isDeleting ? "Deleting..." : "Yes, delete user"}
+                        {isDeleting ? "Deleting..." : "Yes, delete Office"}
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>

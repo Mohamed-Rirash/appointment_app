@@ -9,9 +9,6 @@ import { Button } from "@/components/ui/button";
 import { MoreHorizontal } from "lucide-react";
 import { ResendInviteMenuItem } from "./ResendInviteMenuItem";
 import { ActivateUserMenuItem } from "./ActivateUserMenuItem";
-import { DeactivateUserMenuItem } from "./DeactivateUserMenuItem";
-import { AssignRoleModal } from "./AssignRoleModal";
-import { RevokeRoleMenuItem } from "./RevokeRoleMenuItem";
 
 export function UserActionsDropdown({
   userId,
@@ -35,17 +32,6 @@ export function UserActionsDropdown({
       >
         <ResendInviteMenuItem userId={userId} token={token} />
         <ActivateUserMenuItem userId={userId} token={token} />
-        <DeactivateUserMenuItem userId={userId} token={token} />
-        <AssignRoleModal
-          userId={userId}
-          currentRole={currentRole}
-          token={token}
-        />
-        <RevokeRoleMenuItem
-          userId={userId}
-          roleName={currentRole}
-          token={token}
-        />
       </DropdownMenuContent>
     </DropdownMenu>
   );

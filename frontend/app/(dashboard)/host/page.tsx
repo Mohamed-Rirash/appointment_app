@@ -4,6 +4,9 @@ import { AvailabilityDialog } from "./_components/AvailabilityDialog";
 import { Button } from "@/components/ui/button";
 import { Calendar, Clock } from "lucide-react";
 import Link from "next/link";
+import AppointmentQueueSection from "./_components/AppointmentQueueSection";
+import TodaysScheduleCard from "./_components/TodaysScheduleCard";
+import AvailableOverview from "./_components/AvailableOverview";
 
 export default async function page() {
   const session = await getSession();
@@ -11,6 +14,7 @@ export default async function page() {
   if (session?.user.roles[0] !== "host") {
     return null
   }
+  console.log("userrr", session?.user)
   return (
     <>
       <main className="px-6 pt-12">
@@ -48,8 +52,15 @@ export default async function page() {
         <section className="mt-12">
           <DashboardStatsCardhost token={token} />
         </section>
-
-
+        <section className="mt-12">
+          <AppointmentQueueSection token={token} />
+        </section>
+        <section className="mt-12">
+          <TodaysScheduleCard token={token} />
+        </section>
+        <section className="my-12">
+          <AvailableOverview officeId={session?.user.office_id} token={token} />
+        </section>
       </main>
     </>
   );
