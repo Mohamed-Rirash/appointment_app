@@ -85,7 +85,7 @@ async def create_with_citizen(
 
         error_msg = str(e)
         error_type = type(e).__name__
-        error_traceback = traceback.format_exc()
+        _error_traceback = traceback.format_exc()
 
         raise HTTPException(
             status_code=500,
@@ -117,14 +117,11 @@ async def sse_endpoint(request: Request, office_id: str = Query(...)):
 
             while True:
                 if await request.is_disconnected():
-                    print(f"📡 Client disconnected from office {office_id}")
                     break
                 data = await queue.get()
                 yield data
         finally:
             office_connections[office_id].remove(queue)
-            print(f"📡 Removed connection for office {office_id}")
-            print(f"   Remaining connections: {len(office_connections[office_id])}")
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
@@ -132,12 +129,12 @@ async def sse_endpoint(request: Request, office_id: str = Query(...)):
 @appointment_router.patch("/{appointment_id}/decision")
 async def decide_appointment(
     appointment_id: UUID,
+    background_tasks: BackgroundTasks,
     status: AppointmentStatus = Query(
         ..., description="Decision status: approved or denied"
     ),
     office_id: UUID = Query(..., description="Office ID for verification"),
     reason_data: sch.AppointmentDecisionReason | None = None,
-    background_tasks: BackgroundTasks = None,
     db: Database = Depends(get_db),
     current_user: CurrentUser = Depends(require_any_role("host", "secretary")),
 ):
@@ -238,9 +235,6 @@ async def decide_appointment(
                                 background_tasks=background_tasks,
                                 template_name="appointments/appointment-approved-inline.html",
                             )
-                            print(
-                                f"📧 Approval email notification queued for {appointment_details.citizen_email}"
-                            )
 
                     elif status == AppointmentStatus.DENIED:
                         # Send SMS notification
@@ -272,12 +266,9 @@ async def decide_appointment(
                                 background_tasks=background_tasks,
                                 template_name="appointments/appointment-denied-inline.html",
                             )
-                            print(
-                                f"📧 Denial email notification queued for {appointment_details.citizen_email}"
-                            )
             except Exception as e:
                 # Log error but don't fail the request
-                print(f"Failed to queue notifications: {e!s}")
+                raise HTTPException(status_code=500, detail=str(e))
 
         return updated_appointment
 
@@ -372,12 +363,9 @@ async def postpone_appointment(
                             background_tasks=background_tasks,
                             template_name="appointments/appointment-approved-inline.html",
                         )
-                        print(
-                            f"📧 Approval email notification queued for {appointment_details.citizen_email}"
-                        )
             except Exception as e:
                 # Log error but don't fail the request
-                print(f"Failed to queue notifications: {e!s}")
+                raise HTTPException(status_code=500, detail=str(e))
 
         return updated_appointment
 
@@ -402,7 +390,7 @@ async def postpone_appointment(
 async def edit_appointment(
     appointment_id: UUID,
     update_data: sch.AppointmentUpdate,
-    background_tasks: BackgroundTasks,
+    _background_tasks: BackgroundTasks,
     db: Database = Depends(get_db),
     current_user: CurrentUser = Depends(require_any_role("reception")),
 ):
@@ -417,7 +405,6 @@ async def edit_appointment(
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         # Unexpected server error: log and return 500
-        print(f"Unexpected error editing appointment {appointment_id}: {e!s}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -455,7 +442,7 @@ async def cancel_appointment(
                     )
             except Exception as e:
                 # Log error but don't fail the request
-                print(f"Failed to queue SMS notification: {e!s}")
+                raise HTTPException(status_code=500, detail=str(e))
 
         return updated_appointment
 
@@ -564,7 +551,7 @@ async def get_appointment_history(
     citizen_id: UUID | None = Query(None, description="Filter by specific citizen"),
     host_id: UUID | None = Query(None, description="Filter by specific host"),
     db: Database = Depends(get_db),
-    current_user: CurrentUser = Depends(
+    _current_user: CurrentUser = Depends(
         require_any_role("host", "secretary", "reception")
     ),
 ):
@@ -592,7 +579,7 @@ async def get_appointment_history(
 async def get_all_me_appointments(
     db: Database = Depends(get_db),
     user: CurrentUser = Depends(require_any_role("host", "secretary", "reception")),
-    when: date = Query(...),  # FIX: make it to days date by default
+    when: date = Query(...),
 ):
     return AppointmentService.get_my_appointments(db, user.id, when)
 
@@ -606,7 +593,7 @@ async def get_all_me_appointments(
 async def print_appointment_slip(
     appointment_id: UUID,
     db: Database = Depends(get_db),
-    current_user: CurrentUser = Depends(require_any_role("reception", "security")),
+    _current_user: CurrentUser = Depends(require_any_role("reception", "security")),
 ):
     try:
         slip_data = await AppointmentService.generate_appointment_slip(
