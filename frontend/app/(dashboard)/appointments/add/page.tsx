@@ -1,7 +1,3 @@
-
-
-
-import { client } from '@/helpers/api/client'
 import AddForm from './_components/addForm'
 import { getSession } from '@/helpers/actions/getsession'
 import { redirect } from 'next/navigation';
@@ -16,9 +12,10 @@ export default async function AddAppointment() {
 
 
 
-    if (role && role !== "reception" && role !== "host") {
+       const allowedRoles = ["host", "secretary", "reception"];
+    if (!allowedRoles.includes(role)) {
         redirect("/");
-        return null
+        return null;
     }
 
     if (!token) {

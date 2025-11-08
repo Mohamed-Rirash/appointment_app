@@ -7,13 +7,18 @@ import Link from "next/link";
 import AppointmentQueueSection from "./_components/AppointmentQueueSection";
 import TodaysScheduleCard from "./_components/TodaysScheduleCard";
 import AvailableOverview from "./_components/AvailableOverview";
+import { redirect } from "next/navigation";
 
 export default async function page() {
   const session = await getSession();
   const token = session?.user.access_token;
-  if (session?.user.roles[0] !== "host") {
-    return null
-  }
+  const officeId = session?.user.office_id
+  const role = session?.user.roles[0]
+    const allowedRoles = ["host", "secretary", "reception"];
+    if (!allowedRoles.includes(role)) {
+        redirect("/");
+        return null;
+    }
   console.log("userrr", session?.user)
   return (
     <>
@@ -41,7 +46,7 @@ export default async function page() {
             <AvailabilityDialog>
               <Button
                 variant="outline"
-                className="font-bold py-6 px-8 rounded-[4px]"
+                className="font-bold py-6 px-8 rounded-sm"
               >
                 <Calendar className="h-5 w-5 mr-2" />
                 View Calendar
@@ -53,7 +58,7 @@ export default async function page() {
           <DashboardStatsCardhost token={token} />
         </section>
         <section className="mt-12">
-          <AppointmentQueueSection token={token} />
+          <AppointmentQueueSection token={token} office_id={officeId}/>
         </section>
         <section className="mt-12">
           <TodaysScheduleCard token={token} />

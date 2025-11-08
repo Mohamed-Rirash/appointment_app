@@ -457,7 +457,6 @@ export const client = {
   },
 
   // create appoint
-
   async createAppointment(data, token?: string) {
     console.log("OFFICE ID client", data);
 
@@ -489,10 +488,12 @@ export const client = {
     }
   },
 
+
   // Get appointment queue
-  async getAppointmentQueue(token: string) {
+  async getAppointmentQueue(token: string,office_id:string,limit:number,offset:number) {
+    console.log("Client",office_id)
     try {
-      const response = await apiClient.get("/admin/appointments/queue", {
+      const response = await apiClient.get(`/views/${office_id}/appointments?status=PENDING&limit=${limit}&offset=${offset}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       return response.data;

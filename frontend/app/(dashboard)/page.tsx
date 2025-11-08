@@ -5,6 +5,7 @@ import OfficeOverviewSection from "./_components/OfficeOverviewSection";
 import RecentUsersTable from "./_components/RecentUsersTable";
 import RecentActivitySection from "./_components/RecentActivitySection";
 import DashboardFooter from "./_components/Footer";
+import { redirect } from "next/navigation";
 
 
 export default async function Dashboard() {
@@ -12,12 +13,13 @@ export default async function Dashboard() {
   const token = session?.user.access_token
 
   if (session?.user.roles[0] !== "admin") {
+    redirect("/")
     return null
   }
 
   return (
-    <>
-      <main className="px-6 pt-12">
+ <>
+  <main className="px-6 pt-12 ">
         <div className="">
           <h1 className="font-bold text-lg">Welcome, {session?.user.first_name} </h1>
           <p className="text-ms text-brand-gray ">System Overview & Management</p>
@@ -42,6 +44,8 @@ export default async function Dashboard() {
       <footer>
         <DashboardFooter user={session?.user} />
       </footer>
-    </>
+ </>
+     
+  
   );
 }

@@ -183,7 +183,7 @@ export default function AddForm({ office_id, host_id, hostName, token }: MultiSt
                     purpose: data.purpose,
                     appointment_date: data.date.toISOString(),
                     time_slotted: data.timeSlot,
-                    status: "pending"
+                    status: "PENDING"
                 }
             }
 
@@ -197,6 +197,7 @@ export default function AddForm({ office_id, host_id, hostName, token }: MultiSt
             toast.success(result.message)
             setSuccess(true)
             form.reset()
+            setStep(1)
 
 
         } catch (error) {
@@ -209,12 +210,12 @@ export default function AddForm({ office_id, host_id, hostName, token }: MultiSt
     console.log("slot", timeSlots)
 
 
-    if (success) {
-        return <div className="">
-            <h1>Appointmetn created</h1>
-            <Link href={"/appointments/add"}>  <Button>Add new Appointment</Button></Link>
-        </div>
-    }
+    // if (success) {
+    //     return <div className="">
+    //         <h1>Appointmetn created</h1>
+    //         <Link href={"/appointments/add"}>  <Button>Add new Appointment</Button></Link>
+    //     </div>
+    // }
 
     return (
         <div className="max-w-4xl mx-auto p-6">
@@ -443,8 +444,6 @@ export default function AddForm({ office_id, host_id, hostName, token }: MultiSt
                                             </CardHeader>
                                             <CardContent>
                                                 <p className="text-sm"><strong>Purpose:</strong> {formData.purpose}</p>
-                                                <p className="text-sm text-muted-foreground"><strong>Host ID:</strong> {host_id}</p>
-                                                <p className="text-sm text-muted-foreground"><strong>Office ID:</strong> {office_id}</p>
                                             </CardContent>
                                         </Card>
                                     </div>
