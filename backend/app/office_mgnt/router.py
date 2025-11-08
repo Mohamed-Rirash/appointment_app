@@ -5,23 +5,16 @@ from databases import Database
 from fastapi import APIRouter, Depends, Query, status
 
 from app.admin.config import AdminLevel
-from app.auth.dependencies import (
-    CurrentUser,
-    require_any_role,
-    require_authentication,
-    require_role,
-)
+from app.auth.dependencies import (CurrentUser, require_any_role,
+                                   require_authentication, require_role)
 from app.auth.schemas import UserRead
 from app.database import get_db
 from app.office_mgnt import schemas as sch
-from app.office_mgnt.services import (
-    AvailabilityService,
-    HostAssignmentService,
-    OfficeMembershipService,
-    OfficeSearchService,
-    OfficeService,
-    OfficeStatsService,
-)
+from app.office_mgnt.services import (AvailabilityService,
+                                      HostAssignmentService,
+                                      OfficeMembershipService,
+                                      OfficeSearchService, OfficeService,
+                                      OfficeStatsService)
 
 router = APIRouter(
     prefix="/offices",
@@ -81,7 +74,7 @@ async def list_offices(
         regex="^(active|deactivated)$",
         description="Filter offices by status (active or deactivated).",
     ),
-    _admin: CurrentUser = Depends(require_role(AdminLevel.ADMIN)),
+    _user: CurrentUser = Depends(require_any_role("admin", "reception")),
     db: Database = Depends(get_db),
 ):
     if status_filter is None:
