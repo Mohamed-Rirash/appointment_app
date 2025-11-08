@@ -28,6 +28,7 @@ import { cn } from "@/libs/utils";
 import { client } from "@/helpers/api/client";
 import toast from "react-hot-toast";
 import { Textarea } from "@/components/ui/textarea";
+import { useLocalDate } from "@/helpers/hooks/useLocalDate";
 
 
 // Zod schemas for validation
@@ -134,31 +135,33 @@ export default function AddForm({
   //   loadSlots();
   // }, [office_id, formData.date]);
   // Load time slots when office or date changes
-  useEffect(() => {
-    if (!office_id || !host_id || !formData.date) {
+// Load time slots when office or date changes
+const localDate = useLocalDate(formData.date);
+
+useEffect(() => {
+  if (!office_id || !host_id || !localDate) {
+    setTimeSlots([]);
+    return;
+  }
+
+  console.log("Selected local date:", localDate);
+
+  const loadSlots = async () => {
+    setLoadingSlots(true);
+    try {
+      const data = await client.getSlotAvailability(office_id, localDate, token);
+      console.log("Available slots:", data);
+      setTimeSlots(data);
+    } catch (err) {
+      console.error("Failed to load slots:", err);
       setTimeSlots([]);
-      return;
+    } finally {
+      setLoadingSlots(false);
     }
+  };
 
-
-// In your useEffect:
-const tday = format(formData.date, 'yyyy-MM-dd');
-console.log("date", tday);
-    const loadSlots = async () => {
-      setLoadingSlots(true);
-      try {
-        const data = await client.getSlotAvailability(office_id, tday, token);
-        console.log("DATEEE", data);
-        setTimeSlots(data);
-      } catch (err) {
-        console.error("Failed to load slots:", err);
-        setTimeSlots([]);
-      } finally {
-        setLoadingSlots(false);
-      }
-    };
-    loadSlots();
-  }, [office_id, formData.date, host_id, token]);
+  loadSlots();
+}, [office_id, localDate, host_id, token]);
 
   // Format phone number
   const formatPhoneNumber = (value: string) => {
