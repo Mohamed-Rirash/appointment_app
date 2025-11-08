@@ -1,15 +1,14 @@
 import { useMemo } from "react";
 
-export function useLocalDate(dateInput?: string | Date | null) {
+export function useLocalDate(dateInput?: Date | null) {
   return useMemo(() => {
     if (!dateInput) return null;
 
-    // Convert to string first if it’s a Date
-    const date =
-      typeof dateInput === "string" ? dateInput : dateInput.toISOString();
+    // Get the local timezone date (not UTC)
+    const year = dateInput.getFullYear();
+    const month = String(dateInput.getMonth() + 1).padStart(2, "0");
+    const day = String(dateInput.getDate()).padStart(2, "0");
 
-    // Split YYYY-MM-DD if string format
-    const parts = date.split("T")[0];
-    return parts; // this guarantees YYYY-MM-DD with no timezone shift
+    return `${year}-${month}-${day}`; // "YYYY-MM-DD" in your local timezone
   }, [dateInput]);
 }
