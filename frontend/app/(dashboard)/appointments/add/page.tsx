@@ -8,7 +8,7 @@ export default async function AddAppointment() {
 
     // Handle missing session
     if (!session?.user) {
-      redirect("/login");
+      redirect("/Signin");
     }
 
     const { user } = session;
@@ -17,10 +17,7 @@ export default async function AddAppointment() {
     const hostId = user?.id;
     const role = user?.roles?.[0];
 
-    // Build host name safely
-    const hostName =
-      [user?.first_name, user?.last_name].filter(Boolean).join(" ") ||
-      "Unknown User";
+  
 
     // Authorization check
     const allowedRoles = ["host", "secretary", "reception"];

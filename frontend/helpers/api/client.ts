@@ -44,6 +44,22 @@ interface AvailabilityRecord {
   is_recurring: boolean;
 }
 
+
+export interface Appointment {
+  appointment_id: string;
+  host_first_name: string;
+  host_last_name: string;
+  citizen_firstname: string;
+  citizen_lastname: string;
+  citizen_email: string;
+  citizen_phone: string;
+  purpose: string;
+  appointment_date: string; // ISO 8601
+  time_slotted: string;     // "HH:mm:ss"
+  status: "PENDING" | "APPROVED" | "DENIED" | "POSTPONED" | "CANCELED";
+  office_id: string;
+  created_at: string;
+}
 export const client = {
   // Set Password (first-time setup)
   async setPassword(data: { token: string; new_password: string }) {
@@ -516,4 +532,28 @@ export const client = {
       );
     }
   },
+
+  // get my appointment i create
+  // Get current user's appointments (host or secretary)
+async getMyAppointments(
+  token: string,
+  on_date?: string,
+  limit: number = 20,
+  offset: number = 0
+) {
+  const params = new URLSearchParams();
+  if (on_date) params.append("on_date", on_date);
+  params.append("limit", limit.toString());
+  params.append("offset", offset.toString());
+
+  const response = await apiClient.get(`/views/my/appointments?${params}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data as {
+    total: number;
+    limit: number;
+    offset: number;
+    appointments: Appointment[];
+  };
+}
 };

@@ -5,95 +5,165 @@ import AppointmentList from "./AppointmentList";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, List } from "lucide-react";
+import { Calendar, List, Users, UserPlus } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
-interface formData {
-    hostId: string
-    officeId: string
-    token?: string
+interface AppointmentManagerProps {
+    hostId: string;
+    officeId: string;
+    token?: string;
 }
 
-export default function AppointmentManager({ officeId, hostId, token }: formData) {
+export default function AppointmentManager({ officeId, hostId, token }: AppointmentManagerProps) {
   const [activeTab, setActiveTab] = useState('book');
 
   return (
-    <div className="w-full max-w-6xl mx-auto p-4 space-y-6">
-      {/* Header */}
-      <div className="text-center space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">Appointment Manager</h1>
-        <p className="text-muted-foreground">
-          Book new appointments or manage your existing ones
+    <div className="w-full max-w-7xl mx-auto p-4 space-y-8">
+      {/* Header Section */}
+      <div className="text-center space-y-4">
+        <div className="flex items-center justify-center gap-3">
+          <div className="p-3 bg-brand/10 rounded-full">
+            <Users className="w-8 h-8 text-brand" />
+          </div>
+          <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
+            Appointment Management
+          </h1>
+        </div>
+        <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+          Create and manage citizen appointments efficiently. 
+          Streamline visit scheduling and track all bookings.
         </p>
+        <Badge variant="secondary" className="px-4 py-1.5 text-sm font-medium">
+          <UserPlus className="w-3 h-3 mr-1.5" />
+          Reception Management System
+        </Badge>
       </div>
 
-      {/* Tabs Section */}
-      <Card className="shadow-lg border-0">
+      {/* Main Tabs Section */}
+      <Card className="shadow-sm border border-border/50 bg-card/50 backdrop-blur-sm">
         <CardContent className="p-0">
           <Tabs 
             value={activeTab} 
             onValueChange={setActiveTab}
             className="w-full"
           >
-            <div className="border-b">
-              <TabsList className="grid w-full grid-cols-2 h-14 rounded-none bg-transparent p-0">
+            {/* Enhanced Tab Headers */}
+            <div className=" bg-gradient-to-b from-background to-background/95">
+              <TabsList className="grid w-full grid-cols-2 h-16 rounded-none bg-transparent p-0">
                 <TabsTrigger 
                   value="book" 
-                  className="relative py-4 data-[state=active]:shadow-none rounded-none border-b-2 data-[state=active]:border-primary data-[state=inactive]:border-transparent data-[state=inactive]:bg-transparent transition-all"
+                  className="relative py-5 data-[state=active]:shadow-none rounded-none data-[state=active]:text-brand data-[state=inactive]:text-muted-foreground data-[state=inactive]:bg-transparent data-[state=active]:bg-transparent transition-all group"
                 >
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4" />
-                    <span className="font-semibold">Book Appointment</span>
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-brand/10 group-data-[state=active]:bg-brand/20 transition-colors">
+                      <UserPlus className="w-5 h-5" />
+                    </div>
+                    <div className="text-left">
+                      <span className="font-semibold text-lg block">Create Appointment</span>
+                      <span className="text-xs text-muted-foreground group-data-[state=active]:text-brand/70">
+                        Schedule for citizen
+                      </span>
+                    </div>
                   </div>
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-transparent group-data-[state=active]:bg-brand transition-colors" />
                 </TabsTrigger>
+                
                 <TabsTrigger 
                   value="view" 
-                  className="relative py-4 data-[state=active]:shadow-none rounded-none border-b-2 data-[state=active]:border-primary data-[state=inactive]:border-transparent data-[state=inactive]:bg-transparent transition-all"
+                  className="relative py-5 data-[state=active]:shadow-none rounded-none data-[state=active]:text-brand data-[state=inactive]:text-muted-foreground data-[state=inactive]:bg-transparent data-[state=active]:bg-transparent transition-all group"
                 >
-                  <div className="flex items-center gap-2">
-                    <List className="w-4 h-4" />
-                    <span className="font-semibold">My Appointments</span>
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-brand/10 group-data-[state=active]:bg-brand/20 transition-colors">
+                      <List className="w-5 h-5" />
+                    </div>
+                    <div className="text-left">
+                      <span className="font-semibold text-lg block">Appointment Records</span>
+                      <span className="text-xs text-muted-foreground group-data-[state=active]:text-brand/70">
+                        View and manage all bookings
+                      </span>
+                    </div>
                   </div>
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-transparent group-data-[state=active]:bg-brand transition-colors" />
                 </TabsTrigger>
               </TabsList>
             </div>
 
-            <div className="p-6">
-              <TabsContent value="book" className="m-0">
+            {/* Tab Content */}
+            <div className="p-8">
+              <TabsContent value="book" className="m-0 space-y-6">
+                <div className="space-y-2">
+                  <h2 className="text-2xl font-semibold text-foreground">Schedule Citizen Visit</h2>
+                  <p className="text-muted-foreground">
+                    Enter citizen details and schedule their appointment. 
+                    All fields are required to ensure proper booking.
+                  </p>
+                </div>
                 <AddForm office_id={officeId} token={token} host_id={hostId} />
               </TabsContent>
               
-              <TabsContent value="view" className="m-0">
-                <AppointmentList />
+              <TabsContent value="view" className="m-0 space-y-6">
+                <div className="space-y-2">
+                  <h2 className="text-2xl font-semibold text-foreground">All Appointments</h2>
+                  <p className="text-muted-foreground">
+                    Overview of scheduled visits. Monitor status, manage bookings, 
+                    and track citizen appointments.
+                  </p>
+                </div>
+                <AppointmentList token={token}/>
               </TabsContent>
             </div>
           </Tabs>
         </CardContent>
       </Card>
 
-      {/* Mobile View - Alternative Button Layout */}
-      <div className="block md:hidden">
-        <Card>
-          <CardContent className="p-4">
-            <div className="grid grid-cols-2 gap-2">
+      {/* Mobile Optimized View */}
+      <div className="block lg:hidden">
+        <Card className="shadow-sm border border-border/50">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Users className="w-5 h-5" />
+              Management Tools
+            </CardTitle>
+            <CardDescription>
+              Switch between creating and viewing appointments
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-3">
               <Button
                 variant={activeTab === 'book' ? "default" : "outline"}
                 onClick={() => setActiveTab('book')}
-                className="justify-center gap-2 py-3"
+                className="justify-center gap-3 py-4 h-auto flex-col"
+                size="lg"
               >
-                <Calendar className="w-4 h-4" />
-                Book
+                <UserPlus className="w-5 h-5" />
+                <div className="text-center">
+                  <div className="font-semibold">Create New</div>
+                  <div className="text-xs opacity-70 mt-0.5">For citizen</div>
+                </div>
               </Button>
               <Button
                 variant={activeTab === 'view' ? "default" : "outline"}
                 onClick={() => setActiveTab('view')}
-                className="justify-center gap-2 py-3"
+                className="justify-center gap-3 py-4 h-auto flex-col"
+                size="lg"
               >
-                <List className="w-4 h-4" />
-                My Appointments
+                <List className="w-5 h-5" />
+                <div className="text-center">
+                  <div className="font-semibold">View All</div>
+                  <div className="text-xs opacity-70 mt-0.5">Appointments</div>
+                </div>
               </Button>
             </div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Help Text */}
+      <div className="text-center">
+        <p className="text-sm text-muted-foreground">
+          Administrative system for managing citizen appointments and visit schedules.
+        </p>
       </div>
     </div>
   );
