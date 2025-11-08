@@ -68,7 +68,7 @@ async def create_office(
 @router.get(
     "/",
     response_model=list[sch.OfficeRead],
-    summary="get all the offices we have registered (only admins)",
+    summary="get all the offices we have registered (admins, reception)",
     description="Retrieve all offices. Optionally filter by status (`active` or `deactivated`).",
     responses={
         200: {"description": "List of offices returned"},
@@ -102,7 +102,7 @@ async def list_offices(
 )
 async def read_office(
     office_id: UUID,
-    _user: CurrentUser = Depends(require_authentication),
+    _user: CurrentUser = Depends(require_any_role("admin", "reception")),
     db: Database = Depends(get_db),
 ):
     return await OfficeService.get_office(db, office_id)
