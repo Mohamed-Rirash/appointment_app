@@ -13,31 +13,46 @@ export function AppointmentDashboard({ officeId }: AppointmentDashboardProps) {
     isConnected,
     isLoading,
     error,
-    appointments = [], // Add default values
-    timeSlots = {},    // Add default values  
-    eventCount = 0,    // Add default values
+    appointments = [],           // Default value
+    timeSlots = {},              // Default value  
+    eventCount = 0,              // Default value
     lastUpdate,
-    requestNotificationPermission // This might not exist in your hook
+    reconnect,
+    requestNotificationPermission
   } = useAppointmentEvents(officeId);
 
-  // Safe check for requestNotificationPermission
+  // Request notification permission on mount
   useEffect(() => {
     if (requestNotificationPermission) {
       requestNotificationPermission();
-    } else {
-      // Fallback: request permission directly
-      if ('Notification' in window && Notification.permission === 'default') {
-        Notification.requestPermission();
-      }
     }
-  }, []);
+  }, [requestNotificationPermission]);
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading real-time dashboard...</p>
+        <div className="text-center p-8 bg-white rounded-lg shadow-sm">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Loading Dashboard</h2>
+          <p className="text-gray-600">Connecting to real-time updates...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error && !isConnected) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center p-8 bg-white rounded-lg shadow-sm max-w-md">
+          <div className="text-4xl mb-4">🔌</div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Connection Lost</h2>
+          <p className="text-gray-600 mb-6">{error}</p>
+          <button
+            onClick={reconnect}
+            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Reconnect
+          </button>
         </div>
       </div>
     );
@@ -49,158 +64,168 @@ export function AppointmentDashboard({ officeId }: AppointmentDashboardProps) {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Appointment Dashboard</h1>
-          <p className="text-gray-600">Office ID: {officeId}</p>
+          <p className="text-gray-600 mb-4">Office ID: {officeId}</p>
           
-          <div className="flex items-center space-x-4 mt-4">
-            <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-              isConnected 
-                ? 'bg-green-100 text-green-800' 
-                : 'bg-red-100 text-red-800'
+          <div className="flex items-center space-x-6">
+            <div className={`px-4 py-2 rounded-full text-sm font-medium flex items-center space-x-2 ${
+              isConnected ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
             }`}>
-              {isConnected ? '🟢 Live Connected' : '🔴 Disconnected'}
+              <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+              <span>{isConnected ? '🟢 Live Connected' : '🔴 Disconnected'}</span>
             </div>
-            <div className="text-sm text-gray-500">
-              Events: {eventCount} • Last update: {lastUpdate ? lastUpdate.toLocaleTimeString() : 'Never'}
+            
+            <div className="text-sm text-gray-500 space-x-4">
+              <span>📊 Events: {eventCount}</span>
+              <span>🕒 Last: {lastUpdate ? lastUpdate.toLocaleTimeString() : 'Never'}</span>
             </div>
           </div>
         </div>
 
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <span className="text-red-400">⚠️</span>
-              </div>
-              <div className="ml-3">
-                <h3 className="text-red-800 font-medium">Connection Issue</h3>
-                <p className="text-red-600 text-sm">{error}</p>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <span className="text-2xl">📊</span>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Events</p>
-                <p className="text-2xl font-bold text-gray-900">{eventCount}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <span className="text-2xl">📅</span>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">New Appointments</p>
-                <p className="text-2xl font-bold text-gray-900">{appointments.length}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <span className="text-2xl">🕒</span>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Updated Dates</p>
-                <p className="text-2xl font-bold text-gray-900">{Object.keys(timeSlots).length}</p>
-              </div>
-            </div>
-          </div>
+          <StatCard icon="📅" label="New Appointments" value={appointments.length} color="blue" />
+          <StatCard icon="🕒" label="Updated Dates" value={Object.keys(timeSlots).length} color="purple" />
+          <StatCard icon="📊" label="Total Events" value={eventCount} color="green" />
         </div>
 
         {/* Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Recent Appointments */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">Recent Appointments</h2>
-            </div>
-            <div className="p-6">
-              {appointments.length > 0 ? (
-                <div className="space-y-4">
-                  {appointments.slice(-10).reverse().map((appointment, index) => (
-                    <div key={appointment.id || index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+          <DataCard title="Recent Appointments">
+            {appointments.length > 0 ? (
+              <div className="space-y-3">
+                {appointments.slice(-10).reverse().map((appointment) => (
+                  <div key={appointment.id} className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <div className="flex justify-between items-start">
                       <div>
                         <p className="font-medium text-gray-900">
-                          {appointment.appointment_date ? new Date(appointment.appointment_date).toLocaleDateString() : 'No date'}
+                          {appointment.appointment_date ? 
+                            new Date(appointment.appointment_date).toLocaleDateString() : 
+                            'No date'
+                          }
                         </p>
                         <p className="text-sm text-gray-600">
-                          {appointment.time_slotted} • {appointment.status || 'Unknown'}
+                          ⏰ {appointment.time_slotted || 'No time'} • 
+                          <span className={`ml-2 px-2 py-1 rounded-full text-xs ${
+                            appointment.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
+                            appointment.status === 'APPROVED' ? 'bg-green-100 text-green-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {appointment.status || 'Unknown'}
+                          </span>
                         </p>
-                      </div>
-                      <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                        New
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <span className="text-4xl">📭</span>
-                  <p className="mt-2 text-gray-500">No appointments yet</p>
-                  <p className="text-sm text-gray-400">New appointments will appear here in real-time</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Time Slots Updates */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">Time Slot Updates</h2>
-            </div>
-            <div className="p-6">
-              {Object.keys(timeSlots).length > 0 ? (
-                <div className="space-y-4">
-                  {Object.entries(timeSlots).slice(-5).reverse().map(([date, slots]) => (
-                    <div key={date} className="p-3 bg-gray-50 rounded-lg">
-                      <p className="font-medium text-gray-900">
-                        {new Date(date).toLocaleDateString()}
-                      </p>
-                      <div className="mt-2 flex flex-wrap gap-1">
-                        {/* Safe access to slots array */}
-                        {(Array.isArray(slots) ? slots.slice(0, 5) : []).map((slot, index) => (
-                          <span 
-                            key={slot?.id || index}
-                            className={`px-2 py-1 text-xs rounded ${
-                              slot?.is_booked 
-                                ? 'bg-red-100 text-red-800' 
-                                : 'bg-green-100 text-green-800'
-                            }`}
-                          >
-                            {slot?.start_time || 'Unknown'} {slot?.is_booked ? '🔴' : '🟢'}
-                          </span>
-                        ))}
-                        {Array.isArray(slots) && slots.length > 5 && (
-                          <span className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded">
-                            +{slots.length - 5} more
-                          </span>
+                        {appointment.purpose && (
+                          <p className="text-sm text-gray-500 mt-1">📝 {appointment.purpose}</p>
                         )}
                       </div>
+                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">New</span>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <span className="text-4xl">🕒</span>
-                  <p className="mt-2 text-gray-500">No time slot updates</p>
-                  <p className="text-sm text-gray-400">Time slot changes will appear here</p>
-                </div>
-              )}
-            </div>
-          </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <EmptyState icon="📭" title="No appointments yet" description="New appointments will appear here in real-time" />
+            )}
+          </DataCard>
+
+          {/* Time Slots Updates */}
+          <DataCard title="Time Slot Updates">
+            {Object.keys(timeSlots).length > 0 ? (
+              <div className="space-y-4">
+                {Object.entries(timeSlots).slice(-5).reverse().map(([date, slots]) => (
+                  <div key={date} className="p-4 bg-gray-50 rounded-lg">
+                    <p className="font-medium text-gray-900 mb-2">
+                      {new Date(date).toLocaleDateString()}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {(Array.isArray(slots) ? slots.slice(0, 8) : []).map((slot) => (
+                        <span 
+                          key={slot.id}
+                          className={`text-xs px-2 py-1 rounded ${
+                            slot.is_booked 
+                              ? 'bg-red-100 text-red-800' 
+                              : 'bg-green-100 text-green-800'
+                          }`}
+                        >
+                          {slot.start_time} {slot.is_booked ? '🔴' : '🟢'}
+                        </span>
+                      ))}
+                      {Array.isArray(slots) && slots.length > 8 && (
+                        <span className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded">
+                          +{slots.length - 8} more
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <EmptyState icon="🕒" title="No time slot updates" description="Time slot changes will appear here" />
+            )}
+          </DataCard>
         </div>
       </div>
+    </div>
+  );
+}
+
+// Helper Components
+
+interface StatCardProps {
+  icon: string;
+  label: string;
+  value: number;
+  color: 'blue' | 'purple' | 'green';
+}
+
+function StatCard({ icon, label, value, color }: StatCardProps) {
+  const colorClasses = {
+    blue: 'bg-blue-50 text-blue-600 border-blue-200',
+    purple: 'bg-purple-50 text-purple-600 border-purple-200',
+    green: 'bg-green-50 text-green-600 border-green-200',
+  }[color];
+
+  return (
+    <div className={`p-6 rounded-lg shadow-sm border ${colorClasses}`}>
+      <div className="flex items-center">
+        <div className="flex-shrink-0 text-2xl">{icon}</div>
+        <div className="ml-4">
+          <p className="text-sm font-medium opacity-80">{label}</p>
+          <p className="text-2xl font-bold">{value}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+interface DataCardProps {
+  title: string;
+  children: React.ReactNode;
+}
+
+function DataCard({ title, children }: DataCardProps) {
+  return (
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+      <div className="px-6 py-4 border-b border-gray-200">
+        <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
+      </div>
+      <div className="p-6">{children}</div>
+    </div>
+  );
+}
+
+interface EmptyStateProps {
+  icon: string;
+  title: string;
+  description: string;
+}
+
+function EmptyState({ icon, title, description }: EmptyStateProps) {
+  return (
+    <div className="text-center py-12">
+      <div className="text-5xl mb-4">{icon}</div>
+      <p className="font-medium text-gray-900 mb-1">{title}</p>
+      <p className="text-sm text-gray-500">{description}</p>
     </div>
   );
 }

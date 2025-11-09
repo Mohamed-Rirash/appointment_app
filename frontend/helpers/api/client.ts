@@ -1,4 +1,5 @@
 import axios from "axios";
+import { Signout } from "../actions/signout";
 
 // Create an axios instance with base URL and default config
 const apiClient = axios.create({
@@ -9,6 +10,43 @@ const apiClient = axios.create({
   },
   withCredentials: true,
 });
+
+
+// Response interceptor to handle unauthorized errors
+apiClient.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  async (error) => {
+    const originalRequest = error.config;
+    
+    // Check if the error is due to unauthorized access (401)
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      
+      try {
+        // Try to refresh the token first
+        await client.refreshAccessToken();
+        
+        // Retry the original request with new token
+        return apiClient(originalRequest);
+      } catch (refreshError) {
+        // If refresh fails, sign out the user
+        console.error("Token refresh failed, signing out:", refreshError);
+        await Signout();
+        return Promise.reject(error);
+      }
+    }
+    
+    // For other unauthorized errors or if retry failed, sign out
+    if (error.response?.status === 401) {
+      console.error("Unauthorized access, signing out");
+      await Signout();
+    }
+    
+    return Promise.reject(error);
+  }
+);
 
 // Define types
 interface Userdata {

@@ -1,18 +1,76 @@
-// hooks/useAppointmentEvents.tsx - Updated version
+// hooks/useAppointmentEvents.tsx
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
-export const useAppointmentEvents = (officeId: string) => {
+// TypeScript Interfaces
+interface Citizen {
+  id: string;
+  firstname: string;
+  lastname: string;
+  email?: string;
+  phone?: string;
+}
+
+interface Appointment {
+  id: string;
+  office_id: string;
+  appointment_date: string;
+  time_slotted: string;
+  status: string;
+  citizen_id: string;
+  purpose?: string;
+}
+
+interface TimeSlot {
+  id: string;
+  start_time: string;
+  end_time: string;
+  is_booked: boolean;
+}
+
+interface SSEEvent {
+  event: string;
+  data: any;
+}
+
+interface UseAppointmentEventsReturn {
+  isConnected: boolean;
+  isLoading: boolean;
+  error: string | null;
+  eventCount: number;
+  appointments: Appointment[];
+  timeSlots: Record<string, TimeSlot[]>;
+  lastUpdate: Date | null;
+  reconnect: () => void;
+  requestNotificationPermission: () => Promise<NotificationPermission>;
+}
+
+export const useAppointmentEvents = (officeId: string): UseAppointmentEventsReturn => {
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [retryCount, setRetryCount] = useState(0);
+  const [eventCount, setEventCount] = useState(0);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [timeSlots, setTimeSlots] = useState<Record<string, TimeSlot[]>>({});
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  
   const eventSourceRef = useRef<EventSource | null>(null);
+  const retryCountRef = useRef(0);
+  const maxRetriesRef = useRef(5);
   const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const MAX_RETRIES = 5;
-  const BASE_DELAY = 2000; // 2 seconds
+  const disconnect = useCallback(() => {
+    if (retryTimeoutRef.current) {
+      clearTimeout(retryTimeoutRef.current);
+      retryTimeoutRef.current = null;
+    }
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+    }
+    setIsConnected(false);
+  }, []);
 
   const connect = useCallback(() => {
     if (!officeId) {
@@ -20,14 +78,12 @@ export const useAppointmentEvents = (officeId: string) => {
       return;
     }
 
-    // Clear any existing connection
-    if (eventSourceRef.current) {
-      eventSourceRef.current.close();
-    }
+    // Cleanup existing connection
+    disconnect();
 
-    console.log('🔗 Connecting to SSE... Attempt:', retryCount + 1);
-    
     const url = `${process.env.NEXT_PUBLIC_API_URL}/appointments/events?office_id=${encodeURIComponent(officeId)}`;
+    console.log('🔗 Connecting to SSE:', url);
+    
     eventSourceRef.current = new EventSource(url);
 
     eventSourceRef.current.onopen = () => {
@@ -35,69 +91,87 @@ export const useAppointmentEvents = (officeId: string) => {
       setIsConnected(true);
       setIsLoading(false);
       setError(null);
-      setRetryCount(0); // Reset on successful connection
+      retryCountRef.current = 0;
     };
 
     eventSourceRef.current.onmessage = (event) => {
       try {
-        const data = JSON.parse(event.data);
+        const data: SSEEvent = JSON.parse(event.data);
         console.log('📨 Update received:', data);
+        setLastUpdate(new Date());
+        setEventCount(prev => prev + 1);
+
         // Reset retry count on successful message
-        setRetryCount(0);
+        retryCountRef.current = 0;
+
+        // Handle different event types
+        switch (data.event) {
+          case 'new_appointment':
+            if (data.data?.appointment) {
+              setAppointments(prev => [...prev, data.data.appointment]);
+              console.log('📅 New appointment added to state');
+            }
+            break;
+
+          case 'time_slots_updated':
+            if (data.data?.date && data.data?.slots) {
+              setTimeSlots(prev => ({
+                ...prev,
+                [data.data.date]: data.data.slots
+              }));
+              console.log('🕒 Time slots updated');
+            }
+            break;
+
+          case 'heartbeat':
+            console.log('❤️ Heartbeat received');
+            break;
+
+          default:
+            console.log('🤔 Unknown event type:', data.event);
+        }
       } catch (err) {
         console.error('❌ Failed to parse event data:', err);
       }
     };
 
     eventSourceRef.current.onerror = (event) => {
-      console.error('❌ EventSource error - Connection lost');
+      console.error('❌ EventSource error:', event);
       setIsConnected(false);
-      setError('Connection lost - retrying...');
-      
-      // Implement exponential backoff retry
-      if (retryCount < MAX_RETRIES) {
-        const delay = BASE_DELAY * Math.pow(2, retryCount); // Exponential backoff
-        console.log(`🔄 Retrying in ${delay}ms... (${retryCount + 1}/${MAX_RETRIES})`);
+      setError('Connection error - retrying...');
+
+      // Retry logic with exponential backoff
+      if (retryCountRef.current < maxRetriesRef.current) {
+        const delay = 2000 * Math.pow(2, retryCountRef.current);
+        console.log(`🔄 Retrying in ${delay}ms... (${retryCountRef.current + 1}/${maxRetriesRef.current})`);
         
         retryTimeoutRef.current = setTimeout(() => {
-          setRetryCount(prev => prev + 1);
+          retryCountRef.current += 1;
           connect();
         }, delay);
       } else {
         setIsLoading(false);
-        setError('Failed to establish connection after multiple attempts');
+        setError('Failed to maintain connection after multiple attempts');
+        console.error('🚫 Max retries reached. Giving up.');
       }
     };
 
-  }, [officeId, retryCount]);
-
-  const disconnect = useCallback(() => {
-    if (retryTimeoutRef.current) {
-      clearTimeout(retryTimeoutRef.current);
-    }
-    if (eventSourceRef.current) {
-      eventSourceRef.current.close();
-      eventSourceRef.current = null;
-    }
-    setIsConnected(false);
-    setRetryCount(0);
-  }, []);
+  }, [officeId, disconnect]);
 
   const reconnect = useCallback(() => {
-    disconnect();
-    setRetryCount(0);
+    console.log('🔄 Manual reconnect requested');
+    retryCountRef.current = 0;
+    setError(null);
+    setIsLoading(true);
     connect();
-  }, [connect, disconnect]);
+  }, [connect]);
 
   useEffect(() => {
     connect();
-
-    return () => {
-      disconnect();
-    };
+    return () => disconnect();
   }, [connect, disconnect]);
 
-  // Auto-reconnect when component becomes visible
+  // Auto-reconnect when page becomes visible
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible' && !isConnected) {
@@ -107,19 +181,28 @@ export const useAppointmentEvents = (officeId: string) => {
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [isConnected, reconnect]);
+
+  // Request browser notification permission
+  const requestNotificationPermission = useCallback(async () => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      const permission = await Notification.requestPermission();
+      console.log('🔔 Notification permission:', permission);
+      return permission;
+    }
+    return Notification.permission;
+  }, []);
 
   return {
     isConnected,
-    isLoading: isLoading && retryCount === 0, // Don't show loading during retries
-    error: retryCount >= MAX_RETRIES ? error : null, // Only show final error
-    retryCount,
-    maxRetries: MAX_RETRIES,
+    isLoading,
+    error,
+    eventCount,
+    appointments,
+    timeSlots,
+    lastUpdate,
     reconnect,
-    disconnect
+    requestNotificationPermission,
   };
 };
