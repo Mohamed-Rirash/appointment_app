@@ -13,18 +13,15 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar, List, Users, UserPlus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import AddReceptionform from "./AddReceptionform";
 
-interface AppointmentManagerProps {
-  hostId: string;
-  officeId: string;
+interface AppointmentRecepManagerProps {
   token?: string;
 }
 
-export default function AppointmentManager({
-  officeId,
-  hostId,
+export default function AppointmentReceptionManager({
   token,
-}: AppointmentManagerProps) {
+}: AppointmentRecepManagerProps) {
   const [activeTab, setActiveTab] = useState("book");
 
   return (
@@ -114,7 +111,7 @@ export default function AppointmentManager({
                     fields are required to ensure proper booking.
                   </p>
                 </div>
-                <AddForm office_id={officeId} token={token} host_id={hostId} />
+                <AddReceptionform token={token} />
               </TabsContent>
 
               <TabsContent value="view" className="m-0 space-y-6">

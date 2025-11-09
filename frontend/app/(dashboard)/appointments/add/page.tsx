@@ -1,6 +1,7 @@
 import { getSession } from "@/helpers/actions/getsession";
 import { redirect } from "next/navigation";
 import AppointmentManager from "./_components/AppointmentManager";
+import AppointmentReceptionManager from "./_components/AppointmentReceptionManager";
 
 export default async function AddAppointment() {
   try {
@@ -50,8 +51,7 @@ export default async function AddAppointment() {
           />
         ) : (
           <div className="text-center p-8">
-            <p>Appointment form for {role} role is coming soon...</p>
-            {/* Consider implementing actual forms for other roles */}
+           <AppointmentReceptionManager token={token}/>
           </div>
         )}
       </main>

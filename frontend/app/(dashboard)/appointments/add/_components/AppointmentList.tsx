@@ -10,7 +10,7 @@ import { Calendar, Clock, User, FileText, Eye, Filter } from "lucide-react";
 
 export default function AppointmentList({ token }: { token?: string }) {
   const today = format(new Date(), "yyyy-MM-dd");
-
+console.log("list ",today)
   const { data, isLoading, error } = useQuery({
     queryKey: ["appointments", today],
     queryFn: () => client.getMyAppointments(token!, today),

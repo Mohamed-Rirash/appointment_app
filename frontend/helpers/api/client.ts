@@ -307,12 +307,12 @@ export const client = {
   // OFFICESSS
 
   // Get Offices
-  async getOffices(token: string) {
-    const response = await apiClient.get("/offices", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    return response.data;
-  },
+  // async getOffices(token: string) {
+  //   const response = await apiClient.get("/offices", {
+  //     headers: { Authorization: `Bearer ${token}` },
+  //   });
+  //   return response.data;
+  // },
 
   // Get Office
   async getOffice(token?: string, id?: string) {
@@ -473,22 +473,42 @@ export const client = {
   },
 
   // create appoint
-  async createAppointment(data, token?: string) {
-    console.log("OFFICE ID client", data);
-
-    try {
-      const response = await apiClient.post(
-        `/appointments/with-citizen`,
-        data,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      return response.data;
-    } catch (error: any) {
-      error.response?.data?.detail || "Failed to set availability";
+async createAppointment(data, token?: string) {
+  try {
+    const response = await apiClient.post(
+      `/appointments/with-citizen`,
+      data,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+    return response.data;
+  } catch (error: any) {
+    console.log("Error creating appointment:", error);
+    
+    // Handle 422 validation errors
+    if (error.response?.status === 422 && error.response?.data?.detail) {
+      const details = error.response.data.detail;
+      
+      // Extract all error messages from the detail array
+      const errorMessages = details.map((err: any) => {
+        // Format: "field: message" or just "message"
+        const field = err.loc?.join('.') || 'validation';
+        return `${field}: ${err.msg}`;
+      }).join(', ');
+      
+      throw new Error(`Validation failed: ${errorMessages}`);
     }
-  },
+    
+    // For other types of errors
+    const errorMessage = error.response?.data?.detail || 
+                        error.response?.data?.message || 
+                        "Failed to create appointment";
+    
+    // Ensure errorMessage is a string
+    throw new Error(typeof errorMessage === 'string' ? errorMessage : JSON.stringify(errorMessage));
+  }
+},
 
   // Get host dashboard stats
   async getHostDashboardStats(token: string) {
@@ -534,7 +554,7 @@ export const client = {
   },
 
   // get my appointment i create
-  // Get current user's appointments (host or secretary)
+  // Get current user's appointments (host or secretary or reception)
 async getMyAppointments(
   token: string,
   on_date?: string,
@@ -555,5 +575,40 @@ async getMyAppointments(
     offset: number;
     appointments: Appointment[];
   };
+},
+
+// reception getting office and host
+// 1. GET all offices (with optional status filter)
+async getOffices(token: string, status?: 'active' | 'deactivated') {
+  try {
+    const params = status ? { status_filter: status } : {};
+    const response = await apiClient.get('/offices/', {
+      params,
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data; // returns Office[]
+  } catch (error: any) {
+    throw new Error(
+      error.response?.data?.detail ||
+      error.message ||
+      'Failed to fetch offices'
+    );
+  }
+},
+
+// 2. GET hosts for a specific office
+async getOfficeHosts(token: string, officeId: string) {
+  try {
+    const response = await apiClient.get(`/offices/${officeId}/hosts`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data; // returns Host[]
+  } catch (error: any) {
+    throw new Error(
+      error.response?.data?.detail ||
+      error.message ||
+      'Failed to fetch office hosts'
+    );
+  }
 }
 };
