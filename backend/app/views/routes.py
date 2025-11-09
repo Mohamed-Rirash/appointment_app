@@ -32,7 +32,9 @@ async def get_my_appointments_on_date(
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
     db: Database = Depends(get_db),
-    current_user: CurrentUser = Depends(require_any_role("secretary", "host")),
+    current_user: CurrentUser = Depends(
+        require_any_role("secretary", "host", "reception")
+    ),
 ):
     try:
         return await ViewAppointmentService.get_user_appointments_on_date(

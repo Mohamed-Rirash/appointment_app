@@ -5,16 +5,23 @@ from databases import Database
 from fastapi import APIRouter, Depends, Query, status
 
 from app.admin.config import AdminLevel
-from app.auth.dependencies import (CurrentUser, require_any_role,
-                                   require_authentication, require_role)
+from app.auth.dependencies import (
+    CurrentUser,
+    require_any_role,
+    require_authentication,
+    require_role,
+)
 from app.auth.schemas import UserRead
 from app.database import get_db
 from app.office_mgnt import schemas as sch
-from app.office_mgnt.services import (AvailabilityService,
-                                      HostAssignmentService,
-                                      OfficeMembershipService,
-                                      OfficeSearchService, OfficeService,
-                                      OfficeStatsService)
+from app.office_mgnt.services import (
+    AvailabilityService,
+    HostAssignmentService,
+    OfficeMembershipService,
+    OfficeSearchService,
+    OfficeService,
+    OfficeStatsService,
+)
 
 router = APIRouter(
     prefix="/offices",
