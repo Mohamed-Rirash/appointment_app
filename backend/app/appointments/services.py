@@ -18,6 +18,13 @@ from app.appointments.exceptions import (
 from app.appointments.utils import broadcast_event
 from app.appointments.view import appointment_details
 from app.core.serialization import serialize_database_record
+from app.notifications.sse import SSEBroker, office_brokers
+
+
+async def broadcast_event(office_id: uuid.UUID, event: dict):
+    """Publish event to the specific office's SSE broker."""
+    broker = office_brokers.setdefault(office_id, SSEBroker())
+    await broker.publish(event["type"], event)
 
 
 class AppointmentService:
@@ -27,7 +34,7 @@ class AppointmentService:
     ):
         try:
             async with db.transaction():
-                # 1️⃣ Insert Citizen
+                # 1️⃣ Create Citizen
                 citizen_data = payload.citizen.model_dump()
                 citizen_data.setdefault("id", uuid.uuid4())
 
@@ -39,37 +46,30 @@ class AppointmentService:
                 citizen_dict = dict(citizen_record)
                 print(f"Citizen created: {citizen_dict['id']}")
 
-                # 2️⃣ Check available slot
+                # 2️⃣ Validate and book slot
                 appointment_data = payload.appointment.model_dump()
                 slot_date = appointment_data["appointment_date"].date()
                 slot_time = appointment_data["time_slotted"]
 
                 print(f"Checking slot for date: {slot_date}, time: {slot_time}")
-                # Find slot by start time
                 slot = await AppointmentCrud.get_slot_by_start_time(
                     db, slot_date, slot_time
                 )
                 if not slot:
                     raise AppointmentNotFound(f"No slot found for {slot_time}.")
 
-                # Check if booked
                 if slot["is_booked"]:
                     raise AppointmentNotFound(
                         f"Time slot {slot_time} is already booked."
                     )
 
                 print(f"Marking slot {slot['id']} as booked")
-                # Mark slot booked
                 await AppointmentCrud.mark_slot_booked(db, slot["id"])
 
-                # 3️⃣ Insert Appointment
+                # 3️⃣ Create Appointment
                 appointment_data["citizen_id"] = citizen_dict["id"]
-
-                # Set default values
                 appointment_data.setdefault("id", uuid.uuid4())
                 appointment_data.setdefault("issued_by", user_id)
-
-                # Explicitly set decision_reason to None to ensure consistency
                 appointment_data["decision_reason"] = None
 
                 print(f"Creating appointment with data: {appointment_data}")
@@ -81,6 +81,7 @@ class AppointmentService:
 
                 appointment_dict = dict(appointment_record)
                 print(f"Appointment created: {appointment_dict['id']}")
+
         except Exception as e:
             print(f"Error in create_with_citizen service: {type(e).__name__}: {e!s}")
             import traceback
@@ -88,14 +89,16 @@ class AppointmentService:
             traceback.print_exc()
             raise
 
-        # 4️⃣ Broadcast event after transaction commit
+        # 4️⃣ Broadcast events after successful commit
         if "office_id" in appointment_dict:
-            # Convert database records to JSON-serializable format
+            office_id = str(appointment_dict["office_id"])
+
             citizen_dict_serializable = serialize_database_record(citizen_dict)
             appointment_dict_serializable = serialize_database_record(appointment_dict)
 
+            # A. Notify new appointment
             await broadcast_event(
-                office_id=str(appointment_dict["office_id"]),
+                office_id=office_id,
                 event={
                     "type": "new_appointment",
                     "citizen": citizen_dict_serializable,
@@ -103,19 +106,20 @@ class AppointmentService:
                 },
             )
 
-            # 5️⃣ Broadcast updated time slots for the appointment date
+            # B. Notify updated time slots for that date
             from app.office_mgnt.crud import TimeSlotCRUD
 
             appointment_date = appointment_data["appointment_date"].date()
             updated_slots = await TimeSlotCRUD.get_slots_by_date(
                 db, appointment_dict["office_id"], appointment_date
             )
+
             updated_slots_serializable = [
                 serialize_database_record(slot) for slot in updated_slots
             ]
 
             await broadcast_event(
-                office_id=str(appointment_dict["office_id"]),
+                office_id=office_id,
                 event={
                     "type": "time_slots_updated",
                     "date": str(appointment_date),
@@ -124,7 +128,7 @@ class AppointmentService:
                 },
             )
 
-        # 6️⃣ Return combined schema
+        # 5️⃣ Return response schema
         return sch.AppointmentWithCitizenRead(
             citizen=sch.CitizenRead.model_validate(citizen_dict),
             appointment=sch.AppointmentRead.model_validate(appointment_dict),
