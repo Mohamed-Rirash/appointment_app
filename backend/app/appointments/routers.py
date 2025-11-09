@@ -1,4 +1,3 @@
-import asyncio
 import json
 from datetime import date, time
 from uuid import UUID
@@ -27,11 +26,11 @@ from app.appointments.exceptions import (
 )
 from app.appointments.services import AppointmentService
 from app.appointments.sms_service import SMSService
-from app.appointments.utils import office_connections
 from app.auth.dependencies import CurrentUser, require_any_role, require_role
 from app.config import get_settings
 from app.core.emails.services import send_email
 from app.database import get_db
+from app.notifications.sse import SSEBroker, office_brokers
 from app.views.schemas import AppointmentDetails
 
 settings = get_settings()
@@ -104,24 +103,24 @@ async def create_with_citizen(
 )
 async def sse_endpoint(request: Request, office_id: str = Query(...)):
     """
-    SSE endpoint for real-time notifications.
-    Clients connect to this endpoint to receive real-time updates about appointments.
+    SSE endpoint for real-time notifications per office.
+    Each office_id gets its own broker instance.
     """
-    queue = asyncio.Queue()
-    office_connections.setdefault(office_id, []).append(queue)
+    # Get or create a broker for this office
+    broker = office_brokers.setdefault(office_id, SSEBroker())
+    q = await broker.subscribe()
 
     async def event_generator():
         try:
-            # Send initial connection confirmation
+            # Initial connection confirmation
             yield f"data: {json.dumps({'type': 'connected', 'office_id': office_id})}\n\n"
 
-            while True:
+            async for msg in broker.event_generator(q):
                 if await request.is_disconnected():
                     break
-                data = await queue.get()
-                yield data
+                yield msg
         finally:
-            office_connections[office_id].remove(queue)
+            await broker.unsubscribe(q)
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
@@ -276,7 +275,8 @@ async def decide_appointment(
         raise HTTPException(status_code=400, detail=str(e))
     except AppointmentNotFound as e:
         raise HTTPException(
-            status_code=404, detail=str(e) if str(e) else "Appointment not found"
+            status_code=404,
+            detail=str(e) if str(e) else "Appointment not found",
         )
     except AppointmentAlreadyApproved:
         raise HTTPException(status_code=400, detail="Appointment already decided")
@@ -531,7 +531,8 @@ async def get_all_appointments(
         return await AppointmentService.get_appointments(db, filters)
     except AppointmentNotFound:
         raise HTTPException(
-            status_code=404, detail="No appointments found matching the criteria."
+            status_code=404,
+            detail="No appointments found matching the criteria.",
         )
 
 

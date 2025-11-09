@@ -1,14 +1,18 @@
+# event.py
 import asyncio
 import json
 from collections.abc import AsyncIterator
+from uuid import UUID
+
+from pydantic import BaseModel
+
+
+class EventModel(BaseModel):
+    event: str
+    data: str
 
 
 class SSEBroker:
-    """
-    Simple in-memory SSE broker using asyncio.Queue per subscriber.
-    Not for multi-process use; good for dev and single-process deployments.
-    """
-
     def __init__(self):
         self._subscribers: list[asyncio.Queue] = []
         self._lock = asyncio.Lock()
@@ -23,12 +27,11 @@ class SSEBroker:
         async with self._lock:
             if q in self._subscribers:
                 self._subscribers.remove(q)
-        # Drain queue
-        try:
-            while not q.empty():
+        while not q.empty():
+            try:
                 q.get_nowait()
-        except Exception:
-            pass
+            except Exception:
+                break
 
     async def publish(self, event: str, data: dict) -> None:
         payload = json.dumps({"event": event, "data": data}, default=str)
@@ -38,22 +41,16 @@ class SSEBroker:
             try:
                 await q.put(payload)
             except asyncio.QueueFull:
-                # Drop if subscriber is too slow
                 pass
 
     async def event_generator(self, q: asyncio.Queue) -> AsyncIterator[str]:
         try:
             while True:
                 payload = await q.get()
-                yield "event: message\n"
-                # Split by lines to comply with SSE format
-                for line in payload.splitlines():
-                    yield f"data: {line}\n"
-                yield "\n"
+                yield f"data: {payload}\n\n"
         except asyncio.CancelledError:
-            # client disconnected
             raise
 
 
-# Global singleton broker for appointments events
-appointments_broker = SSEBroker()
+# global dictionary of brokers per office
+office_brokers: dict[UUID, SSEBroker] = {}
