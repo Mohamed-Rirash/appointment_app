@@ -33,6 +33,8 @@ from app.database import get_db
 from app.notifications.sse import SSEBroker, office_brokers
 from app.views.schemas import AppointmentDetails
 
+
+
 settings = get_settings()
 
 appointment_router = APIRouter(prefix="/appointments", tags=["Appointments"])
@@ -96,34 +98,71 @@ async def create_with_citizen(
         )
 
 
-@appointment_router.get(
-    "/events",
-    summary="Get SSE events",
-    description="make the client ready for the server to notify the events",
-)
+# @appointment_router.get(
+#     "/events",
+#     summary="Get SSE events",
+#     description="make the client ready for the server to notify the events",
+# )
+# async def sse_endpoint(request: Request, office_id: str = Query(...)):
+#     """
+#     SSE endpoint for real-time notifications per office.
+#     Each office_id gets its own broker instance.
+#     """
+#     # Get or create a broker for this office
+#     broker = office_brokers.setdefault(office_id, SSEBroker())
+#     q = await broker.subscribe()
+
+#     async def event_generator():
+#         try:
+#             # Initial connection confirmation
+#             yield f"data: {json.dumps({'type': 'connected', 'office_id': office_id})}\n\n"
+
+#             async for msg in broker.event_generator(q):
+#                 if await request.is_disconnected():
+#                     break
+#                 yield msg
+#         finally:
+#             await broker.unsubscribe(q)
+
+#     return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+@appointment_router.get("/events")
 async def sse_endpoint(request: Request, office_id: str = Query(...)):
     """
     SSE endpoint for real-time notifications per office.
-    Each office_id gets its own broker instance.
     """
-    # Get or create a broker for this office
-    broker = office_brokers.setdefault(office_id, SSEBroker())
-    q = await broker.subscribe()
+    try:
+        office_uuid = UUID(office_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid office_id format")
+    
+    # Get or create broker for this office
+    from app.notifications.sse import office_brokers
+    broker = office_brokers.setdefault(office_uuid, SSEBroker())
+    
+    # Subscribe client
+    queue = await broker.subscribe()
 
-    async def event_generator():
+    # Generator function
+    async def generate():
         try:
-            # Initial connection confirmation
-            yield f"data: {json.dumps({'type': 'connected', 'office_id': office_id})}\n\n"
-
-            async for msg in broker.event_generator(q):
-                if await request.is_disconnected():
-                    break
-                yield msg
+            async for message in broker.event_generator(queue, request):
+                yield message
         finally:
-            await broker.unsubscribe(q)
+            await broker.unsubscribe(queue)
 
-    return StreamingResponse(event_generator(), media_type="text/event-stream")
-
+    # Return streaming response with proper headers
+    return StreamingResponse(
+        generate(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",  # Critical for Nginx
+            "Access-Control-Allow-Origin": "*",
+            "Content-Type": "text/event-stream; charset=utf-8",
+        },
+    )
 
 @appointment_router.patch("/{appointment_id}/decision")
 async def decide_appointment(

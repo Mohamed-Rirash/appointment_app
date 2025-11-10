@@ -1,58 +1,61 @@
+# docker-compose.yml
+version: '3.8'
+
 services:
   # -------------------------------
-  # PostgreSQL Database
+  # Database (PostgreSQL)
   # -------------------------------
   db:
-    image: postgres:17
-    restart: always
+    image: postgres:17-alpine
+    restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
+      timeout: 5s
       retries: 5
       start_period: 30s
-      timeout: 10s
     volumes:
-      - app-db-data:/var/lib/postgresql/data/pgdata
+      - app-db-data:/var/lib/postgresql/data
     env_file:
       - .env
     environment:
-      - PGDATA=/var/lib/postgresql/data/pgdata
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD?Variable not set}
-      - POSTGRES_USER=${POSTGRES_USER?Variable not set}
-      - POSTGRES_DB=${POSTGRES_DB?Variable not set}
+      - PGDATA=/var/lib/postgresql/data
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_DB=${POSTGRES_DB}
     ports:
       - "5432:5432"
     networks:
       - app-network
 
   # -------------------------------
-  # Redis
+  # Redis Cache
   # -------------------------------
   redis:
-    image: redis:alpine
-    container_name: redis
-    ports:
-      - "6379:6379"
+    image: redis:7-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
     volumes:
       - redis-data:/data
     command: redis-server --appendonly yes
     networks:
       - app-network
 
-    # -------------------------------
-  # Mailpit (email testing UI)
+  # -------------------------------
+  # Mailpit (Email Testing)
   # -------------------------------
   mailpit:
     image: axllent/mailpit:latest
-    container_name: mailpit
-    restart: always
+    restart: unless-stopped
     ports:
       - "1025:1025" # SMTP
       - "8025:8025" # Web UI
     environment:
       - MP_DATABASE=/data/mailpit.db
-      - MP_SMTP_BIND_ADDR=0.0.0.0:1025
-      - MP_UI_BIND_ADDR=0.0.0.0:8025
     volumes:
       - mailpit-data:/data
     healthcheck:
@@ -64,61 +67,53 @@ services:
       - app-network
 
   # -------------------------------
-  # SMS Catcher (mock SMS server)
+  # SMS Catcher (Mock SMS)
   # -------------------------------
   smscatcher:
     build:
       context: ./mock-sms
       dockerfile: Dockerfile
-    restart: always
+    restart: unless-stopped
     ports:
-      - "3001:3001"
-      - "3002:3002"
+      - "3001:3001" # API
+      - "3002:3002" # Web UI
     environment:
       - PORT=3001
       - WEB_PORT=3002
     volumes:
       - smscatcher-data:/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      test: ["CMD", "wget", "--spider", "http://localhost:3001/health"]
       interval: 15s
       timeout: 5s
       retries: 5
       start_period: 20s
     networks:
       - app-network
-    # Docker Compose Watch configuration for hot-reload
     develop:
       watch:
-        # Sync source code changes
         - action: sync
           path: ./mock-sms/src
           target: /app/src
-          ignore:
-            - node_modules/
-            - "*.log"
-
-        # Rebuild on dependency changes
         - action: rebuild
           path: ./mock-sms/package.json
 
   # -------------------------------
-  # Adminer (PostgreSQL UI)
+  # Adminer (Database UI)
   # -------------------------------
   adminer:
-    image: adminer
-    restart: always
+    image: adminer:latest
+    restart: unless-stopped
     depends_on:
-      - db
-    environment:
-      - ADMINER_DESIGN=pepa-linha-dark
+      db:
+        condition: service_healthy
     ports:
       - "8080:8080"
     networks:
       - app-network
 
   # -------------------------------
-  # Prestart (backend DB setup)
+  # Prestart (Database Migrations)
   # -------------------------------
   prestart:
     build:
@@ -126,112 +121,21 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    command: bash scripts/prestart.sh
+    command: ["bash", "scripts/prestart.sh"]
     env_file:
       - .env
     environment:
-      - DOMAIN=${DOMAIN}
-      - FRONTEND_HOST=${FRONTEND_HOST}
-      - ENVIRONMENT=${ENVIRONMENT}
-      - BACKEND_CORS_ORIGINS=${BACKEND_CORS_ORIGINS}
-      - SECRET_KEY=${SECRET_KEY}
-      - FIRST_SUPERUSER=${FIRST_SUPERUSER}
-      - FIRST_SUPERUSER_PASSWORD=${FIRST_SUPERUSER_PASSWORD}
-      - SMTP_HOST=${SMTP_HOST:-mailpit}
-      - SMTP_USER=${SMTP_USER:-}
-      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
-      - EMAILS_FROM_EMAIL=${EMAILS_FROM_EMAIL:-noreply@test.com}
       - POSTGRES_SERVER=db
-      - POSTGRES_PORT=${POSTGRES_PORT}
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - SENTRY_DSN=${SENTRY_DSN}
     networks:
       - app-network
 
   # -------------------------------
-  # Frontend (Next.js)
-  # -------------------------------
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile.dev
-    container_name: frontend
-    env_file:
-      - frontend/.env.local
-    environment:
-      - NODE_ENV=development
-      # Client-side API URL (browser) - relative path via nginx proxy
-      - NEXT_PUBLIC_API_URL=/api/v1
-      # Server-side API URL (Next.js server) - internal Docker network URL
-      - API_URL=http://backend:8000/api/v1
-      # Force Next.js standalone server to listen on all interfaces
-      - HOSTNAME=0.0.0.0
-      - PORT=3000
-    # command: npm run dev
-    depends_on:
-      - backend
-    restart: unless-stopped
-    networks:
-      - app-network
-    # Docker Compose Watch configuration for hot-reload
-    develop:
-      watch:
-        # Sync source code changes
-        - action: sync
-          path: ./frontend/app
-          target: /app/app
-          ignore:
-            - node_modules/
-            - .next/
-            - "*.log"
-
-        - action: sync
-          path: ./frontend/components
-          target: /app/components
-          ignore:
-            - node_modules/
-
-        - action: sync
-          path: ./frontend/helpers
-          target: /app/helpers
-          ignore:
-            - node_modules/
-
-        - action: sync
-          path: ./frontend/hooks
-          target: /app/hooks
-          ignore:
-            - node_modules/
-
-        # Rebuild on dependency changes
-        - action: rebuild
-          path: ./frontend/package.json
-  #
-  # # -------------------------------
-  # # Nginx Reverse Proxy
-  # # -------------------------------
-  nginx:
-    image: nginx:alpine
-    container_name: nginx
-    ports:
-      - "80:80"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-    depends_on:
-      - frontend
-      - backend
-    restart: unless-stopped
-    networks:
-      - app-network
-  # -------------------------------
-  # Backend (FastAPI or similar)
+  # Backend (FastAPI)
   # -------------------------------
   backend:
     build:
       context: ./backend
-    restart: always
+    restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
@@ -239,32 +143,14 @@ services:
         condition: service_completed_successfully
       mailpit:
         condition: service_started
+      redis:
+        condition: service_healthy
     env_file:
       - .env
     environment:
-      - DOMAIN=${DOMAIN}
-      - FRONTEND_HOST=${FRONTEND_HOST}
-      - ENVIRONMENT=${ENVIRONMENT}
-      - BACKEND_CORS_ORIGINS=${BACKEND_CORS_ORIGINS}
-      - SECRET_KEY=${SECRET_KEY}
-      - FIRST_SUPERUSER=${FIRST_SUPERUSER}
-      - FIRST_SUPERUSER_PASSWORD=${FIRST_SUPERUSER_PASSWORD}
-      - MAIL_SERVER=${MAIL_SERVER:-mailpit}
-      - MAIL_PORT=${MAIL_PORT:-1025}
-      - MAIL_USERNAME=${MAIL_USERNAME:-}
-      - MAIL_PASSWORD=${MAIL_PASSWORD:-}
-      - EMAILS_FROM_EMAIL=${EMAILS_FROM_EMAIL:-noreply@test.com}
-
       - POSTGRES_SERVER=db
-      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - SENTRY_DSN=${SENTRY_DSN}
-    # Port 8000 is only accessible internally via nginx proxy
-    # Uncomment below for direct backend access during debugging
-    # ports:
-    #   - "8000:8000"
+      - REDIS_URL=redis://redis:6379
+      - MAIL_SERVER=mailpit
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 15s
@@ -273,57 +159,81 @@ services:
       start_period: 25s
     networks:
       - app-network
-    # Docker Compose Watch configuration for hot-reload
     develop:
       watch:
-        # Sync Python source code changes
         - action: sync
           path: ./backend/app
           target: /app/app
           ignore:
             - __pycache__/
             - "*.pyc"
-            - "*.pyo"
-            - "*.pyd"
-            - .pytest_cache/
-            - "*.egg-info/"
-
-        # Sync tests directory
-        - action: sync
-          path: ./backend/tests
-          target: /app/tests
-          ignore:
-            - __pycache__/
-            - "*.pyc"
-            - .pytest_cache/
-
-        # Rebuild on dependency changes
         - action: rebuild
           path: ./backend/pyproject.toml
 
-        - action: rebuild
-          path: ./backend/uv.lock
-
-        # Sync scripts
+  # -------------------------------
+  # Frontend (Next.js)
+  # -------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    env_file:
+      - frontend/.env.local
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=/api/v1
+      - API_URL=http://backend:8000/api/v1
+      - HOSTNAME=0.0.0.0
+      - PORT=3000
+    command: ["pnpm", "dev"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - app-network
+    develop:
+      watch:
         - action: sync
-          path: ./backend/scripts
-          target: /app/scripts
-  # -------------------------------
-  # Frontend (Next.js standalone)
-  # -------------------------------
+          path: ./frontend/app
+          target: /app/app
+          ignore:
+            - node_modules/
+            - .next/
+        - action: rebuild
+          path: ./frontend/package.json
 
-  #     build:
-  #       context: ./frontend
-  #       dockerfile: Dockerfile
-  #       args:
-  #         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
-  #     environment:
-  #       - NODE_ENV=production
-  #     ports:
-  #       - "3000:3000"
-  #     env_file:
-  #       - .env
-  #
+  # -------------------------------
+  # Nginx Reverse Proxy
+  # -------------------------------
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro,z
+      - ./logs:/var/log/nginx:rw,z
+    depends_on:
+      frontend:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s  # ✅ This gives Nginx 15 seconds to stabilize before health checks begin
+    networks:
+      - app-network
+
 volumes:
   app-db-data:
   redis-data:

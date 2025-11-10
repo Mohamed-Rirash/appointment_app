@@ -1,16 +1,6 @@
-// hooks/useAppointmentEvents.tsx
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-
-// TypeScript Interfaces
-interface Citizen {
-  id: string;
-  firstname: string;
-  lastname: string;
-  email?: string;
-  phone?: string;
-}
 
 interface Appointment {
   id: string;
@@ -22,38 +12,19 @@ interface Appointment {
   purpose?: string;
 }
 
-interface TimeSlot {
-  id: string;
-  start_time: string;
-  end_time: string;
-  is_booked: boolean;
-}
-
-interface SSEEvent {
-  event: string;
-  data: any;
-}
-
 interface UseAppointmentEventsReturn {
   isConnected: boolean;
   isLoading: boolean;
   error: string | null;
-  eventCount: number;
   appointments: Appointment[];
-  timeSlots: Record<string, TimeSlot[]>;
-  lastUpdate: Date | null;
   reconnect: () => void;
-  requestNotificationPermission: () => Promise<NotificationPermission>;
 }
 
 export const useAppointmentEvents = (officeId: string): UseAppointmentEventsReturn => {
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [eventCount, setEventCount] = useState(0);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [timeSlots, setTimeSlots] = useState<Record<string, TimeSlot[]>>({});
-  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   
   const eventSourceRef = useRef<EventSource | null>(null);
   const retryCountRef = useRef(0);
@@ -78,7 +49,6 @@ export const useAppointmentEvents = (officeId: string): UseAppointmentEventsRetu
       return;
     }
 
-    // Cleanup existing connection
     disconnect();
 
     const url = `${process.env.NEXT_PUBLIC_API_URL}/appointments/events?office_id=${encodeURIComponent(officeId)}`;
@@ -96,39 +66,17 @@ export const useAppointmentEvents = (officeId: string): UseAppointmentEventsRetu
 
     eventSourceRef.current.onmessage = (event) => {
       try {
-        const data: SSEEvent = JSON.parse(event.data);
+        const data = JSON.parse(event.data);
         console.log('📨 Update received:', data);
-        setLastUpdate(new Date());
-        setEventCount(prev => prev + 1);
 
-        // Reset retry count on successful message
-        retryCountRef.current = 0;
+        if (data.event === 'new_appointment' && data.data?.appointment) {
+          const newAppointment = data.data.appointment;
+          setAppointments(prev => [newAppointment, ...prev].slice(0, 50)); // Keep last 50
+          retryCountRef.current = 0;
 
-        // Handle different event types
-        switch (data.event) {
-          case 'new_appointment':
-            if (data.data?.appointment) {
-              setAppointments(prev => [...prev, data.data.appointment]);
-              console.log('📅 New appointment added to state');
-            }
-            break;
-
-          case 'time_slots_updated':
-            if (data.data?.date && data.data?.slots) {
-              setTimeSlots(prev => ({
-                ...prev,
-                [data.data.date]: data.data.slots
-              }));
-              console.log('🕒 Time slots updated');
-            }
-            break;
-
-          case 'heartbeat':
-            console.log('❤️ Heartbeat received');
-            break;
-
-          default:
-            console.log('🤔 Unknown event type:', data.event);
+          // Play sound and show notification
+          playNotificationSound();
+          showBrowserNotification(newAppointment);
         }
       } catch (err) {
         console.error('❌ Failed to parse event data:', err);
@@ -140,11 +88,8 @@ export const useAppointmentEvents = (officeId: string): UseAppointmentEventsRetu
       setIsConnected(false);
       setError('Connection error - retrying...');
 
-      // Retry logic with exponential backoff
       if (retryCountRef.current < maxRetriesRef.current) {
         const delay = 2000 * Math.pow(2, retryCountRef.current);
-        console.log(`🔄 Retrying in ${delay}ms... (${retryCountRef.current + 1}/${maxRetriesRef.current})`);
-        
         retryTimeoutRef.current = setTimeout(() => {
           retryCountRef.current += 1;
           connect();
@@ -152,57 +97,59 @@ export const useAppointmentEvents = (officeId: string): UseAppointmentEventsRetu
       } else {
         setIsLoading(false);
         setError('Failed to maintain connection after multiple attempts');
-        console.error('🚫 Max retries reached. Giving up.');
       }
     };
 
   }, [officeId, disconnect]);
 
-  const reconnect = useCallback(() => {
-    console.log('🔄 Manual reconnect requested');
-    retryCountRef.current = 0;
-    setError(null);
-    setIsLoading(true);
-    connect();
-  }, [connect]);
+  const playNotificationSound = () => {
+    try {
+      const audio = new Audio('/notification.mp3');
+      audio.volume = 0.5;
+      audio.play().catch(err => console.log('Audio play failed:', err));
+    } catch (err) {
+      console.log('Audio creation failed:', err);
+    }
+  };
+
+  const showBrowserNotification = (appointment: Appointment) => {
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification('New Appointment', {
+        body: `📝 ${appointment.purpose || 'New booking'} \n📅 ${appointment.appointment_date}`,
+        icon: '/favicon.ico',
+        tag: 'appointment-' + appointment.id
+      });
+    }
+  };
 
   useEffect(() => {
     connect();
     return () => disconnect();
   }, [connect, disconnect]);
 
-  // Auto-reconnect when page becomes visible
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible' && !isConnected) {
-        console.log('📱 Page visible - attempting reconnect');
         reconnect();
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [isConnected, reconnect]);
+  }, [isConnected]);
 
-  // Request browser notification permission
-  const requestNotificationPermission = useCallback(async () => {
-    if ('Notification' in window && Notification.permission === 'default') {
-      const permission = await Notification.requestPermission();
-      console.log('🔔 Notification permission:', permission);
-      return permission;
-    }
-    return Notification.permission;
-  }, []);
+  const reconnect = useCallback(() => {
+    retryCountRef.current = 0;
+    setError(null);
+    setIsLoading(true);
+    connect();
+  }, [connect]);
 
   return {
     isConnected,
     isLoading,
     error,
-    eventCount,
     appointments,
-    timeSlots,
-    lastUpdate,
     reconnect,
-    requestNotificationPermission,
   };
 };
