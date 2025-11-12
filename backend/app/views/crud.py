@@ -149,3 +149,69 @@ class ViewAppointmentCrud:
         total = await db.fetch_val(total_query)
 
         return [dict(row) for row in rows], total
+
+    @staticmethod
+    async def get_all_appointments_by_date_and_status(
+        db,
+        on_date: date,
+        status: str,
+        limit: int = 20,
+        offset: int = 0,
+    ):
+        filters = and_(
+            appointment_details.c.status == status.upper(),
+            func.date(appointment_details.c.created_at) == on_date,
+        )
+
+        data_query = (
+            ViewAppointmentCrud._base_query()
+            .where(filters)
+            .order_by(
+                appointment_details.c.appointment_date.asc(),
+                appointment_details.c.time_slotted.asc(),
+            )
+            .limit(limit)
+            .offset(offset)
+        )
+        rows = await db.fetch_all(data_query)
+
+        total_query = select(func.count()).select_from(
+            ViewAppointmentCrud._base_query().where(filters).alias("subq")
+        )
+        total = await db.fetch_val(total_query)
+
+        return [dict(row) for row in rows], total
+
+    @staticmethod
+    async def get_all_past_appointments(
+        db,
+        status: str,
+        office_id: UUID,
+        date: date,
+        limit: int = 20,
+        offset: int = 0,
+    ):
+        filters = and_(
+            appointment_details.c.status == status.upper(),
+            appointment_details.c.office_id == office_id,
+            appointment_details.c.appointment_date <= date,
+        )
+
+        data_query = (
+            ViewAppointmentCrud._base_query()
+            .where(filters)
+            .order_by(
+                appointment_details.c.appointment_date.asc(),
+                appointment_details.c.time_slotted.asc(),
+            )
+            .limit(limit)
+            .offset(offset)
+        )
+        rows = await db.fetch_all(data_query)
+
+        total_query = select(func.count()).select_from(
+            ViewAppointmentCrud._base_query().where(filters).alias("subq")
+        )
+        total = await db.fetch_val(total_query)
+
+        return [dict(row) for row in rows], total
