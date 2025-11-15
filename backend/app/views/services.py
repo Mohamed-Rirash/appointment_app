@@ -97,3 +97,40 @@ class ViewAppointmentService:
         return PaginatedAppointments(
             total=total, limit=limit, offset=offset, appointments=appointments
         )
+
+    @staticmethod
+    async def get_all_appointments_by_date_and_status(
+        on_date: date,
+        status: str,
+        db: Database,
+        limit: int = 20,
+        offset: int = 0,
+    ) -> PaginatedAppointments:
+        rows, total = await ViewAppointmentCrud.get_all_appointments_by_date_and_status(
+            db, on_date, status, limit, offset
+        )
+        appointments: list[AppointmentDetails] = [
+            ViewAppointmentService._map_row_to_model(row) for row in rows
+        ]
+        return PaginatedAppointments(
+            total=total, limit=limit, offset=offset, appointments=appointments
+        )
+
+    @staticmethod
+    async def get_all_past_appointments(
+        office_id: UUID,
+        date: date,
+        status: str,
+        db: Database,
+        limit: int = 20,
+        offset: int = 0,
+    ) -> PaginatedAppointments:
+        rows, total = await ViewAppointmentCrud.get_all_past_appointments(
+            db, status, office_id, date, limit, offset
+        )
+        appointments: list[AppointmentDetails] = [
+            ViewAppointmentService._map_row_to_model(row) for row in rows
+        ]
+        return PaginatedAppointments(
+            total=total, limit=limit, offset=offset, appointments=appointments
+        )

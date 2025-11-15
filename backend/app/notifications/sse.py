@@ -27,7 +27,7 @@ class SSEBroker:
             if q in self._subscribers:
                 self._subscribers.remove(q)
                 logger.info(f"Client unsubscribed. Total subscribers: {len(self._subscribers)}")
-        
+
         # Drain queue safely
         while True:
             try:
@@ -42,7 +42,7 @@ class SSEBroker:
         payload = json.dumps({"event": event, "data": data}, default=str)
         async with self._lock:
             targets = list(self._subscribers)
-        
+
         for q in targets:
             try:
                 await q.put(payload)
@@ -58,25 +58,25 @@ class SSEBroker:
         try:
             # Initial connection
             yield f"data: {json.dumps({'event': 'connected', 'data': {'status': 'ok'}})}\n\n"
-            
+
             while True:
                 # Wait for event with 30s timeout
                 try:
                     payload = await asyncio.wait_for(q.get(), timeout=30.0)
                     yield f"data: {payload}\n\n"
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     # Heartbeat
                     heartbeat = json.dumps({
                         "event": "heartbeat",
                         "data": {"timestamp": datetime.utcnow().isoformat()}
                     })
                     yield f"data: {heartbeat}\n\n"
-                
+
                 # Check if client disconnected
                 if await request.is_disconnected():
                     logger.info("Client disconnected detected")
                     break
-                    
+
         except asyncio.CancelledError:
             logger.info("Event generator cancelled")
             raise

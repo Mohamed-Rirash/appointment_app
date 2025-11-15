@@ -7,7 +7,7 @@ from databases import Database
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.appointments.constants import AppointmentStatus
-from app.auth.dependencies import CurrentUser, require_any_role
+from app.auth.dependencies import CurrentUser, require_any_role, require_role
 from app.database import get_db
 from app.views.schemas import PaginatedAppointments
 from app.views.services import ViewAppointmentService
@@ -47,6 +47,47 @@ async def get_my_appointments_on_date(
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Failed to fetch your appointments: {e}"
+        )
+
+
+# get all past appointments for my office
+@view_router.get(
+    "/{office_id}/allpastappointments",
+    response_model=PaginatedAppointments,
+    summary="Get all past appointments for my office(host and secretary)",
+    description=(
+        "Retrieve paginated appointments for all offices filtered by status. "
+        "Supported statuses: pending, approved, cancelled, completed, not_shown, denied, postponed."
+        "this is for recipien filtering date and status"
+    ),
+)
+async def get_all_past_appointments(
+    office_id: UUID,
+    date: date = Query(
+        default_factory=date.today,
+        description="Date to filter appointments by (YYYY-MM-DD). Defaults to today.",
+    ),
+    status: AppointmentStatus = Query(
+        AppointmentStatus.PENDING,
+        description="Filter appointments by status",
+    ),
+    limit: int = Query(20, ge=1, le=100, description="Number of items per page"),
+    offset: int = Query(0, ge=0, description="Number of items to skip"),
+    db: Database = Depends(get_db),
+    _user: CurrentUser = Depends(require_any_role("secretary", "host")),
+):
+    try:
+        return await ViewAppointmentService.get_all_past_appointments(
+            office_id=office_id,
+            date=date,
+            status=status.value,
+            db=db,
+            limit=limit,
+            offset=offset,
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Failed to fetch appointments: {e}"
         )
 
 
@@ -139,6 +180,39 @@ async def get_all_appointments_by_status(
 ):
     try:
         return await ViewAppointmentService.get_all_appointments_by_status(
+            status=status.value,
+            db=db,
+            limit=limit,
+            offset=offset,
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Failed to fetch appointments: {e}"
+        )
+
+
+@view_router.get(
+    "/allappointments",
+    response_model=PaginatedAppointments,
+    summary="Get all appointments by date and status for (admin) ",
+)
+async def get_all_appointments_by_date_and_status(
+    on_date: date = Query(
+        default_factory=date.today,
+        description="Date to filter appointments by (YYYY-MM-DD). Defaults to today.",
+    ),
+    status: AppointmentStatus = Query(
+        AppointmentStatus.PENDING,
+        description="Filter appointments by status",
+    ),
+    limit: int = Query(20, ge=1, le=100, description="Number of items per page"),
+    offset: int = Query(0, ge=0, description="Number of items to skip"),
+    db: Database = Depends(get_db),
+    _user: CurrentUser = Depends(require_role(role_name="admin")),
+):
+    try:
+        return await ViewAppointmentService.get_all_appointments_by_date_and_status(
+            on_date=on_date,
             status=status.value,
             db=db,
             limit=limit,

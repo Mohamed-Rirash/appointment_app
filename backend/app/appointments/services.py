@@ -1,7 +1,7 @@
-import uuid
 import logging
+import uuid
 from datetime import date, datetime
-from typing import Any, Dict, Union
+from typing import Any
 
 from databases import Database
 from sqlalchemy import func, or_
@@ -9,14 +9,12 @@ from sqlalchemy import func, or_
 from app.appointments import schemas as sch
 from app.appointments.constants import AppointmentStatus
 from app.appointments.crud import AppointmentCrud
-from app.appointments.exceptions import (
-    AppointmentAlreadyApproved,
-    AppointmentCompletionNotAllowed,
-    AppointmentDecisionNotAllowed,
-    AppointmentEditNotAllowed,
-    AppointmentNotFound,
-    AppointmentPostponementNotAllowed,
-)
+from app.appointments.exceptions import (AppointmentAlreadyApproved,
+                                         AppointmentCompletionNotAllowed,
+                                         AppointmentDecisionNotAllowed,
+                                         AppointmentEditNotAllowed,
+                                         AppointmentNotFound,
+                                         AppointmentPostponementNotAllowed)
 from app.appointments.view import appointment_details
 from app.core.serialization import serialize_database_record
 from app.notifications.sse import SSEBroker, office_brokers
@@ -28,16 +26,15 @@ logger = logging.getLogger(__name__)
 # FIXED: Event Broadcasting Helper
 # =============================================================================
 
-async def broadcast_event(office_id: Union[uuid.UUID, str], event: Dict[str, Any]) -> None:
+
+async def broadcast_event(office_id: uuid.UUID | str, event: dict[str, Any]) -> None:
     """
     Publish event to the specific office's SSE broker.
-    
     Args:
         office_id: Office UUID (can be string or UUID object)
         event: Dictionary containing:
             - "type": The event type (string)
             - Additional key-value pairs for the event payload
-    
     Example:
         await broadcast_event(
             office_id="6e8be20d-22ce-4e8a-9c66-9e1b1876a3d7",
@@ -52,27 +49,29 @@ async def broadcast_event(office_id: Union[uuid.UUID, str], event: Dict[str, Any
         # Normalize office_id to UUID object
         if isinstance(office_id, str):
             office_id = uuid.UUID(office_id)
-        
+
         # Get or create broker for this office
         broker = office_brokers.setdefault(office_id, SSEBroker())
-        
+
         # Extract event type and create clean payload
         event_type = str(event["type"])
         event_data = {k: v for k, v in event.items() if k != "type"}
-        
+
         # Publish to all subscribers
         await broker.publish(event_type, event_data)
         logger.info(f"📡 Broadcast event '{event_type}' to office {office_id}")
-        
+
     except Exception as e:
         logger.error(f"❌ Failed to broadcast event: {e}")
         import traceback
+
         traceback.print_exc()
 
 
 # =============================================================================
 # FIXED: Appointment Service
 # =============================================================================
+
 
 class AppointmentService:
     @staticmethod
@@ -111,7 +110,9 @@ class AppointmentService:
                     raise AppointmentNotFound(f"No slot found for {slot_time}.")
 
                 if slot["is_booked"]:
-                    raise AppointmentNotFound(f"Time slot {slot_time} is already booked.")
+                    raise AppointmentNotFound(
+                        f"Time slot {slot_time} is already booked."
+                    )
 
                 logger.info(f"Marking slot {slot['id']} as booked")
                 await AppointmentCrud.mark_slot_booked(db, slot["id"])
@@ -135,6 +136,7 @@ class AppointmentService:
         except Exception as e:
             logger.error(f"❌ Error in create_with_citizen: {type(e).__name__}: {e}")
             import traceback
+
             traceback.print_exc()
             raise
 
@@ -221,9 +223,7 @@ class AppointmentService:
                 "decision_reason": decision.reason,
             }
 
-            await AppointmentCrud.update_appointment(
-                db, appointment_id, update_data
-            )
+            await AppointmentCrud.update_appointment(db, appointment_id, update_data)
 
             # 5. Broadcast event
             await broadcast_event(
@@ -265,7 +265,9 @@ class AppointmentService:
 
             # Validate new date/time provided
             if not decision.new_appointment_date or not decision.new_time_slot:
-                raise ValueError("Both new_appointment_date and new_time_slot are required")
+                raise ValueError(
+                    "Both new_appointment_date and new_time_slot are required"
+                )
 
             # Check and book new slot
             slot_date = decision.new_appointment_date.date()
@@ -323,16 +325,20 @@ class AppointmentService:
                     "updated_slots": {
                         "old_date": {
                             "date": str(old_slot_date),
-                            "slots": [serialize_database_record(s) for s in old_date_slots],
+                            "slots": [
+                                serialize_database_record(s) for s in old_date_slots
+                            ],
                         },
                         "new_date": {
                             "date": str(slot_date),
-                            "slots": [serialize_database_record(s) for s in new_date_slots],
+                            "slots": [
+                                serialize_database_record(s) for s in new_date_slots
+                            ],
                         },
                     },
                 },
             )
-            logger.info(f"📡 Sent appointment_postponed event")
+            logger.info("📡 Sent appointment_postponed event")
 
             return await AppointmentCrud.get_appointment_by_id(db, appointment_id)
 
@@ -382,7 +388,7 @@ class AppointmentService:
                     "updates": serialize_database_record(update_dict),
                 },
             )
-            logger.info(f"📡 Sent appointment_updated event")
+            logger.info("📡 Sent appointment_updated event")
 
             return await AppointmentCrud.get_appointment_by_id(db, appointment_id)
 
@@ -421,7 +427,7 @@ class AppointmentService:
                     "reason": cancel_data.reason,
                 },
             )
-            logger.info(f"📡 Sent appointment_cancelled event")
+            logger.info("📡 Sent appointment_cancelled event")
 
             return await AppointmentCrud.get_appointment_by_id(db, appointment_id)
 
@@ -459,7 +465,7 @@ class AppointmentService:
                     "notes": complete_data.notes if complete_data else None,
                 },
             )
-            logger.info(f"📡 Sent appointment_completed event")
+            logger.info("📡 Sent appointment_completed event")
 
             return await AppointmentCrud.get_appointment_by_id(db, appointment_id)
 
@@ -492,16 +498,20 @@ class AppointmentService:
 
             if filters.start_date:
                 conditions.append(
-                    func.date(appointment_details.c.appointment_date) >= filters.start_date
+                    func.date(appointment_details.c.appointment_date)
+                    >= filters.start_date
                 )
 
             if filters.end_date:
                 conditions.append(
-                    func.date(appointment_details.c.appointment_date) <= filters.end_date
+                    func.date(appointment_details.c.appointment_date)
+                    <= filters.end_date
                 )
 
             if filters.citizen_id:
-                conditions.append(appointment_details.c.citizen_id == filters.citizen_id)
+                conditions.append(
+                    appointment_details.c.citizen_id == filters.citizen_id
+                )
 
             if filters.host_id:
                 conditions.append(appointment_details.c.host_id == filters.host_id)
@@ -524,11 +534,19 @@ class AppointmentService:
             "host_name": appointment.host_name,
             "office_name": appointment.office_name,
             "purpose": appointment.purpose,
-            "appointment_date": appointment.appointment_date.isoformat() if appointment.appointment_date else None,
-            "time_slotted": str(appointment.time_slotted) if appointment.time_slotted else None,
+            "appointment_date": (
+                appointment.appointment_date.isoformat()
+                if appointment.appointment_date
+                else None
+            ),
+            "time_slotted": (
+                str(appointment.time_slotted) if appointment.time_slotted else None
+            ),
             "status": appointment.status,
             "issued_by": appointment.issued_by_name,
-            "issued_at": appointment.created_at.isoformat() if appointment.created_at else None,
+            "issued_at": (
+                appointment.created_at.isoformat() if appointment.created_at else None
+            ),
         }
 
         return slip_data
@@ -561,11 +579,15 @@ class AppointmentService:
                 )
 
             if filters.by_time_slot is not None:
-                conditions.append(appointment_details.c.time_slotted == filters.by_time_slot)
+                conditions.append(
+                    appointment_details.c.time_slotted == filters.by_time_slot
+                )
 
             if filters.completed is True:
                 conditions.append(appointment_details.c.appointment_active.is_(False))
-                conditions.append(appointment_details.c.status == AppointmentStatus.COMPLETED)
+                conditions.append(
+                    appointment_details.c.status == AppointmentStatus.COMPLETED
+                )
 
         appointments = await AppointmentCrud.get_all_appointments(db, conditions)
 
