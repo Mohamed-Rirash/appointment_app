@@ -304,17 +304,6 @@ export const client = {
     return response.data;
   },
 
-  // Suspend User
-  async suspendUser(userId: string, token: string) {
-    const response = await apiClient.patch(
-      `/admin/users/${userId}/suspend`,
-      {},
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
-    return response.data;
-  },
 
   // Assign Role
   async assignRole(userId: string, roleName: string, token: string) {
@@ -345,12 +334,13 @@ export const client = {
   // OFFICESSS
 
   // Get Offices
-  // async getOffices(token: string) {
-  //   const response = await apiClient.get("/offices", {
-  //     headers: { Authorization: `Bearer ${token}` },
-  //   });
-  //   return response.data;
-  // },
+  async getOfficess(token: string) {
+    const response = await apiClient.get("/offices", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    console.log("res",response.data)
+    return response.data;
+  },
 
   // Get Office
   async getOffice(token?: string, id?: string) {
@@ -492,11 +482,7 @@ export const client = {
   },
 
   // Get Slot availability
-
   async getSlotAvailability(officeId: string, data: string, token?: string) {
-    console.log("OFFICE ID client", officeId);
-
-    console.log("TOKEN client", token);
     try {
       const response = await apiClient.get(
         `/availability/hosts/${officeId}/slots?target_date=${data}`,

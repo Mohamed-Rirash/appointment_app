@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -87,7 +86,7 @@ interface AddReception {
 const formSchema = z.object({
   firstName: z.string().min(1, "First name is required").max(50),
   lastName: z.string().min(1, "Last name is required").max(50),
-  email: z.string().email("Invalid email format").optional().or(z.literal("")),
+  email: z.email("Invalid email format").optional().or(z.literal("")),
   phone: z
     .string()
     .min(1, "Phone number is required")
@@ -206,7 +205,7 @@ export default function AddReceptionform({ token }: AddReception) {
       try {
         // Format date as string directly
         const dateStr = format(selectedDate, "yyyy-MM-dd");
- 
+
         const data = await client.getSlotAvailability(
           officeId,
           dateStr,
@@ -274,7 +273,7 @@ export default function AddReceptionform({ token }: AddReception) {
     try {
       // Format date as string to avoid timezone issues
       const appointmentDateStr = format(data.date, "yyyy-MM-dd");
-      
+
       const requestData = {
         citizen: {
           firstname: data.firstName,
@@ -286,24 +285,24 @@ export default function AddReceptionform({ token }: AddReception) {
           host_id: data.hostId,
           office_id: data.officeId,
           purpose: data.purpose,
-          appointment_date: appointmentDateStr, 
+          appointment_date: appointmentDateStr,
           time_slotted: data.timeSlot,
           status: "PENDING",
         },
       };
 
-    
+
       const response = await client.createAppointment(requestData, token);
       toast.success("Appointment created successfully!");
       form.reset();
       setStep(1);
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
     } catch (error: any) {
-      
+
       // Handle unique constraint violation
       if (error.response?.data?.detail?.error_type === "UniqueViolationError") {
         const errorMsg = error.response.data.detail.error;
-        
+
         if (errorMsg.includes("citizen_info_phone_key")) {
           toast.error(
             "This phone number is already registered. Please use a different phone number or search for the existing citizen.",
@@ -313,7 +312,7 @@ export default function AddReceptionform({ token }: AddReception) {
               style: { maxWidth: "500px" },
             }
           );
-          
+
           form.setError("phone", {
             type: "manual",
             message: "Phone number already exists",
@@ -332,9 +331,9 @@ export default function AddReceptionform({ token }: AddReception) {
           toast.error("Duplicate entry error. Please check your information.");
         }
       } else {
-        const errorMessage = error.response?.data?.detail?.message || 
-                            error.message || 
-                            "Failed to create appointment. Please try again.";
+        const errorMessage = error.response?.data?.detail?.message ||
+          error.message ||
+          "Failed to create appointment. Please try again.";
         toast.error(errorMessage);
       }
     } finally {
@@ -373,7 +372,7 @@ export default function AddReceptionform({ token }: AddReception) {
   return (
     <div className="max-w-4xl mx-auto mt-6">
       <Card className="shadow-none border-none">
-    
+
         <CardContent className="p-6">
           {/* Step Progress */}
           <div className="flex items-center justify-center mb-8">
@@ -387,8 +386,8 @@ export default function AddReceptionform({ token }: AddReception) {
                         stepNum <= step
                           ? "bg-brand text-primary-foreground border-brand"
                           : stepNum === step
-                          ? "border-brand bg-background text-brand"
-                          : "bg-muted text-muted-foreground border-muted"
+                            ? "border-brand bg-background text-brand"
+                            : "bg-muted text-muted-foreground border-muted"
                       )}
                     >
                       {getStepIcon(stepNum)}
@@ -440,9 +439,9 @@ export default function AddReceptionform({ token }: AddReception) {
                       name="firstName"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>First Name</FormLabel>
+                          <FormLabel className="text-brand-black">First Name</FormLabel>
                           <FormControl>
-                            <Input placeholder="Enter first name" {...field} />
+                            <Input placeholder="Enter first name" {...field} className="py-5" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -454,9 +453,9 @@ export default function AddReceptionform({ token }: AddReception) {
                       name="lastName"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Last Name</FormLabel>
+                          <FormLabel className="text-brand-black">Last Name</FormLabel>
                           <FormControl>
-                            <Input placeholder="Enter last name" {...field} />
+                            <Input placeholder="Enter last name" {...field} className="py-5" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -480,6 +479,7 @@ export default function AddReceptionform({ token }: AddReception) {
                               placeholder="(063) 123-4567"
                               value={field.value}
                               onChange={handlePhoneChange}
+                              className="py-5"
                             />
                           </FormControl>
                           <FormMessage />
@@ -500,6 +500,7 @@ export default function AddReceptionform({ token }: AddReception) {
                             <Input
                               type="email"
                               placeholder="citizen@example.com"
+                              className="py-5"
                               {...field}
                             />
                           </FormControl>
@@ -524,7 +525,7 @@ export default function AddReceptionform({ token }: AddReception) {
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 ">
                     <FormField
                       control={form.control}
                       name="officeId"
@@ -538,8 +539,8 @@ export default function AddReceptionform({ token }: AddReception) {
                             {loadingOffices ? (
                               <div className="h-10 w-full bg-muted rounded-md animate-pulse" />
                             ) : offices.length > 0 ? (
-                              <Select onValueChange={field.onChange} value={field.value}>
-                                <SelectTrigger>
+                              <Select onValueChange={field.onChange} value={field.value} >
+                                <SelectTrigger className="py-5 w-full">
                                   <SelectValue placeholder="Select an office" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -585,7 +586,7 @@ export default function AddReceptionform({ token }: AddReception) {
                                 value={field.value}
                                 disabled={!form.watch("officeId")}
                               >
-                                <SelectTrigger>
+                                <SelectTrigger className="py-5 w-full">
                                   <SelectValue
                                     placeholder={
                                       form.watch("officeId")
@@ -711,7 +712,7 @@ export default function AddReceptionform({ token }: AddReception) {
                                 }}
                                 disabled={(date) => isBefore(startOfDay(date), startOfDay(tomorrow))}
                                 className="rounded-md"
-                                key={`calendar-${step}`} // Force re-render
+                                key={`calendar-${step}`}
                               />
                             </div>
                             <FormMessage />

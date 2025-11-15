@@ -29,10 +29,10 @@ export default async function OfficeDetailPage({
 
   return (
     <main className="mx-6 my-6">
-      <Link href="/offices">
+      <Link href="/admin/offices">
         <Button
           variant="ghost"
-          className="mb-4 pl-0 rounded-[4px] hover:bg-brand-primary"
+          className="mb-4 pl-0 rounded-sm hover:bg-brand-primary"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Offices

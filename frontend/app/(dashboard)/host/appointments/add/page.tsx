@@ -18,8 +18,8 @@ export default async function AddAppointment() {
     const hostId = user?.id;
     const role = user?.roles?.[0];
 
-  
 
+    console.log("roel", role)
     // Authorization check
     const allowedRoles = ["host", "secretary", "reception"];
     if (!role || !allowedRoles.includes(role)) {
@@ -51,7 +51,7 @@ export default async function AddAppointment() {
           />
         ) : (
           <div className="text-center p-8">
-           <AppointmentReceptionManager token={token}/>
+            <AppointmentReceptionManager token={token} />
           </div>
         )}
       </main>

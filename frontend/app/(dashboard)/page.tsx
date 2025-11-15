@@ -1,51 +1,81 @@
-import { getSession } from "@/helpers/actions/getsession";
-import DashboardStatsCard from "./_components/DashboardStatsCard";
-import QuickActionsCard from "./_components/QuickActionsCard";
-import OfficeOverviewSection from "./_components/OfficeOverviewSection";
-import RecentUsersTable from "./_components/RecentUsersTable";
-import RecentActivitySection from "./_components/RecentActivitySection";
-import DashboardFooter from "./_components/Footer";
+// import { getSession } from "@/helpers/actions/getsession";
+// import DashboardStatsCard from "./_components/DashboardStatsCard";
+// import QuickActionsCard from "./_components/QuickActionsCard";
+// import OfficeOverviewSection from "./_components/OfficeOverviewSection";
+// import RecentUsersTable from "./_components/RecentUsersTable";
+// import RecentActivitySection from "./_components/RecentActivitySection";
+// import DashboardFooter from "./_components/Footer";
+// import { redirect } from "next/navigation";
+
+
+// export default async function Dashboard() {
+//   const session = await getSession()
+//   const token = session?.user.access_token
+
+//   if (session?.user.roles[0] !== "admin") {
+//     redirect("/")
+//     return null
+//   }
+
+//   return (
+//  <>
+//   <main className="px-6 pt-12 ">
+//         <div className="">
+//           <h1 className="font-bold text-lg">Welcome, {session?.user.first_name} </h1>
+//           <p className="text-ms text-brand-gray ">System Overview & Management</p>
+//         </div>
+//         <section className="mt-12">
+//           <DashboardStatsCard token={token} />
+//         </section>
+//         <section className="mt-8">
+//           <QuickActionsCard token={token} />
+//         </section>
+//         <section className="mt-8">
+//           <OfficeOverviewSection token={token} />
+//         </section>
+//         <section className="mt-8">
+//           <RecentUsersTable token={token} />
+//         </section>
+//         <section className="mt-8">
+//           <RecentActivitySection token={token} />
+//         </section>
+
+//       </main>
+//       <footer>
+//         <DashboardFooter user={session?.user} />
+//       </footer>
+//  </>
+     
+//   );
+// }
+
+
 import { redirect } from "next/navigation";
+import { getSession } from "@/helpers/actions/getsession";
 
-
-export default async function Dashboard() {
+export default async function DashboardHome() {
   const session = await getSession()
   const token = session?.user.access_token
 
-  if (session?.user.roles[0] !== "admin") {
-    redirect("/")
-    return null
+  if (!token) {
+    redirect("/Signin");
   }
 
-  return (
- <>
-  <main className="px-6 pt-12 ">
-        <div className="">
-          <h1 className="font-bold text-lg">Welcome, {session?.user.first_name} </h1>
-          <p className="text-ms text-brand-gray ">System Overview & Management</p>
-        </div>
-        <section className="mt-12">
-          <DashboardStatsCard token={token} />
-        </section>
-        <section className="mt-8">
-          <QuickActionsCard token={token} />
-        </section>
-        <section className="mt-8">
-          <OfficeOverviewSection token={token} />
-        </section>
-        <section className="mt-8">
-          <RecentUsersTable token={token} />
-        </section>
-        <section className="mt-8">
-          <RecentActivitySection token={token} />
-        </section>
 
-      </main>
-      <footer>
-        <DashboardFooter user={session?.user} />
-      </footer>
- </>
-     
-  
-  );
+    const user = session?.user
+    const role = user.roles?.[0]
+
+    // Redirect based on role
+    switch (role) {
+      case "admin":
+        redirect("/admin");
+      case "reception":
+        redirect("/reception");
+      case "host":
+      case "secretary":
+        redirect("/host");
+      default:
+        redirect("/unauthorized");
+    }
+
 }

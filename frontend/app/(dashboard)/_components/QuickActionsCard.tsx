@@ -8,8 +8,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import CreateOfficeForm from "../offices/_components/officeForm";
-import UserForm from "../members/_components/userForm";
+import CreateOfficeForm from "../admin/offices/_components/officeForm";
+import UserForm from "../admin/members/_components/userForm";
 import { PlusIcon } from "lucide-react";
 
 export default function QuickActionsCard({ token }: { token?: string }) {

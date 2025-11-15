@@ -1,31 +1,42 @@
+import { getSession } from "@/helpers/actions/getsession";
+import { redirect } from "next/navigation";
+import AvailabilityCalendar from "../_components/availability-calendar";
 
-import { ArrowLeft } from 'lucide-react'
-import ManageAvailability from '../_components/ManageAvailability'
-import { Button } from '@/components/ui/button'
-import Link from 'next/link'
-import { getSession } from '@/helpers/actions/getsession'
+export const metadata = {
+    title: "My Availability - KulanDesk Host",
+};
 
-export default async function Availability() {
+export default async function AvailabilityPage() {
     const session = await getSession()
     const token = session?.user.access_token
+    const officeId = session?.user.office_id
+    if (!token) {
+        redirect("/Signin");
+    }
+
+
+    if (!officeId) {
+        redirect("/profile?error=no_office");
+    }
+
     return (
-        <>
-            <main className='px-6 pt-8'>
-                <div className="">
-                    <Link href={"/host"}>
-                        <Button
-                            className="text-xl py-6 rounded-[4px] shodow-gren transition-colors
-        border border-[#eeeeee] bg-white text-brand-gray hover:bg-brand-primary/40 "
-                        >
-                            <ArrowLeft className="h-5! w-5!" />
-                            <span className="mx-2"> Back to login</span>
-                        </Button>
-                    </Link>
+        <div className="space-y-6 p-6">
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight">My Availability</h1>
+                    <p className="text-muted-foreground">
+                        Set your weekly appointment schedule
+                    </p>
                 </div>
-                <section className='mt-8'>
-                    <ManageAvailability officeId={session?.user.office_id} token={token} />
-                </section>
-            </main>
-        </>
-    )
+                <div className="text-sm text-muted-foreground">
+                    Possition: {session?.user.position || "Not assigned"}
+                </div>
+            </div>
+
+            <AvailabilityCalendar
+                officeId={officeId}
+                token={token}
+            />
+        </div>
+    );
 }

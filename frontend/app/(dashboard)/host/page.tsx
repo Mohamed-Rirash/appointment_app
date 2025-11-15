@@ -1,72 +1,69 @@
-import { getSession } from "@/helpers/actions/getsession";
-import DashboardStatsCardhost from "./_components/DashboardStatsCardhost";
-import { AvailabilityDialog } from "./_components/AvailabilityDialog";
-import { Button } from "@/components/ui/button";
-import { Calendar, Clock } from "lucide-react";
-import Link from "next/link";
-import AppointmentQueueSection from "./_components/AppointmentQueueSection";
-import TodaysScheduleCard from "./_components/TodaysScheduleCard";
-import AvailableOverview from "./_components/AvailableOverview";
 import { redirect } from "next/navigation";
+import { getSession } from "@/helpers/actions/getsession";
+import { QuickStats } from "./_components/quick-stats";
+import { HostTodaysAppointments } from "./_components/appointmentsoverview";
+export const metadata = {
+  title: "My Schedule - KulanDesk Host",
+  description: "Today's appointments and availability",
+};
 
-export default async function page() {
-  const session = await getSession();
-  const token = session?.user.access_token;
-  const officeId = session?.user.office_id
-  const role = session?.user.roles[0]
-    const allowedRoles = ["host", "secretary", "reception"];
-    if (!allowedRoles.includes(role)) {
-        redirect("/");
-        return null;
+export default async function HostDashboard() {
+  const session = await getSession()
+  const token = session?.user.access_token
+  const office_id = session?.user.office_id
+  if (!token) {
+    redirect("/Signin");
+  }
+  let limit = 20
+  let offset = 0
+
+  // Fetch today's appointments for this host
+  const res = await fetch(
+    `${process.env.API_URL}/views/${office_id}/appointments?status=PENDING&limit=${limit}&offset=${offset}`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
     }
-  console.log("userrr", session?.user)
+  )
+  if (!res.ok) {
+    redirect("/unauthorized");
+  }
+  const appointments = await res.json()
+
+  const stats = {
+    total_today: 150,
+    pending: 23,
+    completed: 127,
+    approval_rate: 84.7
+  };
+
+  const today = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric'
+  });
+
   return (
-    <>
-      <main className="px-6 pt-12">
-        <div className="flex justify-between items-center">
-          <div className="">
-            <h1 className="font-bold text-lg">
-              Welcome, {session?.user.first_name}{" "}
-            </h1>
-            <p className="text-ms text-brand-gray ">
-              Host Dashboard management
-            </p>
-          </div>
-          <div className="flex gap-4 ">
+    <div className="space-y-6 p-6">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight mb-2">Appointment Management</h1>
+        <p className="text-brand-gray">
+          Review and process appointment requests for <span className="text-brand font-bold">{today}</span>
+        </p>
+      </div>
 
-            <Link href={"/host/availabletime"}>
-              <Button className="bg-linear-to-r from-[#0F9938] to-[#29E05F] text-white font-bold py-6 px-8 rounded-[4px] shadow-gren">
-                <Clock className="h-5 w-5 mr-2" />
-                Manage Availability
-              </Button>
-            </Link>
+      <QuickStats
+        totalToday={stats.total_today}
+        pending={stats.pending}
+        completed={stats.completed}
+        approvalRate={stats.approval_rate}
+      />
 
-
-            {/* View Calendar */}
-            <AvailabilityDialog>
-              <Button
-                variant="outline"
-                className="font-bold py-6 px-8 rounded-sm"
-              >
-                <Calendar className="h-5 w-5 mr-2" />
-                View Calendar
-              </Button>
-            </AvailabilityDialog>
-          </div>
-        </div>
-        <section className="mt-12">
-          <DashboardStatsCardhost token={token} />
-        </section>
-        <section className="mt-12">
-          <AppointmentQueueSection token={token} office_id={officeId}/>
-        </section>
-        <section className="mt-12">
-          <TodaysScheduleCard token={token} />
-        </section>
-        <section className="my-12">
-          <AvailableOverview officeId={session?.user.office_id} token={token} />
-        </section>
-      </main>
-    </>
+      <HostTodaysAppointments
+        initialAppointments={appointments}
+        office_id={office_id}
+        token={token}
+      />
+    </div>
   );
 }

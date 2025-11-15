@@ -16,11 +16,11 @@ export default function Unauthorized() {
         {/* Content */}
         <div className="space-y-4">
           <h1 className="text-3xl font-bold text-gray-900">Access Denied</h1>
-          
+
           <p className="text-lg text-gray-600">
             You don't have permission to access this page.
           </p>
-          
+
           <p className="text-sm text-gray-500">
             If you believe this is an error, please contact your administrator.
           </p>
@@ -28,15 +28,15 @@ export default function Unauthorized() {
 
         {/* Actions */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center pt-6">
-          <Link 
+          <Link
             href="/"
-            className="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors"
+            className="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-brand hover:bg-brand/90 transition-colors"
           >
             Go Home
           </Link>
-          
-          <Link 
-            href="/login"
+
+          <Link
+            href="/Signin"
             className="inline-flex items-center justify-center px-5 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors"
           >
             Sign In Again

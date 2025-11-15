@@ -4,7 +4,6 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useOffices } from "@/helpers/hooks/office/useOffices";
 import { OfficeCard } from "./OfficeCard";
-import { UnassignedUsersCard } from "./UnassignedUsersCard";
 import { Search } from "lucide-react";
 
 interface Office {

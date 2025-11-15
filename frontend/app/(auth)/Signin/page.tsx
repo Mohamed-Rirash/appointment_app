@@ -12,14 +12,15 @@ import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 
 import logo from "@/public/logo.png";
-import { useRouter } from "next/navigation";
+import { redirect, useRouter } from "next/navigation";
 import { Spinner } from "@/components/ui/spinner";
 import axios from "axios";
+import getUser from "@/helpers/actions/getUser";
 
 const API = process.env.NEXT_PUBLIC_API_FRONT;
 
@@ -29,8 +30,20 @@ const formSchema = z.object({
   password: z.string().min(8),
 });
 export default function Signin() {
-  console.log("Hello guys",API);
   const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState(null)
+  useEffect(() => {
+    const getuser = async () => {
+      const User = await getUser()
+      console.log("userrrs", User)
+      setUser(User)
+    }
+    getuser()
+  }, [])
+
+  // if (!user) {
+  //   redirect("/")
+  // }
 
   // define the form
   const form = useForm<z.infer<typeof formSchema>>({
@@ -50,12 +63,12 @@ export default function Signin() {
   async function Submit(values: z.infer<typeof formSchema>) {
     form.clearErrors();
     setLoading(true);
-      console.log("Api",API)
+    console.log("Api", API)
 
     try {
-       const { data } = await axios.post<LoginResponse>(`/api/auth/login`, values);
+      const { data } = await axios.post<LoginResponse>(`/api/auth/login`, values);
 
-    
+
 
       console.log("Response data:", data);
       if (data.success) {
@@ -156,9 +169,8 @@ export default function Signin() {
             <Button
               disabled={loading}
               type="submit"
-              className={`py-[28px] w-full  text-xl font-bold mt-4 bg-linear-to-r from-[#21D256] to-[#0EA73C] ${
-                loading ? "opacity-50 pointer-disabled" : ""
-              }`}
+              className={`py-[28px] w-full  text-xl font-bold mt-4 bg-linear-to-r from-[#21D256] to-[#0EA73C] ${loading ? "opacity-50 pointer-disabled" : ""
+                }`}
             >
               {loading ? (
                 <>

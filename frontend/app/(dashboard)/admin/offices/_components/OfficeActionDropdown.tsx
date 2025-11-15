@@ -35,7 +35,7 @@ export function OfficeActionsDropdown({
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-36 p-2">
-                <Link href={`/offices/${office.id}`}>
+                <Link href={`offices/${office.id}`}>
                     <DropdownMenuItem> <Eye className="h-4 w-4 mr-1" />view</DropdownMenuItem>
                 </Link>
                 <EditOffice initialData={office} token={token} />
