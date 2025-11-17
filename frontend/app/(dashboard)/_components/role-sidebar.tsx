@@ -9,7 +9,6 @@ import {
   Calendar,
   UserCheck,
   Clock,
-  Shield,
   LogOut,
   ChevronsRight,
   ChevronsLeft,
@@ -48,7 +47,7 @@ const navigationConfig = {
       title: "Overview",
       href: "/admin",
       icon: LayoutDashboard,
-      description: "System statistics",
+      description: "System overview",
     },
     {
       title: "Users",
