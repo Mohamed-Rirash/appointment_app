@@ -57,10 +57,7 @@ class ViewAppointmentCrud:
         offset: int = 0,
     ):
         filters = and_(
-            or_(
-                appointment_details.c.issued_by == user_id,
-                appointment_details.c.host_id == user_id,
-            ),
+            appointment_details.c.issued_by == user_id,
             func.date(appointment_details.c.created_at) == target_date,
         )
 
