@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -28,7 +29,7 @@ import { client } from "@/helpers/api/client";
 import toast from "react-hot-toast";
 import { Spinner } from "@/components/ui/spinner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Shield } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
 // Validation schema
@@ -43,10 +44,10 @@ const userSchema = z.object({
 
 type UserFormData = z.infer<typeof userSchema>;
 
-export default function UserForm({ token }: { token?: string }) {
+export default function UserForm({ token }: { token: string | undefined }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
-    const queryClient = useQueryClient();
+  const queryClient = useQueryClient();
 
   const form = useForm<UserFormData>({
     resolver: zodResolver(userSchema),
@@ -65,14 +66,14 @@ export default function UserForm({ token }: { token?: string }) {
       setIsSubmitting(false);
       return;
     }
- 
+
     try {
       const result = await client.createUser(data, token);
       toast.success(
         `User ${data.first_name} ${data.last_name} has been added.`
       );
-      console.log("r",result)
-       queryClient.invalidateQueries({ queryKey: ["users"] });
+      // console.log("r", result)
+      queryClient.invalidateQueries({ queryKey: ["users"] });
 
       form.reset();
     } catch (err: any) {
@@ -167,30 +168,55 @@ export default function UserForm({ token }: { token?: string }) {
             name="roles"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-[16px] font-medium text-brand-black">
-                  Role
+                <FormLabel className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                  <Shield className="h-4 w-4 text-gray-500" />
+                  Role & Permissions
                 </FormLabel>
                 <Select
                   onValueChange={field.onChange}
-                  defaultValue={field.value}
+                  value={field.value}
+                  disabled={isSubmitting}
                 >
                   <FormControl>
-                    <SelectTrigger className="h-14 w-full py-6 pl-4 text-lg">
-                      <SelectValue placeholder="Select role" />
+                    <SelectTrigger className="w-full py-5 text-base rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500 transition-colors">
+                      <SelectValue placeholder="Choose a role for this member" />
                     </SelectTrigger>
                   </FormControl>
-                  <SelectContent>
+                  <SelectContent className="rounded-lg border-gray-300 shadow-lg">
                     <SelectGroup>
-                      <SelectLabel className="font-medium text-[14px] text-brand-black">
-                        user roles
+                      <SelectLabel className="text-xs text-gray-500 font-semibold uppercase tracking-wider">
+                        Available Roles
                       </SelectLabel>
-                      <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="host">Host</SelectItem>
-                      <SelectItem value="reception">Reception</SelectItem>
-                      <SelectItem value="secretary">Secretary</SelectItem>
+                      <SelectItem value="admin" className="text-base py-3 hover:bg-blue-50">
+                        <div className="flex flex-col">
+                          <span className="font-semibold text-brand-black">Administrator</span>
+                          <span className="text-xs text-brand-gray">Full system access</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="host" className="text-base py-3 hover:bg-blue-50">
+                        <div className="flex flex-col text-start">
+                          <span className="font-semibold text-brand-black">Host</span>
+                          <span className="text-xs text-brand-gray">Manage appointments & visitors</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="reception" className="text-base py-3 hover:bg-blue-50">
+                        <div className="flex flex-col text-start">
+                          <span className="font-semibold text-brand-black">Reception</span>
+                          <span className="text-xs text-brand-gray">Check-in & front desk operations</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="secretary" className="text-base py-3 hover:bg-blue-50">
+                        <div className="flex flex-col text-start">
+                          <span className="font-semibold text-brand-black">Secretary</span>
+                          <span className="text-xs text-brand-gray">Administrative support</span>
+                        </div>
+                      </SelectItem>
                     </SelectGroup>
                   </SelectContent>
                 </Select>
+                <FormDescription className="text-xs text-gray-500">
+                  Defines what this team member can access and manage.
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}

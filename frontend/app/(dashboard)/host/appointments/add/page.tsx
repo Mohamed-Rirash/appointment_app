@@ -33,7 +33,7 @@ export default async function AddAppointment() {
     if (rolesRequiringFullInfo.includes(role) && !hasRequiredInfo) {
       return (
         <div className="flex justify-center items-center min-h-64">
-          <div className="text-red-500">
+          <div className="text-red-500 font-bold">
             Missing required information. Please try again.
           </div>
         </div>

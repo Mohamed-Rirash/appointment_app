@@ -1,10 +1,14 @@
-// app/users/set-password/page.tsx
 "use client";
 
-import { useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { AlertCircle } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
+import toast from "react-hot-toast";
 import { z } from "zod";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import {
     Form,
     FormControl,
@@ -14,12 +18,7 @@ import {
     FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { client } from "@/helpers/api/client";
-import { useState } from "react";
-import toast from "react-hot-toast";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
 
 // Validation schema
 const setPasswordSchema = z
@@ -47,7 +46,7 @@ export default function SetPasswordPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
-    const [message, setMessage] = useState("")
+    const [message, setMessage] = useState("");
 
     const form = useForm<SetPasswordFormValues>({
         resolver: zodResolver(setPasswordSchema),
@@ -56,6 +55,7 @@ export default function SetPasswordPage() {
             confirmPassword: "",
         },
     });
+    const router = useRouter()
 
     async function onSubmit(values: SetPasswordFormValues) {
         if (!token || !email) {
@@ -77,14 +77,16 @@ export default function SetPasswordPage() {
             });
             if (result.message) {
                 toast.success(result.message);
-                setMessage(result.message)
+                setMessage(result.message);
                 setSuccess(true);
 
-                console.log("res", result)
+                console.log("res", result);
             }
 
-        } catch (err: any) {
-            const message = err.message || "Failed to set password. Please try again.";
+        } catch (err: unknown) {
+            const message =
+                (err instanceof Error && err.message) ||
+                "Failed to set password. Please try again.";
             setError(message);
             toast.error(message);
         } finally {
@@ -101,8 +103,10 @@ export default function SetPasswordPage() {
                         {message} You can now log in.
                     </p>
                     <Button
-                        className="mt-6 w-full bg-gradient-to-r from-[#29E05F] to-[#0F9938] text-white"
-                        onClick={() => (window.location.href = "/Signin")}
+                        className="mt-6 w-full bg-linear-to-r from-[#29E05F] to-[#0F9938] text-white"
+                        onClick={() => {
+                            router.push("/Signin")
+                        }}
                     >
                         Go to Login
                     </Button>
@@ -171,7 +175,7 @@ export default function SetPasswordPage() {
                         <Button
                             type="submit"
                             disabled={isSubmitting}
-                            className="w-full mt-6 py-7 bg-gradient-to-r from-[#29E05F] to-[#0F9938] text-white font-bold text-lg"
+                            className="w-full mt-6 py-7 bg-linear-to-r from-[#29E05F] to-[#0F9938] text-white font-bold text-lg"
                         >
                             {isSubmitting ? "Setting Password..." : "Set Password"}
                         </Button>

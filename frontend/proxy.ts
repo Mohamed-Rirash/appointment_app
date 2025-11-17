@@ -38,7 +38,7 @@
 // };
 
 // proxy.ts (project root)
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { getSession } from "./helpers/actions/getsession";
 
 // Route configuration
@@ -61,8 +61,7 @@ export async function proxy(req: NextRequest) {
 
   // 2. Protect routes and check roles
   if (PROTECTED_ROUTES.some(route => pathname.startsWith(route))) {
-    const response = NextResponse.next();
-    const session = await getSession()
+    const session = await getSession();
     
     if (!session.user) {
       return NextResponse.redirect(new URL("/Signin", req.url));
@@ -73,13 +72,12 @@ export async function proxy(req: NextRequest) {
       return NextResponse.redirect(new URL("/unauthorized", req.url));
     }
 
-    return response;
+    return NextResponse.next();
   }
 
   // 3. Handle root path with role-based redirects
   if (pathname === "/") {
-    const response = NextResponse.next();
-    const session = await getSession()
+    const session = await getSession();
     
     if (!session.user) {
       return NextResponse.redirect(new URL("/Signin", req.url));

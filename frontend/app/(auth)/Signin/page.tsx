@@ -1,4 +1,14 @@
 "use client";
+import { zodResolver } from "@hookform/resolvers/zod";
+import axios from "axios";
+import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { type UserSession } from "@/auth";
+import getUser from "@/helpers/actions/getUser";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -9,18 +19,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import Image from "next/image";
-
-import logo from "@/public/logo.png";
-import { redirect, useRouter } from "next/navigation";
 import { Spinner } from "@/components/ui/spinner";
-import axios from "axios";
-import getUser from "@/helpers/actions/getUser";
+import logo from "@/public/logo.png";
 
 const API = process.env.NEXT_PUBLIC_API_FRONT;
 
@@ -31,15 +31,15 @@ const formSchema = z.object({
 });
 export default function Signin() {
   const [loading, setLoading] = useState(false);
-  const [user, setUser] = useState(null)
+  const [_user, setUser] = useState<UserSession | null>(null);
   useEffect(() => {
     const getuser = async () => {
-      const User = await getUser()
-      console.log("userrrs", User)
-      setUser(User)
-    }
-    getuser()
-  }, [])
+      const User = await getUser();
+      console.log("userrrs", User);
+      setUser(User);
+    };
+    getuser();
+  }, []);
 
   // if (!user) {
   //   redirect("/")
@@ -63,12 +63,10 @@ export default function Signin() {
   async function Submit(values: z.infer<typeof formSchema>) {
     form.clearErrors();
     setLoading(true);
-    console.log("Api", API)
+    console.log("Api", API);
 
     try {
       const { data } = await axios.post<LoginResponse>(`/api/auth/login`, values);
-
-
 
       console.log("Response data:", data);
       if (data.success) {
@@ -84,7 +82,7 @@ export default function Signin() {
           message: data.error,
         });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Login error:", error);
 
       let errorMessage = "Login failed. Please try again.";

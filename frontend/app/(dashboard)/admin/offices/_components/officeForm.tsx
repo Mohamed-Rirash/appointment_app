@@ -26,7 +26,7 @@ const officeSchema = z.object({
 
 type OfficeFormData = z.infer<typeof officeSchema>;
 
-export default function CreateOfficeForm({ token }: { token?: string }) {
+export default function CreateOfficeForm({ token }: { token: string | undefined }) {
   const queryClient = useQueryClient();
   const form = useForm<OfficeFormData>({
     resolver: zodResolver(officeSchema),
@@ -52,7 +52,7 @@ export default function CreateOfficeForm({ token }: { token?: string }) {
   });
 
   async function onSubmit(values: OfficeFormData) {
-    console.log("value::", values);
+    // console.log("value::", values);
     mutation.mutate(values);
   }
 

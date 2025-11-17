@@ -24,7 +24,7 @@ export default function AppointmentManager({
   const [activeTab, setActiveTab] = useState("book");
 
   return (
-    <div className="w-full max-w-7xl mx-auto p-6 space-y-8">
+    <div className="w-full max-w-7xl mx-auto  space-y-8">
 
       {/* Main Tabs Section */}
       <Card className="shadow-none border-none bg-card/50 backdrop-blur-sm">
@@ -95,15 +95,7 @@ export default function AppointmentManager({
               </TabsContent>
 
               <TabsContent value="view" className="m-0 space-y-6">
-                <div className="space-y-2">
-                  <h2 className="text-2xl font-semibold text-foreground">
-                    All Appointments
-                  </h2>
-                  <p className="text-muted-foreground">
-                    Overview of scheduled visits. Monitor status, manage
-                    bookings, and track citizen appointments.
-                  </p>
-                </div>
+
                 <AppointmentList token={token} />
               </TabsContent>
             </div>

@@ -1,13 +1,12 @@
 "use client";
 
+import { AlertCircle, ArrowLeft } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useState, useEffect } from "react";
-import Image from "next/image";
 import { client } from "@/helpers/api/client";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, ArrowLeft } from "lucide-react";
 
 export default function ForgetPassword() {
   const [email, setEmail] = useState("");
@@ -66,14 +65,28 @@ export default function ForgetPassword() {
         setIsCounting(true); // Start resend countdown
         setCountdown(30);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Reset password error:", err);
 
       let errorMessage = "Failed to send reset email. Please try again.";
 
       // Handle specific backend validation errors
-      if (err?.response?.data?.detail?.[0]?.msg) {
-        const msg = err.response.data.detail[0].msg;
+      if (
+        typeof err === "object" &&
+        err !== null &&
+        "response" in err &&
+        typeof err.response === "object" &&
+        err.response !== null &&
+        "data" in err.response &&
+        typeof err.response.data === "object" &&
+        err.response.data !== null &&
+        "detail" in err.response.data &&
+        Array.isArray(err.response.data.detail) &&
+        err.response.data.detail[0] &&
+        typeof err.response.data.detail[0] === "object" &&
+        "msg" in err.response.data.detail[0]
+      ) {
+        const msg = String(err.response.data.detail[0].msg);
         if (
           msg.includes("Only email addresses from these domains are allowed")
         ) {
@@ -97,16 +110,15 @@ export default function ForgetPassword() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center">
       <Button
-        className="text-xl py-6 rounded-[4px] shodow-gren absolute top-6 left-6 transition-colors
-        border border-[#eeeeee] bg-white text-brand-gray hover:bg-brand-primary/40 "
+        className="text-xl py-6 rounded-[4px] shodow-gren absolute top-6 left-6 transition-colors border border-[#eeeeee] bg-white text-brand-gray hover:bg-brand-primary/40"
         onClick={() => window.history.back()}
       >
         <ArrowLeft className="h-5! w-5!" />
-        <span className="mx-2"> Back to login</span>
+        <span className="mx-2">Back to login</span>
       </Button>
 
       <div className="w-full max-w-sm">
-        <div className="bg-white p-6 rounded-[8px]  border border-brand-primary">
+        <div className="bg-white p-6 rounded-[8px] border border-brand-primary">
           {!submitted ? (
             <>
               <div className="">
@@ -151,19 +163,18 @@ export default function ForgetPassword() {
 
                 <Button
                   type="submit"
-                  className={`w-full py-7 mt-4 text-xl font-medium ${
-                    !email
-                      ? "bg-bran-secondary text-brand-gray"
-                      : "hover:bg-brand/90"
-                  } `}
+                  className={`w-full py-7 mt-4 text-xl font-medium ${!email
+                    ? "bg-bran-secondary text-brand-gray"
+                    : "hover:bg-brand/90"
+                    }`}
                   disabled={!email}
                 >
-                  {loading ? "Reseting password..." : " Reset my Password"}
+                  {loading ? "Reseting password..." : "Reset my Password"}
                 </Button>
               </form>
             </>
           ) : (
-            <div className="text-center ">
+            <div className="text-center">
               <div className="flex flex-col items-center">
                 <h3 className="text-2xl font-bold text-brand-black">
                   Check Your inbox!
@@ -176,8 +187,8 @@ export default function ForgetPassword() {
               </div>
 
               <div className="pt-4 mt-6">
-                <p className="text-base text-brand-gray ">
-                  Didn’t get the email? You can resend it
+                <p className="text-base text-brand-gray">
+                  Didn't get the email? You can resend it
                 </p>
                 {isCounting ? (
                   <p className="text-sm text-brand-gray mt-2">
@@ -199,7 +210,7 @@ export default function ForgetPassword() {
 
         <p className="text-center text-base text-gray-400 mt-6">
           Need help?{" "}
-          <a href="#" className="text-primary hover:underline">
+          <a href="/contact" className="text-primary hover:underline">
             Contact Support
           </a>
         </p>

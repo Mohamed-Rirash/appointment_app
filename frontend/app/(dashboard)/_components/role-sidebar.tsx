@@ -15,6 +15,7 @@ import {
   ChevronsLeft,
   Bell,
   PlusCircle,
+  EyeIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -61,12 +62,12 @@ const navigationConfig = {
       icon: Building,
       description: "Office management",
     },
-    {
-      title: "Security",
-      href: "/admin/security",
-      icon: Shield,
-      description: "Audit logs",
-    },
+    // {
+    //   title: "Security",
+    //   href: "/admin/security",
+    //   icon: Shield,
+    //   description: "Audit logs",
+    // },
   ],
   reception: [
     {
@@ -112,6 +113,12 @@ const navigationConfig = {
       href: "/host/appointments/add",
       icon: PlusCircle,
       description: "Create appointment",
+    },
+    {
+      title: "view Appointments",
+      href: "/host/appointments",
+      icon: EyeIcon,
+      description: "View appointment",
     },
     {
       title: "Notifications",

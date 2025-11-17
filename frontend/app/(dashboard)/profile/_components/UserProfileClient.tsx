@@ -1,15 +1,13 @@
 "use client";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import Image from "next/image";
-import active_icon from "@/public/active.png";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, BadgeCheckIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -17,390 +15,432 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { useState } from "react";
-import { Skeleton } from "@/components/ui/skeleton";
 import { client } from "@/helpers/api/client";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import toast from "react-hot-toast";
+import { useState } from "react";
+import {
+  CheckCircle2,
+  Lock,
+  Mail,
+  User,
+  Shield,
+  Key,
+  Eye,
+  EyeOff,
+  Building2,
+  Calendar,
+  Phone,
+  MapPin,
+} from "lucide-react";
 
-// Define individual rule checkers with their error messages
+// Password validation rules
 const passwordRules = [
-  {
-    test: (pwd: string) => pwd.length >= 6,
-    message: "Password must be at least 6 characters",
-  },
-  {
-    test: (pwd: string) => /[A-Z]/.test(pwd),
-    message: "Password must have at least one uppercase letter",
-  },
-  {
-    test: (pwd: string) => /[0-9]/.test(pwd),
-    message: "Password must have at least one number",
-  },
-  {
-    test: (pwd: string) => /[^a-zA-Z0-9]/.test(pwd),
-    message: "Password must have at least one special character",
-  },
+  { test: (pwd: string) => pwd.length >= 8, message: "At least 8 characters" },
+  { test: (pwd: string) => /[A-Z]/.test(pwd), message: "One uppercase letter" },
+  { test: (pwd: string) => /[a-z]/.test(pwd), message: "One lowercase letter" },
+  { test: (pwd: string) => /[0-9]/.test(pwd), message: "One number" },
+  { test: (pwd: string) => /[^a-zA-Z0-9]/.test(pwd), message: "One special character" },
 ];
 
-// Helper to get all failing rule messages
-function validatePasswordRules(password: string): string[] {
-  return passwordRules
-    .filter((rule) => !rule.test(password))
-    .map((rule) => rule.message);
-}
-
-// Password strength function
 function getPasswordStrength(password: string) {
-  let score = 0;
-  if (password.length >= 6) score++;
-  if (/[A-Z]/.test(password)) score++;
-  if (/[0-9]/.test(password)) score++;
-  if (/[^a-zA-Z0-9]/.test(password)) score++;
+  if (!password) return { score: 0, label: "", color: "" };
 
-  const levels = ["Weak", "Fair", "Good", "Strong"];
-  return { score, label: levels[score - 1] || "Too short" };
+  let score = 0;
+  passwordRules.forEach(rule => {
+    if (rule.test(password)) score++;
+  });
+
+  const levels = [
+    { label: "Weak", color: "text-red-500 bg-red-100" },
+    { label: "Fair", color: "text-yellow-500 bg-yellow-100" },
+    { label: "Good", color: "text-blue-500 bg-blue-100" },
+    { label: "Strong", color: "text-green-500 bg-green-100" },
+  ];
+
+  const level = levels[score - 1] || { label: "Too short", color: "text-gray-500 bg-gray-100" };
+  return { score, ...level };
 }
 
 export default function UserProfileClient({ user }: { user: any }) {
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [newPassword, setNewPassword] = useState("");
-  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [showPasswords, setShowPasswords] = useState({ current: false, new: false });
   const [isOpen, setIsOpen] = useState(false);
 
-  const {
-    email,
-    first_name,
-    last_name,
-    is_active,
-    is_verified,
-    roles,
-    access_token: token,
-  } = user;
-console.log("UUU",user)
+  const { email, first_name, last_name, is_active, is_verified, roles, access_token: token } = user;
+
   const strength = getPasswordStrength(newPassword);
+  const validation = passwordRules.map(rule => ({
+    ...rule,
+    isValid: rule.test(newPassword),
+  }));
+
+  const canSubmit = strength.score >= 3 && !isSubmitting;
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setError(null);
-    setSuccess(null);
 
     const formData = new FormData(e.currentTarget);
     const current_password = formData.get("current_password") as string;
 
     if (!current_password || !newPassword) {
-      setError("Please fill in both password fields.");
-      setIsSubmitting(false);
-      return;
-    }
-
-    const form = e.currentTarget;
-
-    const errors = validatePasswordRules(newPassword);
-    if (errors.length > 0) {
-      setError(errors.join("\n"));
+      toast.error("Please fill in all fields");
       setIsSubmitting(false);
       return;
     }
 
     try {
-      const result = await client.changePassword(
-        current_password,
-        newPassword,
-        token
-      );
-      console.log("Result", result);
-      if (result.message === "Password changed successfully") {
-        toast.success(result.message);
-      }
+      const result = await client.changePassword(current_password, newPassword, token);
+      toast.success(result.message || "Password changed successfully");
 
-      setNewPassword("");
-      form.reset();
       setIsOpen(false);
+      setNewPassword("");
+      (e.currentTarget as HTMLFormElement).reset();
     } catch (err: any) {
-      setError(err.message || "Failed to change password");
+      toast.error(err.message || "Failed to change password");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="border border-[#eeeeee]  max-w-[388px] w-full mx-auto p-6 mt-8 rounded-[4px]">
-      {/* avatar */}
-      <div className="relative">
-        <Avatar className="w-16 h-16">
-          <AvatarImage src={"/avatar.png"} />
-          <AvatarFallback>AB</AvatarFallback>
-        </Avatar>
-        {is_active ? (
-          <Image
-            className="absolute bottom-[-4px] left-10 "
-            width={16}
-            height={16}
-            src={active_icon}
-            alt="active"
-          />
-        ) : (
-          ""
-        )}
-      </div>
-
-      {/* username and email */}
-      <div className="mt-4 flex justify-between">
-        <div>
-          <h1 className="mb-0 text-lg font-bold text-brand-black">
-            {first_name}
-          </h1>
-          <p className="text-brand-gray"> {email} </p>
-        </div>
-        <div className="flex items-center">
-          <Badge
-            variant="secondary"
-            className={`text-brand-primary ${
-              is_verified
-                ? "bg-blue-500  dark:bg-blue-600"
-                : "bg-red-500 dark:bg-red-600"
-            }`}
-          >
-            <BadgeCheckIcon /> Verified
-          </Badge>
-        </div>
-      </div>
-
-      {/* personal info */}
-      <h1 className="text-2xl font-bold text-brand-black my-6">
-        Personal Information
-      </h1>
-      <div>
-        <div>
-          <Label className="text-[16px] text-brand-gray font-medium">
-            First Name
-          </Label>
-          <h2 className="text-lg text-brand-black font-medium -mt-2">
-            {first_name}
-          </h2>
-        </div>
-        <div className="mt-4">
-          <Label className="text-[16px] text-brand-gray font-medium">
-            Last Name
-          </Label>
-          <h2 className="text-lg text-brand-black font-medium -mt-2">
-            {last_name}
-          </h2>
-        </div>
-        <div className="mt-4">
-          <Label className="text-[16px] text-brand-gray font-medium">
-            Email
-          </Label>
-          <h2 className="text-lg text-brand-black font-medium -mt-2">
-            {email}
-          </h2>
-        </div>
-        <div className="mt-4">
-          <Label className="text-[16px] text-brand-gray font-medium">
-            Role
-          </Label>
-          <h2 className="text-lg text-brand-black font-medium -mt-2">
-            {roles}
-          </h2>
-        </div>
-      </div>
-
-      {/* change password dialog */}
-      <Dialog
-        open={isOpen}
-        onOpenChange={() => {
-          setIsOpen(!isOpen);
-          setError(null);
-          setNewPassword("");
-        }}
-      >
-        <DialogTrigger asChild>
-          <Button className="mt-8  text-lg rounded-[4px] text-brand-primary py-6 hover:bg-brand/90 font-bold max-w-[180px] w-full">
-            Change Password
-          </Button>
-        </DialogTrigger>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogDescription></DialogDescription>
-          <form onSubmit={handleSubmit}>
-            <DialogHeader>
-              <DialogTitle className="text-2xl font-bold text-brand-black">
-                Change password
-              </DialogTitle>
-            </DialogHeader>
-
-            {error && (
-              <Alert
-                variant="destructive"
-                className="mb-6 animate-in fade-in-0"
-              >
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Error</AlertTitle>
-                <AlertDescription>
-                  {" "}
-                  {error.split("\n").map((msg, i) => (
-                    <p key={i}>{msg}</p>
-                  ))}
-                </AlertDescription>
-              </Alert>
-            )}
-
-            <div className="grid mt-2">
-              <div className="grid">
-                <Label
-                  htmlFor="current-password"
-                  className="text-[16px] font-medium mb-3"
-                >
-                  Current Password
-                </Label>
-                <Input
-                  className="py-7 pl-4 text-lg"
-                  id="current-password"
-                  name="current_password"
-                  placeholder="*************"
-                  type="password"
-                  required
-                />
-              </div>
-
-              <div className="grid mt-4">
-                <Label
-                  htmlFor="new-password"
-                  className="text-[16px] font-medium mb-3"
-                >
-                  New Password
-                </Label>
-                <Input
-                  className="py-7 pl-4 text-lg"
-                  id="new-password"
-                  name="new_password"
-                  placeholder="*************"
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => {
-                    setNewPassword(e.target.value);
-                    const errors = validatePasswordRules(e.target.value);
-                    setPasswordError(
-                      errors.length > 0 ? errors.join("\n") : null
-                    );
-                  }}
-                  required
-                />
-
-                {/* Password Rules Checklist */}
-                <div className="mt-3 space-y-1">
-                  {passwordRules.map((rule, index) => {
-                    const isValid = rule.test(newPassword);
-                    return (
-                      <div key={index} className="flex items-center text-sm">
-                        <span
-                          className={`mr-2 w-4 h-4 rounded-full flex items-center justify-center text-white text-xs ${
-                            isValid ? "bg-green-500" : "bg-gray-300"
-                          }`}
-                        >
-                          {isValid ? "✓" : ""}
-                        </span>
-                        <span
-                          className={
-                            isValid ? "text-green-600" : "text-gray-500"
-                          }
-                        >
-                          {rule.message}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                <p
-                  className={`mt-2 text-sm font-medium ${
-                    strength.score <= 1
-                      ? "text-red-500"
-                      : strength.score === 2
-                      ? "text-yellow-500"
-                      : strength.score === 3
-                      ? "text-blue-500"
-                      : "text-green-500"
-                  }`}
-                >
-                  {newPassword && <span>Strength: {strength.label}</span>}
-                </p>
-
-                {/* {passwordError && (
-                  <Alert
-                    variant="destructive"
-                    className="mb-6 animate-in fade-in-0"
-                  >
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>Error</AlertTitle>
-                    <AlertDescription>
-                      {" "}
-                      {passwordError.split("\n").map((msg, i) => (
-                        <li key={i}>{msg}</li>
-                      ))}
-                    </AlertDescription>
-                  </Alert>
-                )} */}
-              </div>
+    <div className="space-y-8">
+      {/* Enhanced Profile Header */}
+      <Card className="relative overflow-hidden border-0 bg-linear-to-br from-brand-primary via-brand to-brand/60 text-white shadow-gren">
+        <div className="absolute inset-0 bg-black/10" />
+        <CardContent className="relative p-8">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center gap-8">
+            <div className="relative">
+              <Avatar className="w-28 h-28 border-4 border-white/20 shadow-2xl">
+                <AvatarImage src="/avatar.png" alt={`${first_name} ${last_name}`} />
+                <AvatarFallback className="text-2xl font-bold bg-white/20 text-white">
+                  {first_name?.[0]}{last_name?.[0]}
+                </AvatarFallback>
+              </Avatar>
+              {is_active && (
+                <div className="absolute bottom-2 right-2 w-6 h-6 bg-green-400 rounded-full border-3 border-white shadow-lg" />
+              )}
             </div>
 
-            <DialogFooter className="mt-8">
-              <DialogClose  asChild>
-                <Button
-                  type="button"
-                  className=" max-w-[156px] w-full py-6 text-[16px] font-bold rounded-[4px] bg-bran-secondary hover:bg-bran-secondary/80 text-brand-gray"
-                >
-                  Cancel
-                </Button>
-              </DialogClose>
-              <Button
-                type="submit"
-                disabled={isSubmitting || strength.score < 3 || !!passwordError}
-                className="max-w-[156px] w-full py-6 text-[16px] font-bold rounded-[4px] bg-linear-to-r from-[#21D256] to-[#0EA73C]"
-              >
-                {isSubmitting ? "Saving..." : "Save changes"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-}
+            <div className="flex-1 space-y-3">
+              <div className="flex items-center gap-4 flex-wrap">
+                <h1 className="text-4xl font-bold text-white">
+                  {first_name} {last_name}
+                </h1>
+                <div className="flex gap-2">
+                  <Badge className="bg-white/20 text-white border-0 font-medium px-3 py-1">
+                    {is_verified ? "Verified" : "Unverified"}
+                  </Badge>
+                  <Badge className={`${is_active ? 'bg-green-400/20 text-green-100' : 'bg-gray-400/20 text-gray-200'} border-0 font-medium px-3 py-1`}>
+                    {is_active ? 'Active' : 'Inactive'}
+                  </Badge>
+                </div>
+              </div>
 
-// Keep skeleton if needed elsewhere, but not used here
-function ProfileSkeleton() {
-  return (
-    <div className="border border-[#eeeeee] max-w-[388px] w-full ml-[122px] mt-[60px] mb-16 p-6 rounded-[4px]">
-      <div className="flex flex-col ">
-        <Skeleton className="h-20 w-20 rounded-full" />
-        <Skeleton className="h-5 w-32 mt-4" />
-        <Skeleton className="h-4 w-40 mt-2" />
+              <div className="space-y-2">
+                <p className="text-blue-100 flex items-center gap-3 text-lg">
+                  <Mail className="w-5 h-5" />
+                  {email}
+                </p>
+                <div className="flex items-center gap-3 text-blue-100">
+                  <Shield className="w-5 h-5" />
+                  <span className="capitalize text-lg font-medium">{roles?.join?.(', ') || roles}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Main Content Grid */}
+      <div className="grid lg:grid-cols-2 gap-8">
+        {/* Personal Information - Enhanced */}
+        <div className="lg:col-span-2 space-y-6">
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-gray-50/50">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-3 text-2xl font-bold text-gray-900">
+                <div className="p-2 bg-blue-100 rounded-xl">
+                  <User className="w-6 h-6 text-blue-600" />
+                </div>
+                Personal Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-sm text-gray-500 font-medium flex items-center gap-2">
+                    <User className="w-4 h-4" />
+                    First Name
+                  </Label>
+                  <p className="text-xl font-semibold text-gray-900 bg-gray-50 rounded-lg px-4 py-3">
+                    {first_name}
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm text-gray-500 font-medium flex items-center gap-2">
+                    <User className="w-4 h-4" />
+                    Last Name
+                  </Label>
+                  <p className="text-xl font-semibold text-gray-900 bg-gray-50 rounded-lg px-4 py-3">
+                    {last_name}
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm text-gray-500 font-medium flex items-center gap-2">
+                  <Mail className="w-4 h-4" />
+                  Email Address
+                </Label>
+                <div className="flex items-center gap-3 bg-gray-50 rounded-lg px-4 py-3">
+                  <p className="text-xl font-semibold text-gray-900 flex-1">
+                    {email}
+                  </p>
+                  {is_verified && (
+                    <Badge className="bg-green-50 text-green-700 border-green-200">
+                      <CheckCircle2 className="w-4 h-4 mr-1" />
+                      Verified
+                    </Badge>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm text-gray-500 font-medium flex items-center gap-2">
+                  <Shield className="w-4 h-4" />
+                  Role
+                </Label>
+                <div className="bg-gray-50 rounded-lg px-4 py-3">
+                  <p className="text-xl font-semibold text-gray-900 capitalize">
+                    {roles?.join?.(', ') || roles || "No role assigned"}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Additional Info Section */}
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-blue-50/30">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-3 text-xl font-bold text-gray-900">
+                <div className="p-2 bg-blue-100 rounded-xl">
+                  <Building2 className="w-5 h-5 text-blue-600" />
+                </div>
+                Additional Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-2 gap-6 text-gray-600">
+                <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200">
+                  <Calendar className="w-5 h-5 text-blue-500" />
+                  <div>
+                    <p className="text-sm font-medium">Member Since</p>
+                    <p className="text-gray-900 font-semibold">January 2024</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200">
+                  <MapPin className="w-5 h-5 text-green-500" />
+                  <div>
+                    <p className="text-sm font-medium">Location</p>
+                    <p className="text-gray-900 font-semibold">Hargeisa, Somaliland</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Security & Actions - Enhanced */}
+        <div className="space-y-6">
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-purple-50/30">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-3 text-xl font-bold text-gray-900">
+                <div className="p-2 bg-purple-100 rounded-xl">
+                  <Lock className="w-5 h-5 text-purple-600" />
+                </div>
+                Security & Account
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-200 shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-lg ${is_active ? 'bg-green-100' : 'bg-gray-100'}`}>
+                      <div className={`w-3 h-3 rounded-full ${is_active ? 'bg-green-500' : 'bg-gray-400'}`} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">Account Status</p>
+                      <p className="text-xs text-gray-500">{is_active ? 'Your account is active' : 'Account is inactive'}</p>
+                    </div>
+                  </div>
+                  <Badge className={`${is_active ? 'bg-green-100 text-green-700 border-green-200' : 'bg-gray-100 text-gray-600 border-gray-200'} font-medium`}>
+                    {is_active ? 'Active' : 'Inactive'}
+                  </Badge>
+                </div>
+
+                <div className="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-200 shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <Shield className="w-4 h-4 text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">Verification</p>
+                      <p className="text-xs text-gray-500">{is_verified ? 'Email verified' : 'Email not verified'}</p>
+                    </div>
+                  </div>
+                  <Badge className={`${is_verified ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-amber-100 text-amber-700 border-amber-200'} font-medium`}>
+                    {is_verified ? 'Verified' : 'Pending'}
+                  </Badge>
+                </div>
+              </div>
+
+              <Dialog open={isOpen} onOpenChange={(open) => {
+                setIsOpen(open);
+                if (!open) {
+                  setNewPassword("");
+                }
+              }}>
+                <DialogTrigger asChild>
+                  <Button className="w-full h-12  bg-linear-to-br from-brand-primary via-brand to-brand/60 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-200">
+                    <Key className="w-5 h-5 mr-3" />
+                    Change Password
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-lg p-0 overflow-auto bg-white rounded-2xl">
+                  <DialogHeader className="p-6 pb-4 bg-gradient-to-r from-blue-50 to-purple-50 border-b">
+                    <DialogTitle className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+                      <div className="p-2 bg-white rounded-xl shadow-sm">
+                        <Key className="w-6 h-6 text-blue-600" />
+                      </div>
+                      Update Password
+                    </DialogTitle>
+                    <DialogDescription className="text-gray-600 text-base mt-2">
+                      Create a strong, unique password to keep your account secure
+                    </DialogDescription>
+                  </DialogHeader>
+
+                  <form onSubmit={handleSubmit} className="p-6 space-y-6">
+                    <div className="space-y-3">
+                      <Label htmlFor="current-password" className="text-sm font-semibold text-gray-700">
+                        Current Password
+                      </Label>
+                      <div className="relative">
+                        <Input
+                          id="current-password"
+                          name="current_password"
+                          type={showPasswords.current ? "text" : "password"}
+                          placeholder="Enter your current password"
+                          required
+                          className="h-12 text-base rounded-xl border-gray-300 focus:border-blue-500 focus:ring-blue-500/20 pr-12"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 p-0 text-gray-500 hover:text-gray-700"
+                          onClick={() => setShowPasswords(prev => ({ ...prev, current: !prev.current }))}
+                        >
+                          {showPasswords.current ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <Label htmlFor="new-password" className="text-sm font-semibold text-gray-700">
+                        New Password
+                      </Label>
+                      <div className="relative">
+                        <Input
+                          id="new-password"
+                          name="new_password"
+                          type={showPasswords.new ? "text" : "password"}
+                          placeholder="Create your new password"
+                          required
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          className="h-12 text-base rounded-xl border-gray-300 focus:border-blue-500 focus:ring-blue-500/20 pr-12"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 p-0 text-gray-500 hover:text-gray-700"
+                          onClick={() => setShowPasswords(prev => ({ ...prev, new: !prev.new }))}
+                        >
+                          {showPasswords.new ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </Button>
+                      </div>
+
+                      {/* Password Strength */}
+                      {newPassword && (
+                        <div className="mt-4 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium text-gray-700">Password Strength</span>
+                            <span className={`text-sm font-semibold ${strength.color}`}>{strength.label}</span>
+                          </div>
+                          <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full transition-all duration-300 ${strength.score <= 1 ? 'bg-red-500' :
+                                strength.score === 2 ? 'bg-yellow-500' :
+                                  strength.score === 3 ? 'bg-blue-500' :
+                                    'bg-green-500'
+                                }`}
+                              style={{ width: `${(strength.score / passwordRules.length) * 100}%` }}
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Validation Rules */}
+                      <div className="mt-4 space-y-2">
+                        {validation.map((rule, index) => (
+                          <div key={index} className="flex items-center gap-3">
+                            <div className={`w-5 h-5 rounded-full flex items-center justify-center border-2 ${rule.isValid
+                              ? 'bg-green-500 border-green-500'
+                              : 'bg-white border-gray-300'
+                              }`}>
+                              {rule.isValid && <span className="text-white text-xs">✓</span>}
+                            </div>
+                            <span className={`text-sm ${rule.isValid ? 'text-green-600 font-medium' : 'text-gray-500'}`}>
+                              {rule.message}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <DialogFooter className="gap-3 pt-4">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setIsOpen(false)}
+                        className="flex-1 h-12 rounded-xl border-gray-300 hover:bg-gray-50 font-medium"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="submit"
+                        disabled={!canSubmit}
+                        className="flex-1 h-12  bg-linear-to-br from-brand-primary via-brand to-brand/60 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isSubmitting ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                            Updating...
+                          </>
+                        ) : (
+                          "Update Password"
+                        )}
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </CardContent>
+          </Card>
+        </div>
       </div>
-      <Skeleton className="h-6 w-40 mt-8" />
-      <div className="mt-6 space-y-6">
-        <div>
-          <Skeleton className="h-4 w-24 mb-2" />
-          <Skeleton className="h-5 w-48" />
-        </div>
-        <div>
-          <Skeleton className="h-4 w-24 mb-2" />
-          <Skeleton className="h-5 w-48" />
-        </div>
-        <div>
-          <Skeleton className="h-4 w-24 mb-2" />
-          <Skeleton className="h-5 w-60" />
-        </div>
-        <div>
-          <Skeleton className="h-4 w-24 mb-2" />
-          <Skeleton className="h-5 w-32" />
-        </div>
-      </div>
-      <Skeleton className="h-10 w-[200px] mt-8 mx-auto" />
     </div>
   );
 }

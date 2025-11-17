@@ -1,10 +1,10 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { client } from "@/helpers/api/client";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useState } from "react";
 import { CircleAlert, HousePlus, Users } from "lucide-react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Skeleton } from "@/components/ui/skeleton";
+import { client } from "@/helpers/api/client";
 
 export interface Stats {
   total_users: number;
@@ -25,18 +25,18 @@ export default function DashboardStatsCard({ token }: { token?: string }) {
   //     },
   //     placeholderData: (previousData) => previousData,
   //   });
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, _setIsLoading] = useState(false);
 
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {[...Array(4)].map((_, i) => (
-          <Skeleton key={i} className="h-24 rounded-lg" />
+          <Skeleton key={`skeleton-${i}`} className="h-24 rounded-lg" />
         ))}
       </div>
     );
   }
-  let data = {
+  const data = {
     total_users: 123,
     total_offices: 80,
     active_offices: 12,
@@ -144,9 +144,8 @@ function StatCard({
         {content && <div>{content}</div>}
       </div>
       <div
-        className={`${
-          content ? "bg-[#F3ECE0]" : "bg-brand-primary"
-        } h-12 w-12 p-3 rounded-lg`}
+        className={`${content ? "bg-[#F3ECE0]" : "bg-brand-primary"
+          } h-12 w-12 p-3 rounded-lg`}
       >
         {icon}
       </div>
