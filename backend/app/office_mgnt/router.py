@@ -5,23 +5,16 @@ from databases import Database
 from fastapi import APIRouter, Depends, Query, status
 
 from app.admin.config import AdminLevel
-from app.auth.dependencies import (
-    CurrentUser,
-    require_any_role,
-    require_authentication,
-    require_role,
-)
+from app.auth.dependencies import (CurrentUser, require_any_role,
+                                   require_authentication, require_role)
 from app.auth.schemas import UserRead
 from app.database import get_db
 from app.office_mgnt import schemas as sch
-from app.office_mgnt.services import (
-    AvailabilityService,
-    HostAssignmentService,
-    OfficeMembershipService,
-    OfficeSearchService,
-    OfficeService,
-    OfficeStatsService,
-)
+from app.office_mgnt.services import (AvailabilityService,
+                                      HostAssignmentService,
+                                      OfficeMembershipService,
+                                      OfficeSearchService, OfficeService,
+                                      OfficeStatsService)
 
 router = APIRouter(
     prefix="/offices",
@@ -252,7 +245,6 @@ async def get_office_hosts(
 
 @router.patch(
     "/{office_id}/memberships/{user_id}",
-    response_model=sch.MembershipRead,
     summary="Update/edit office membershiping (only admins)",
     description="Update membership details (e.g., role). Only admins can perform this action.",
     responses={
