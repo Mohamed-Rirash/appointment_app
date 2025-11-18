@@ -68,7 +68,7 @@ async def get_all_past_appointments(
         description="Date to filter appointments by (YYYY-MM-DD). Defaults to today.",
     ),
     status: AppointmentStatus = Query(
-        AppointmentStatus.PENDING,
+        None,
         description="Filter appointments by status",
     ),
     limit: int = Query(20, ge=1, le=100, description="Number of items per page"),
@@ -93,6 +93,7 @@ async def get_all_past_appointments(
 
 @view_router.get(
     "/{office_id}/appointments",
+    deprecated=True,
     response_model=PaginatedAppointments,
     summary="Get appointments in office by status",
     description=(
