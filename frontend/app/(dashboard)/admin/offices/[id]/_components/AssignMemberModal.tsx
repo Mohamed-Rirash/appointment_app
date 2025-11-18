@@ -60,7 +60,7 @@ export function AssignMemberModal({
             position: "",
         },
     });
-    console.log("users", users)
+
     const onSubmit = async (values: AssignFormData) => {
         try {
             const result = await client.assigntoOffice(values, officeId, token);

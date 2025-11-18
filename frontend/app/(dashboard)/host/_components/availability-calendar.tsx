@@ -10,7 +10,7 @@ import {
     CardContent,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Save, ChevronLeft, ChevronRight, Loader2, Clock, Calendar } from "lucide-react";
+import { Save, ChevronLeft, ChevronRight, Loader2, Clock, Calendar, MousePointer2 } from "lucide-react";
 import { cn } from "@/libs/utils";
 
 // ── TYPES & CONSTANTS ─────────────────────────────────────────────────────
@@ -124,8 +124,7 @@ function convertToBackendFormat(slots: Set<string>): AvailabilityRecord[] {
 
         timeBlocks.forEach((block) => {
             const startTime = block.start;
-            // const endTime = incrementTimeBy30Minutes(block.end);
-            const endTime = block.end
+            const endTime = block.end;
 
             // Format times with leading zeros and seconds
             const formattedStart = startTime.includes(":")
@@ -253,7 +252,6 @@ export default function AvailabilityCalendar({ officeId, token }: AvailabilityCa
         setLoading(true);
         try {
             const response = await client.getHotAvailability(officeId, token);
-            // console.log("loadav", response)
             if (!Array.isArray(response)) {
                 console.error("❌ Expected array but got:", typeof response, response);
                 toast.error("Invalid data format from server");
@@ -307,8 +305,6 @@ export default function AvailabilityCalendar({ officeId, token }: AvailabilityCa
             );
 
             const backendData = convertToBackendFormat(changedSlots);
-            // console.log("ch", changedSlots)
-            // console.log("ch", backendData)
             await Promise.all(
                 backendData.map((record) => client.setHostAvailability(officeId, record, token))
             );
@@ -345,22 +341,22 @@ export default function AvailabilityCalendar({ officeId, token }: AvailabilityCa
                     }
                 }}
                 className={cn(
-                    "relative border border-gray-200 cursor-pointer transition-all duration-200",
-                    "hover:scale-[1.02] hover:shadow-sm",
+                    "relative border border-gray-200 cursor-pointer transition-all duration-150",
+                    "hover:scale-[1.02] hover:shadow-sm hover:z-10",
                     isActive
-                        ? "bg-gradient-to-br from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
+                        ? "bg-gradient-to-br from-brand to-brand hover:from-brand hover:to-brand shadow-sm"
                         : "bg-white hover:bg-gray-50",
                     isDragging && "select-none",
                     !isActive && isSaved && "bg-gray-100",
                     hasUnsavedChanges && isActive && "ring-2 ring-amber-400 ring-offset-1",
-                    "focus:ring-2 focus:ring-blue-500 focus:outline-none focus:z-10",
-                    "rounded-sm"
+                    "focus:ring-2 focus:ring-brand focus:outline-none focus:z-10",
+                    "rounded-md"
                 )}
                 style={{ height: "36px", width: "100px" }}
             >
                 {isActive && (
                     <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-2 h-2 bg-white rounded-full opacity-80"></div>
+                        <div className="w-3 h-3 bg-white rounded-full opacity-90 shadow-sm"></div>
                     </div>
                 )}
             </td>
@@ -372,8 +368,16 @@ export default function AvailabilityCalendar({ officeId, token }: AvailabilityCa
     }, [loadAvailability]);
 
     return (
-        <Card className="p-6 select-none border border-gray-200 bg-white rounded-xl shadow-lg max-w-6xl mx-auto">
-            <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6 border-b border-gray-100">
+        <Card className="p-6 select-none border border-gray-200 bg-white rounded-xl shadow-sm max-w-6xl mx-auto">
+            <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 pb-6 border-b border-gray-100">
+
+                <div className="flex flex-col gap-2">
+                    <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                        <Calendar className="h-5 w-5 text-brand" />
+                        Weekly Availability
+                    </h2>
+                    <p className="text-sm text-gray-600">Click and drag to set your available time slots</p>
+                </div>
 
                 <div className="flex flex-wrap items-center gap-3">
                     <Button
@@ -381,22 +385,24 @@ export default function AvailabilityCalendar({ officeId, token }: AvailabilityCa
                         size="sm"
                         onClick={() => setWeekOffset((prev) => prev - 1)}
                         aria-label="Previous week"
-                        className="flex items-center gap-2 hover:bg-gray-50 transition-colors"
+                        className="flex items-center gap-2 hover:bg-gray-50 transition-colors border-gray-300"
                     >
                         <ChevronLeft className="h-4 w-4" />
-                        <span className="hidden sm:inline">Previous</span>
+                        <span className="hidden sm:inline">Prev</span>
                     </Button>
 
-                    <span className="min-w-[180px] text-center text-brand font-semibold bg-brand-primary px-4 py-2 rounded-lg" aria-live="polite">
-                        {weekDisplay}
-                    </span>
+                    <div className="min-w-[220px] text-center bg-brand-primary border border-brand/20 px-4 py-2 rounded-lg">
+                        <span className="text-brand font-semibold text-sm" aria-live="polite">
+                            {weekDisplay}
+                        </span>
+                    </div>
 
                     <Button
                         variant="outline"
                         size="sm"
                         onClick={() => setWeekOffset((prev) => prev + 1)}
                         aria-label="Next week"
-                        className="flex items-center gap-2 hover:bg-gray-50 transition-colors"
+                        className="flex items-center gap-2 hover:bg-gray-50 transition-colors border-gray-300"
                     >
                         <span className="hidden sm:inline">Next</span>
                         <ChevronRight className="h-4 w-4" />
@@ -405,60 +411,71 @@ export default function AvailabilityCalendar({ officeId, token }: AvailabilityCa
                     <Button
                         className={cn(
                             "bg-brand text-brand-primary text-sm font-semibold rounded-lg px-4 py-2",
-                            "hover:bg-brand/90 transition-all duration-200 shadow-md hover:shadow-lg",
-                            "disabled:opacity-50 disabled:cursor-not-allowed"
+                            "hover:bg-brand/90 transition-all duration-200 shadow-sm hover:shadow-md",
+                            "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-brand",
+                            "flex items-center gap-2"
                         )}
                         onClick={handleSaveAvailability}
                         disabled={saving}
                     >
                         {saving ? (
-                            <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                            <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
-                            <Save className="mr-1.5 h-4 w-4" />
+                            <Save className="h-4 w-4" />
                         )}
-                        {saving ? "Saving..." : "Save Changes"}
+                        {saving ? "Saving..." : "Save"}
                     </Button>
                 </div>
             </CardHeader>
 
-            <CardContent className="mt-6 space-y-4">
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 p-4 bg-gray-50 rounded-lg">
-                    <div className="flex items-center gap-4 text-sm">
-                        <div className="flex items-center gap-2">
-                            <span className="text-gray-600">Selected:</span>
-                            <span className="font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-md">{selectedSlots.size}</span>
+            <CardContent className="mt-6 space-y-6">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 p-4 bg-brand-primary border border-brand/20 rounded-xl">
+                    <div className="flex items-center gap-6 text-sm">
+                        <div className="flex items-center gap-3">
+                            <div className="flex flex-col">
+                                <span className="text-gray-600 text-xs">Selected</span>
+                                <span className="font-bold text-brand text-lg">{selectedSlots.size}</span>
+                            </div>
+                            <div className="h-8 w-px bg-brand/30"></div>
+                            <div className="flex flex-col">
+                                <span className="text-gray-600 text-xs">Saved</span>
+                                <span className="font-bold text-green-700 text-lg">{savedSlots.size}</span>
+                            </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <span className="text-gray-600">Saved:</span>
-                            <span className="font-bold text-green-600 bg-green-50 px-2 py-1 rounded-md">{savedSlots.size}</span>
-                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-xs text-gray-600 bg-white px-3 py-2 rounded-lg border border-brand/20">
+                        <MousePointer2 className="h-3 w-3" />
+                        <span>Click and drag to select multiple time slots</span>
                     </div>
 
                     <div className="flex items-center gap-4 text-xs">
                         <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 bg-gradient-to-br from-green-500 to-green-600 rounded-sm shadow-sm"></div>
+                            <div className="w-3 h-3 bg-gradient-to-br from-brand to-brand rounded-sm shadow-sm"></div>
                             <span className="text-gray-700">Available</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 bg-gray-200 border border-gray-300 rounded-sm"></div>
+                            <div className="w-3 h-3 bg-white border border-gray-300 rounded-sm"></div>
                             <span className="text-gray-700">Unavailable</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 bg-gray-100 border border-gray-200 rounded-sm"></div>
+                            <div className="w-3 h-3 bg-gray-100 border border-gray-300 rounded-sm"></div>
                             <span className="text-gray-700">Saved</span>
                         </div>
                     </div>
                 </div>
 
                 {loading ? (
-                    <div className="rounded-lg border border-gray-200 overflow-hidden">
+                    <div className="rounded-xl border border-gray-200 overflow-hidden bg-gray-50">
                         <table className="w-full border-collapse">
                             <thead>
                                 <tr>
-                                    <th className="w-16 p-2 text-left bg-gray-50"></th>
+                                    <th className="w-16 p-3 text-left bg-gray-100 border-r border-gray-200">
+                                        <div className="h-4 bg-gray-300 rounded w-8 animate-pulse"></div>
+                                    </th>
                                     {days.map((day) => (
-                                        <th key={day} className="text-center bg-gray-50 py-2">
-                                            <div className="h-4 bg-gray-200 rounded mx-auto w-12 animate-pulse"></div>
+                                        <th key={day} className="text-center bg-gray-100 py-3 border-r border-gray-200 last:border-r-0">
+                                            <div className="h-4 bg-gray-300 rounded mx-auto w-12 animate-pulse"></div>
                                         </th>
                                     ))}
                                 </tr>
@@ -466,12 +483,12 @@ export default function AvailabilityCalendar({ officeId, token }: AvailabilityCa
                             <tbody>
                                 {times.map((_, index) => (
                                     <tr key={index}>
-                                        <td className="p-2 bg-gray-50">
-                                            <div className="h-3 bg-gray-200 rounded animate-pulse"></div>
+                                        <td className="p-3 bg-gray-100 border-r border-gray-200">
+                                            <div className="h-3 bg-gray-300 rounded w-12 animate-pulse"></div>
                                         </td>
                                         {days.map((_, dayIndex) => (
-                                            <td key={dayIndex} className="p-1">
-                                                <div className="h-8 bg-gray-200 rounded-sm animate-pulse"></div>
+                                            <td key={dayIndex} className="p-2 border-r border-gray-200 last:border-r-0">
+                                                <div className="h-8 bg-gray-300 rounded-md animate-pulse"></div>
                                             </td>
                                         ))}
                                     </tr>
@@ -480,17 +497,17 @@ export default function AvailabilityCalendar({ officeId, token }: AvailabilityCa
                         </table>
                     </div>
                 ) : (
-                    <div className="rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+                    <div className="rounded-xl border border-gray-200 shadow-xs overflow-hidden bg-white">
                         <table className="w-full border-collapse text-sm">
                             <thead>
                                 <tr>
-                                    <th className="w-16 p-3 text-left bg-gradient-to-b from-gray-50 to-gray-100 text-gray-600 font-semibold border-r border-gray-200">
-                                        <Clock className="h-4 w-4 opacity-60" />
+                                    <th className="w-16 p-3 text-left bg-gray-100 text-gray-600 font-semibold border-r border-gray-200">
+                                        <Clock className="h-4 w-4 opacity-70" />
                                     </th>
                                     {days.map((day) => (
                                         <th
                                             key={day}
-                                            className="text-center bg-gradient-to-b from-gray-50 to-gray-100 text-gray-800 font-semibold py-3 border-r border-gray-200 last:border-r-0"
+                                            className="text-center bg-gray-100 text-gray-800 font-semibold py-3 border-r border-gray-200 last:border-r-0"
                                         >
                                             {day}
                                         </th>
@@ -499,8 +516,8 @@ export default function AvailabilityCalendar({ officeId, token }: AvailabilityCa
                             </thead>
                             <tbody>
                                 {times.map((time) => (
-                                    <tr key={time} className="hover:bg-gray-50">
-                                        <td className="text-sm text-gray-600 font-medium pr-3 py-2 text-right bg-gray-50 border-r border-gray-200">
+                                    <tr key={time} className="group hover:bg-gray-50/50 transition-colors">
+                                        <td className="text-sm text-gray-600 font-medium pr-3 py-2 text-right bg-gray-50 border-r border-gray-200 group-hover:bg-gray-100 transition-colors">
                                             {time}
                                         </td>
                                         {days.map((day) => (

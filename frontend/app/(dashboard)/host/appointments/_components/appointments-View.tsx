@@ -1,16 +1,17 @@
-// components/appointments/appointment-view.tsx
 "use client";
 
 import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Filter, RefreshCw, AlertCircle, CalendarDays } from "lucide-react";
+import { Card, CardContent, } from "@/components/ui/card";
+import { Filter, RefreshCw, AlertCircle, CalendarDays, Users, TrendingUp, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AppointmentsFilters } from "./appointments-filters";
 import { AppointmentsTable } from "./appointments-table";
 import { client } from "@/helpers/api/client";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface AppointmentsViewProps {
     office_id: string;
@@ -52,7 +53,7 @@ export function AppointmentView({
                     if (!token) throw new Error("No token provided");
                     return await client.searchAppointments(office_id, search, limit, offset, token);
                 },
-                queryKey: ["reception-appointments", "search", office_id, search, page]
+                queryKey: ["host-appointments", "search", office_id, search, page]
             };
         } else if (date !== "today" || status !== "all") {
             return {
@@ -101,25 +102,30 @@ export function AppointmentView({
         queryClient.invalidateQueries({ queryKey: ["reception-appointments"] });
     };
 
-    if (isError) {
-        return (
-            <div className="space-y-6 p-6">
-                <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>
-                        Failed to load appointments. {error instanceof Error ? error.message : "Please try again."}
-                    </AlertDescription>
-                </Alert>
-                <Button onClick={handleRefresh} variant="outline">
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    Retry
-                </Button>
-            </div>
-        );
-    }
-
+    // Calculate some stats for the header
     const appointments = appointmentsData?.appointments || [];
     const totalCount = appointmentsData?.total || 0;
+
+
+    if (isError) {
+        return (
+            <Card className="border-red-200 bg-red-50/50">
+                <CardContent className="p-8 text-center">
+                    <div className="mx-auto w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mb-4">
+                        <AlertCircle className="h-8 w-8 text-red-600" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Failed to Load Appointments</h3>
+                    <p className="text-sm text-gray-500 mb-6 max-w-md mx-auto">
+                        {error instanceof Error ? error.message : "We couldn't retrieve the appointment data. Please try again."}
+                    </p>
+                    <Button onClick={handleRefresh} variant="outline" className="border-red-200 hover:bg-red-100">
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Retry Loading
+                    </Button>
+                </CardContent>
+            </Card>
+        );
+    }
 
     const pagination = {
         total: totalCount,
@@ -141,24 +147,47 @@ export function AppointmentView({
         }
     };
 
+    const getViewType = () => {
+        if (searchParams.search) return "search";
+        if (searchParams.date !== "today" || searchParams.status !== "all") return "filtered";
+        return "current";
+    };
+
+    const viewType = getViewType();
+
     return (
-        <div className="space-y-6 p-6">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-                        <CalendarDays className="h-8 w-8 text-brand" />
-                        Reception Dashboard
-                    </h1>
-                    <p className="text-muted-foreground mt-1">
-                        Manage all office appointments and citizen interactions
-                    </p>
-                </div>
-                <Button onClick={handleRefresh} disabled={isLoading} className="gap-2">
-                    <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-                    Refresh
-                </Button>
-            </div>
+        <div className="space-y-8">
+            {/* View Type Tabs */}
+            <Card className="border-0 bg-white shadow-sm">
+                <CardContent className="p-4">
+                    <Tabs value={viewType} className="w-full">
+                        <TabsList className="grid w-full grid-cols-3">
+                            <TabsTrigger
+                                value="current"
+                                onClick={() => handleFilterChange({ status: "all", date: "today", search: "" })}
+                                className="data-[state=active]:bg-blue-100 data-[state=active]:text-blue-700"
+                            >
+                                <CalendarDays className="h-4 w-4 mr-2" />
+                                Current
+                            </TabsTrigger>
+                            <TabsTrigger
+                                value="filtered"
+                                className="data-[state=active]:bg-purple-100 data-[state=active]:text-purple-700"
+                            >
+                                <Filter className="h-4 w-4 mr-2" />
+                                Filtered
+                            </TabsTrigger>
+                            <TabsTrigger
+                                value="search"
+                                className="data-[state=active]:bg-green-100 data-[state=active]:text-green-700"
+                            >
+                                <Users className="h-4 w-4 mr-2" />
+                                Search
+                            </TabsTrigger>
+                        </TabsList>
+                    </Tabs>
+                </CardContent>
+            </Card>
 
             {/* Filters */}
             <AppointmentsFilters
@@ -169,13 +198,37 @@ export function AppointmentView({
                 onFilterChange={handleFilterChange}
             />
 
-            {/* Endpoint Info Banner */}
-            <Alert className="bg-blue-50 border-blue-200">
-                <Filter className="h-4 w-4 text-blue-600" />
-                <AlertDescription className="text-blue-800">
-                    <strong className="capitalize">{activeEndpoint.replace(/([A-Z])/g, ' $1').trim()}</strong> • {getEndpointDescription()}
-                </AlertDescription>
-            </Alert>
+            {/* Enhanced Endpoint Info Banner */}
+            {viewType !== "current" && (
+                <Alert className={`border-0 shadow-sm ${viewType === "search"
+                    ? "bg-green-50 border-green-200"
+                    : "bg-purple-50 border-purple-200"
+                    }`}>
+                    <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-lg ${viewType === "search" ? "bg-green-100" : "bg-purple-100"
+                            }`}>
+                            <Filter className={`h-4 w-4 ${viewType === "search" ? "text-green-600" : "text-purple-600"
+                                }`} />
+                        </div>
+                        <div className="flex-1">
+                            <AlertDescription className={`font-medium ${viewType === "search" ? "text-green-800" : "text-purple-800"
+                                }`}>
+                                <span className="capitalize font-semibold">{viewType} view</span> • {getEndpointDescription()}
+                            </AlertDescription>
+                        </div>
+                        <Badge
+                            variant="outline"
+                            className={
+                                viewType === "search"
+                                    ? "bg-green-100 text-green-700 border-green-200"
+                                    : "bg-purple-100 text-purple-700 border-purple-200"
+                            }
+                        >
+                            {appointments.length} results
+                        </Badge>
+                    </div>
+                </Alert>
+            )}
 
             {/* Appointments Table */}
             <AppointmentsTable
@@ -192,19 +245,80 @@ export function AppointmentView({
     );
 }
 
-// Loading state component for the main view
+// Enhanced Loading state component
 export function AppointmentViewSkeleton() {
     return (
-        <div className="space-y-6 p-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <Skeleton className="h-8 w-64 mb-2" />
-                    <Skeleton className="h-4 w-48" />
-                </div>
-                <Skeleton className="h-10 w-24" />
-            </div>
-            <Skeleton className="h-32 w-full" />
-            <Skeleton className="h-96 w-full" />
+        <div className="space-y-8">
+            {/* Header Skeleton */}
+            <Card className="border-0 bg-gradient-to-br from-white to-blue-50/30 shadow-lg">
+                <CardContent className="p-8">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                        <div className="flex items-center gap-4">
+                            <Skeleton className="h-14 w-14 rounded-2xl" />
+                            <div className="space-y-3">
+                                <Skeleton className="h-8 w-48" />
+                                <Skeleton className="h-5 w-64" />
+                            </div>
+                        </div>
+                        <Skeleton className="h-11 w-32" />
+                    </div>
+
+                    {/* Stats Skeleton */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                        {[...Array(3)].map((_, i) => (
+                            <div key={i} className="flex items-center gap-4 p-4 bg-white rounded-xl border border-gray-200">
+                                <Skeleton className="h-10 w-10 rounded-lg" />
+                                <div className="space-y-2">
+                                    <Skeleton className="h-7 w-16" />
+                                    <Skeleton className="h-4 w-20" />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Tabs Skeleton */}
+            <Card className="border-0 bg-white shadow-sm">
+                <CardContent className="p-4">
+                    <Skeleton className="h-10 w-full rounded-md" />
+                </CardContent>
+            </Card>
+
+            {/* Filters Skeleton */}
+            <Card className="border-0 bg-white shadow-lg">
+                <CardContent className="p-6">
+                    <div className="space-y-6">
+                        <Skeleton className="h-6 w-48" />
+                        <Skeleton className="h-12 w-full rounded-xl" />
+                        <div className="flex gap-4">
+                            <Skeleton className="h-10 w-40 rounded-xl" />
+                            <Skeleton className="h-10 w-40 rounded-xl" />
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Table Skeleton */}
+            <Card className="border-0 bg-white shadow-lg">
+                <CardContent className="p-0">
+                    <div className="p-6 border-b">
+                        <Skeleton className="h-6 w-64" />
+                    </div>
+                    <div className="p-6 space-y-4">
+                        {[...Array(5)].map((_, i) => (
+                            <div key={i} className="flex items-center gap-4 py-4 border-b last:border-b-0">
+                                <Skeleton className="h-12 w-12 rounded-full" />
+                                <div className="flex-1 space-y-2">
+                                    <Skeleton className="h-4 w-32" />
+                                    <Skeleton className="h-3 w-48" />
+                                </div>
+                                <Skeleton className="h-6 w-16 rounded-full" />
+                            </div>
+                        ))}
+                    </div>
+                </CardContent>
+            </Card>
         </div>
     );
 }

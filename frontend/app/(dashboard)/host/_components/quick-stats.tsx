@@ -5,21 +5,18 @@ import {
     Calendar,
     Clock,
     CheckCircle,
-    TrendingUp
 } from "lucide-react";
 
 interface QuickStatsProps {
     totalToday: number;
     pending: number;
     completed: number;
-    approvalRate: number;
 }
 
 export function QuickStats({
     totalToday,
     pending,
     completed,
-    approvalRate
 }: QuickStatsProps) {
     const stats = [
         {
@@ -40,16 +37,10 @@ export function QuickStats({
             icon: CheckCircle,
             color: "text-green-600",
         },
-        {
-            title: "Approval Rate",
-            value: `${approvalRate}%`,
-            icon: TrendingUp,
-            color: "text-purple-600",
-        },
     ];
 
     return (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {stats.map((stat) => {
                 const Icon = stat.icon;
                 return (

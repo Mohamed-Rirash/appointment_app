@@ -64,11 +64,9 @@ interface TransformedAppointment {
 const baseURL = process.env.NEXT_PUBLIC_API_URL;
 
 export function HostTodaysAppointments({
-    initialAppointments,
     office_id,
     token
 }: {
-    initialAppointments: ApiResponse;
     office_id: string;
     token: string;
 }) {
@@ -103,7 +101,7 @@ export function HostTodaysAppointments({
             if (!res.ok) throw new Error("Failed to fetch appointments");
             return res.json();
         },
-        initialData: initialAppointments,
+
     });
 
     const transformAppointments = (data: ApiResponse): TransformedAppointment[] => {
@@ -124,7 +122,7 @@ export function HostTodaysAppointments({
         }));
     };
 
-    const allAppointments = transformAppointments(appointmentsData || initialAppointments);
+    const allAppointments = transformAppointments(appointmentsData);
     const sortedAppointments = allAppointments.sort(
         (a, b) => new Date(a.time_slot).getTime() - new Date(b.time_slot).getTime()
     );
@@ -210,7 +208,7 @@ export function HostTodaysAppointments({
                             src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${appointment.citizen.email}`}
                             alt={appointment.citizen.name}
                         />
-                        <AvatarFallback className="bg-gradient-to-br from-amber-400 to-orange-500 text-white font-semibold text-lg">
+                        <AvatarFallback className="bg-linear-to-br from-amber-400 to-orange-500 text-white font-semibold text-lg">
                             {appointment.citizen.name.split(' ').map(n => n[0]).join('')}
                         </AvatarFallback>
                     </Avatar>
@@ -301,7 +299,7 @@ export function HostTodaysAppointments({
                             </div>
                             <div>
                                 <CardTitle className="text-2xl font-bold text-gray-900 tracking-tight">
-                                    Your Appointment Queue
+                                    Incoming Appointment Requests
                                 </CardTitle>
                                 <p className="text-sm text-gray-500 mt-1.5">
                                     Review and manage incoming visitor requests

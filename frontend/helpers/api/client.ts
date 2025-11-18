@@ -763,4 +763,40 @@ export const client = {
       );
     }
   },
+  // ... other methods ...
+
+  //   async getAllPastAppointments (
+  //     office_id: string,
+  //     date: string,
+  //     status: string,
+  //     limit: number,
+  //     offset: number,
+  //     token: string
+  // ): Promise<AppointmentsResponse>{
+  //     const params = new URLSearchParams({
+  //         limit: limit.toString(),
+  //         offset: offset.toString(),
+  //     });
+
+  //     // Only add date if provided (not empty)
+  //     if (date) {
+  //         params.append('date', date);
+  //     }
+
+  //     // Only add status if provided (not empty)
+  //     if (status) {
+  //         params.append('status', status);
+  //     }
+
+  //     const response = await apiClient.get(
+  //         `/views/${office_id}/allpastappointments?${params}`,
+  //         {
+  //             headers: {
+  //                 'Authorization': `Bearer ${token}`,
+  //                 'Content-Type': 'application/json',
+  //             },
+  //         }
+  //     );
+  //     return response.data
+  // },
 };
