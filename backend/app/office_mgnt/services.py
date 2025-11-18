@@ -1131,7 +1131,7 @@ class OfficeMembershipService:
         if not existing:
             raise HTTPException(status_code=404, detail="Membership not found")
 
-        success = await OfficeMembershipMgmtCRUD.soft_delete_membership(
+        success = await OfficeMembershipMgmtCRUD.delete_membership(
             db, office_id, existing["id"]
         )
         if not success:

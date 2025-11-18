@@ -252,7 +252,6 @@ async def get_office_hosts(
 
 @router.patch(
     "/{office_id}/memberships/{user_id}",
-    response_model=sch.MembershipRead,
     summary="Update/edit office membershiping (only admins)",
     description="Update membership details (e.g., role). Only admins can perform this action.",
     responses={
@@ -268,9 +267,8 @@ async def update_office_membership(
     _admin: CurrentUser = Depends(require_role(AdminLevel.ADMIN)),
     db: Database = Depends(get_db),
 ):
-    return await OfficeMembershipService.update_office_member(
-        db, office_id, user_id, payload
-    )
+    await OfficeMembershipService.update_office_member(db, office_id, user_id, payload)
+    return {"message": "Membership updated"}
 
 
 @router.delete(

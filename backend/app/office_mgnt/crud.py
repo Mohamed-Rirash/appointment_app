@@ -4,11 +4,15 @@ from datetime import date
 from typing import Any
 
 from databases import Database
-from sqlalchemy import and_, delete, func, insert, or_, select, update
+from sqlalchemy import and_, delete, insert, or_, select, update
 
 from app.appointments.models import time_slot
 from app.auth.models import roles, user_roles, users
-from app.office_mgnt.models import host_availability, office_memberships, offices
+from app.office_mgnt.models import (
+    host_availability,
+    office_memberships,
+    offices,
+)
 from app.office_mgnt.views import office_member_details
 
 
@@ -180,16 +184,10 @@ class OfficeMembershipMgmtCRUD:
         return await db.fetch_one(query)
 
     @staticmethod
-    async def soft_delete_membership(db, office_id, membership_id):
-        query = (
-            update(office_memberships)
-            .where(
-                office_memberships.c.id == membership_id,
-                and_(
-                    office_memberships.c.office_id == office_id,
-                ),
-            )
-            .values(is_active=False, ended_at=func.now())
+    async def delete_membership(db, office_id, membership_id):
+        query = delete(office_memberships).where(
+            office_memberships.c.id == membership_id,
+            office_memberships.c.office_id == office_id,
         )
         return await db.execute(query)
 
@@ -292,18 +290,22 @@ class OfficeMembershipMgmtCRUD:
     async def get_membership_by_id(db, membership_id):
         """Get membership by ID with user details"""
         j = office_memberships.join(users, office_memberships.c.user_id == users.c.id)
-        query = select(
-            users.c.id.label("user_id"),
-            users.c.first_name,
-            users.c.last_name,
-            users.c.email,
-            users.c.is_active.label("user_active"),
-            office_memberships.c.id.label("membership_id"),
-            office_memberships.c.office_id,
-            office_memberships.c.position,
-            office_memberships.c.is_primary,
-            office_memberships.c.is_active.label("membership_active"),
-        ).select_from(j).where(office_memberships.c.id == membership_id)
+        query = (
+            select(
+                users.c.id.label("user_id"),
+                users.c.first_name,
+                users.c.last_name,
+                users.c.email,
+                users.c.is_active.label("user_active"),
+                office_memberships.c.id.label("membership_id"),
+                office_memberships.c.office_id,
+                office_memberships.c.position,
+                office_memberships.c.is_primary,
+                office_memberships.c.is_active.label("membership_active"),
+            )
+            .select_from(j)
+            .where(office_memberships.c.id == membership_id)
+        )
 
         result = await db.fetch_one(query)
         return dict(result) if result else None

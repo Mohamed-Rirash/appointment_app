@@ -156,7 +156,7 @@ services:
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile
     container_name: frontend
     env_file:
       - frontend/.env.local

@@ -9,12 +9,14 @@ from sqlalchemy import func, or_
 from app.appointments import schemas as sch
 from app.appointments.constants import AppointmentStatus
 from app.appointments.crud import AppointmentCrud
-from app.appointments.exceptions import (AppointmentAlreadyApproved,
-                                         AppointmentCompletionNotAllowed,
-                                         AppointmentDecisionNotAllowed,
-                                         AppointmentEditNotAllowed,
-                                         AppointmentNotFound,
-                                         AppointmentPostponementNotAllowed)
+from app.appointments.exceptions import (
+    AppointmentAlreadyApproved,
+    AppointmentCompletionNotAllowed,
+    AppointmentDecisionNotAllowed,
+    AppointmentEditNotAllowed,
+    AppointmentNotFound,
+    AppointmentPostponementNotAllowed,
+)
 from app.appointments.view import appointment_details
 from app.core.serialization import serialize_database_record
 from app.notifications.sse import SSEBroker, office_brokers
