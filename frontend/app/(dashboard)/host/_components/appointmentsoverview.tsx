@@ -93,7 +93,7 @@ export function HostTodaysAppointments({
         queryKey: ["todays-appointments", office_id],
         queryFn: async () => {
             const res = await fetch(
-                `/api/v1/views/${office_id}/allpastappointments?status=PENDING&limit=100&offset=0`,
+                `/api/v1/views/${office_id}/appointments?status=PENDING&limit=100&offset=0`,
                 {
                     headers: { Authorization: `Bearer ${token}` },
                 }
@@ -128,7 +128,8 @@ export function HostTodaysAppointments({
     );
 
     const displayedAppointments = showAll ? sortedAppointments : sortedAppointments.slice(0, 5);
-
+    console.log("pppp", appointmentsData)
+    console.log("pppp", displayedAppointments)
     const approveAppointment = useMutation({
         mutationFn: async (appointmentId: string) => {
             const res = await fetch(

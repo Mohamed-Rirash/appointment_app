@@ -55,7 +55,7 @@ export function AppointmentView({
                 },
                 queryKey: ["host-appointments", "search", office_id, search, page]
             };
-        } else if (date !== "today" || status !== "all") {
+        } else if (date !== "today") {
             return {
                 endpoint: "allpastappointments" as EndpointType,
                 queryFn: async () => {
@@ -64,7 +64,8 @@ export function AppointmentView({
                 },
                 queryKey: ["reception-appointments", "allpast", office_id, date, status, page]
             };
-        } else {
+        }
+        else {
             return {
                 endpoint: "appointments" as EndpointType,
                 queryFn: async () => {
