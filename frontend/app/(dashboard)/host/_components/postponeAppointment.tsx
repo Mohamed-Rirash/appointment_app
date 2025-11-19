@@ -79,7 +79,7 @@ export function PostponeAppointmentDialog({
                 console.log("date", formattedDate)
                 const baseURL = process.env.NEXT_PUBLIC_API_URL;
                 const res = await fetch(
-                    `${baseURL}/availability/hosts/${office_id}/slots?target_date=${formattedDate}`,
+                    `/api/v1/availability/hosts/${office_id}/slots?target_date=${formattedDate}`,
                     {
                         headers: {
                             Authorization: `Bearer ${token}`,
