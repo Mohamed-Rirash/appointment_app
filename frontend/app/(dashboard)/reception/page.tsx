@@ -103,6 +103,15 @@ export default async function ReceptionDashboard() {
     );
 }
 
+const STAT_ICONS = {
+    "user-check": UserCheck,
+    clock: Clock,
+    "user-plus": UserPlus,
+    "calendar-x": CalendarX,
+} as const;
+
+type StatIconKey = keyof typeof STAT_ICONS;
+
 function StatCard({
     title,
     value,
@@ -111,15 +120,10 @@ function StatCard({
 }: {
     title: string;
     value: number;
-    icon: string;
+    icon: StatIconKey;
     color: string;
 }) {
-    const Icon = {
-        "user-check": UserCheck,
-        clock: Clock,
-        "user-plus": UserPlus,
-        "calendar-x": CalendarX,
-    }[icon];
+    const Icon = STAT_ICONS[icon];
 
     return (
         <div className="rounded-lg border bg-card p-6">

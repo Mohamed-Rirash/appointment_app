@@ -93,7 +93,7 @@ export function HostTodaysAppointments({
         queryKey: ["todays-appointments", office_id],
         queryFn: async () => {
             const res = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/views/${office_id}/appointments?status=PENDING&limit=100&offset=0`,
+                `/api/v1/views/${office_id}/allpastappointments?status=PENDING&limit=100&offset=0`,
                 {
                     headers: { Authorization: `Bearer ${token}` },
                 }

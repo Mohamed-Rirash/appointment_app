@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowUpRight, ArrowDownRight, Minus, TrendingUp, TrendingDown } from "lucide-react";
+import { Minus, TrendingUp, TrendingDown } from "lucide-react";
 import {
     LayoutDashboard,
     Building2,
@@ -23,7 +23,7 @@ const iconMap = {
     LayoutDashboard: LayoutDashboard,
 };
 
-interface Metric {
+export interface Metric {
     title: string;
     value: string | number;
     change: string;
@@ -58,7 +58,7 @@ export function StatsGrid({ metrics }: StatsGridProps) {
             case "warning":
                 return {
                     icon: <Minus className="h-4 w-4 text-amber-600" />,
-                    badgeVariant: "warning" as const,
+                    badgeVariant: "outline" as const,
                     bgColor: "bg-amber-50",
                     textColor: "text-amber-700",
                     borderColor: "border-amber-200"

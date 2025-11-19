@@ -163,7 +163,12 @@ services:
     environment:
       - NODE_ENV=production
       # Client-side API URL (browser) - relative path via nginx proxy
-      - NEXT_PUBLIC_API_URL=/api/v1
+      - NEXT_PUBLIC_API_URL='/api/v1'
+      - IRON_SESSION_PASSWORD='WODq0lt63Dtc277vgjjUsjjfLudZrv1QEq0WnkBwXws=''
+      - IRON_SESSION_COOKIE_NAME='app_session'
+      - API_URL='http://localhost:8000/api/v1'
+      - NEXT_PUBLIC_API_URL='/api/v1'
+      - NEXT_PUBLIC_API_FRONT='/api/auth'
       # Server-side API URL (Next.js server) - internal Docker network URL
       - API_URL=http://backend:8000/api/v1
       # Force Next.js standalone server to listen on all interfaces

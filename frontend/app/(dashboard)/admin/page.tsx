@@ -3,6 +3,7 @@ import { format } from "date-fns";
 import { getSession } from "@/helpers/actions/getsession";
 import { QuickActions } from "./_components/quick-actions";
 import { StatsGrid } from "./_components/stats-grid";
+import type { Metric } from "./_components/stats-grid";
 import { RecentOfficesList } from "./_components/recent-offices-list";
 import { RecentActivityFeed } from "./_components/recent-activity-feed";
 import DashboardFooter from "../_components/Footer";
@@ -218,7 +219,7 @@ export default async function AdminDashboard() {
       icon: "Activity",
       trend: "neutral",
     },
-  ];
+  ] satisfies Metric[];
 
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-50 to-blue-50/30">

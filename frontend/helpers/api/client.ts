@@ -3,7 +3,8 @@ import { Signout } from "../actions/signout";
 
 // Create an axios instance with base URL and default config
 const apiClient = axios.create({
-  baseURL: `${process.env.NEXT_PUBLIC_API_URL}`,
+  // baseURL: `${process.env.NEXT_PUBLIC_API_URL}`,
+  baseURL: "/api/v1",
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",
@@ -120,6 +121,23 @@ export interface AppointmentsResponse {
   limit: number;
   offset: number;
   appointments: Appointment[];
+}
+
+interface CreateAppointmentData {
+  citizen: {
+    firstname: string;
+    lastname: string;
+    email?: string;
+    phone: string;
+  };
+  appointment: {
+    host_id: string;
+    office_id: string;
+    purpose: string;
+    appointment_date: string;
+    time_slotted: string;
+    status: "PENDING";
+  };
 }
 
 export const client = {
@@ -547,7 +565,7 @@ export const client = {
   },
 
   // create appoint
-  async createAppointment(data, token?: string) {
+  async createAppointment(data: CreateAppointmentData, token?: string) {
     try {
       const response = await apiClient.post(
         `/appointments/with-citizen`,

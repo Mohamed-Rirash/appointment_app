@@ -10,8 +10,6 @@ import {
   Users,
   TrendingUp,
   AlertCircle,
-  RefreshCw,
-  ArrowRight,
   Mail,
   Clock,
   UserCheck,
@@ -167,41 +165,10 @@ export default async function HostDashboard() {
                         support@kulandesk.com
                       </a>
                     </div>
-
-                    <div className="p-4 bg-white rounded-lg border border-gray-200">
-                      <p className="font-medium text-gray-900 mb-2">Documentation</p>
-                      <p className="text-sm text-gray-600 mb-3">
-                        Learn more about the host role and office assignments.
-                      </p>
-                      <Button variant="outline" size="sm" className="w-full">
-                        <ArrowRight className="h-4 w-4 mr-2" />
-                        View Help Guide
-                      </Button>
-                    </div>
                   </div>
                 </CardContent>
               </Card>
             </div>
-
-            {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button
-                // onClick={() => window.location.reload()}
-                className="h-12 px-8 bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all"
-              >
-                <RefreshCw className="h-5 w-5 mr-3" />
-                Check Assignment Status
-              </Button>
-
-              <Button
-                variant="outline"
-                className="h-12 px-8 border-gray-300 hover:bg-gray-50 font-semibold"
-              >
-                <Mail className="h-5 w-5 mr-3" />
-                Contact Administrator
-              </Button>
-            </div>
-
             {/* Additional Info */}
             <div className="mt-8 pt-6 border-t border-gray-200 text-center">
               <p className="text-sm text-gray-500">
@@ -215,6 +182,8 @@ export default async function HostDashboard() {
     );
   }
 
+
+  console.log("us", user)
   const limit = 50;
   const offset = 0;
 
@@ -224,11 +193,9 @@ export default async function HostDashboard() {
 
   try {
     const res = await fetch(
-      `${process.env.API_URL}/views/${office_id}/appointments?&limit=${limit}&offset=${offset}`,
+      `${process.env.API_URL}/views/${office_id}/allpastappointments?&limit=${limit}&offset=${offset}`,
       {
         headers: { Authorization: `Bearer ${token}` },
-        cache: "no-store",
-        next: { revalidate: 60 },
       }
     );
 
@@ -236,7 +203,7 @@ export default async function HostDashboard() {
       if (res.status === 401) {
         Signout()
       }
-      // throw new Error(`Failed to fetch: ${res.status}`);
+
     }
 
     appointments = await res.json();
@@ -244,6 +211,7 @@ export default async function HostDashboard() {
     error = err instanceof Error ? err.message : "Unknown error";
     console.error("Dashboard fetch error:", err);
   }
+  console.log("deteeeeee", appointments)
 
   const today = new Date();
   const formattedDate = format(today, "EEEE, MMMM d, yyyy");
@@ -322,12 +290,6 @@ export default async function HostDashboard() {
               <p className="text-sm text-gray-500 mb-6 max-w-md mx-auto">
                 We couldn't load your appointment queue. {error}
               </p>
-              <Button
-                onClick={() => window.location.reload()}
-                variant="outline" size="sm">
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Try Again
-              </Button>
             </CardContent>
           </Card>
         ) : (
@@ -335,12 +297,12 @@ export default async function HostDashboard() {
             office_id={office_id}
             token={token}
           />
+
         )}
       </section>
 
       {/* Calendar Section */}
       <section className="my-4">
-
         <CalendarView office_id={office_id} token={token} />
       </section>
 

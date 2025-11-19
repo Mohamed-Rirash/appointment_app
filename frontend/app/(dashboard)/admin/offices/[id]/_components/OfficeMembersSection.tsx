@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import toast from "react-hot-toast";
+import { isAxiosError } from "axios";
 
 export interface User {
     user_id: string;
@@ -106,8 +107,11 @@ export default function OfficeMembersSection({
             setSelectedUser(null);
         },
         onError: (error: unknown) => {
-            console.log("errr", error.response.data.detail)
-            toast.error(error.response.data.detail)
+            console.error("errr", error);
+            const detail = isAxiosError<{ detail?: string }>(error)
+                ? error.response?.data?.detail
+                : undefined;
+            toast.error(detail ?? "Failed to remove member. Please try again.");
         },
     });
 

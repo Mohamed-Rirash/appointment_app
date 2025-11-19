@@ -36,7 +36,7 @@ export function QrScanner() {
             // return res.json();
         },
         onSuccess: () => {
-            queryClient.invalidateQueries(["recent-check-ins"]);
+            queryClient.invalidateQueries({ queryKey: ["recent-check-ins"] });
             setResult({ success: true, message: "Citizen checked in successfully!" });
             setQrData("");
             setTimeout(() => setResult(null), 3000);
@@ -143,8 +143,8 @@ export function QrScanner() {
                     {result && (
                         <div
                             className={`rounded-lg border p-4 flex items-center gap-3 ${result.success
-                                    ? "border-green-500 bg-green-50 text-green-900"
-                                    : "border-red-500 bg-red-50 text-red-900"
+                                ? "border-green-500 bg-green-50 text-green-900"
+                                : "border-red-500 bg-red-50 text-red-900"
                                 }`}
                         >
                             {result.success ? (

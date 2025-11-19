@@ -76,8 +76,8 @@ export function RecentCheckIns({ checkIns }: RecentCheckInsProps) {
             // return res.json();
         },
         onSuccess: () => {
-            queryClient.invalidateQueries(["recent-check-ins"]);
-            queryClient.invalidateQueries(["today-appointments"]);
+            queryClient.invalidateQueries({ queryKey: ["recent-check-ins"] });
+            queryClient.invalidateQueries({ queryKey: ["today-appointments"] });
         },
     });
 

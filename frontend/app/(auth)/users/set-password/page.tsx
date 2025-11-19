@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AlertCircle } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 import { z } from "zod";
@@ -38,7 +38,7 @@ const setPasswordSchema = z
 
 type SetPasswordFormValues = z.infer<typeof setPasswordSchema>;
 
-export default function SetPasswordPage() {
+function SetPasswordForm() {
     const searchParams = useSearchParams();
     const token = searchParams.get("token");
     const email = searchParams.get("email");
@@ -183,5 +183,19 @@ export default function SetPasswordPage() {
                 </Form>
             </div>
         </div>
+    );
+}
+
+export default function SetPasswordPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex flex-col items-center justify-center p-4">
+                <div className="max-w-md w-full bg-white p-8 rounded-lg shadow-gren border border-[#eeeeee] text-center">
+                    <p className="text-brand-gray">Loading...</p>
+                </div>
+            </div>
+        }>
+            <SetPasswordForm />
+        </Suspense>
     );
 }

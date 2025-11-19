@@ -95,7 +95,7 @@ const formSchema = z.object({
       return digitsOnly.length === 10 && digitsOnly.startsWith("063");
     }, "Phone format must start with 063 followed by 7 digits. Example: 063 123 4567"),
   purpose: z.string().min(5, "Purpose must be at least 5 characters"),
-  date: z.date({ required_error: "Date is required" }),
+  date: z.date("Date is required"),
   timeSlot: z.string().min(1, "Time slot is required"),
   officeId: z.string().min(1, "Office selection is required"),
   hostId: z.string().min(1, "Host selection is required"),
@@ -287,7 +287,7 @@ export default function AddReceptionform({ token }: AddReception) {
           purpose: data.purpose,
           appointment_date: appointmentDateStr,
           time_slotted: data.timeSlot,
-          status: "PENDING",
+          status: "PENDING" as const,
         },
       };
 

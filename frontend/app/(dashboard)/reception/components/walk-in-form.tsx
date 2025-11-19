@@ -128,8 +128,9 @@ export function WalkInForm({ hosts, offices }: WalkInFormProps) {
 
     // Auto-fill citizen info when search results come back
     useEffect(() => {
-        if (searchCitizen.data?.length > 0 && !autoFilled) {
-            const citizen = searchCitizen.data[0];
+        if (searchCitizen.data?.length && !autoFilled) {
+            const citizen = searchCitizen.data?.[0];
+            if (!citizen) return;
             form.setValue("citizen_name", citizen.full_name);
             if (citizen.id_number) {
                 form.setValue("id_number", citizen.id_number);
@@ -171,7 +172,7 @@ export function WalkInForm({ hosts, offices }: WalkInFormProps) {
                 citizen_name: data.citizen_name,
                 host_name: selectedHost?.full_name,
                 office_name: offices.find(o => o.id === data.office_id)?.name,
-                date: format(data.date, "yyyy-MM-dd"),
+                date: data.date ? format(data.date, "yyyy-MM-dd") : "",
                 time_slot: data.time_slot,
                 purpose: data.purpose,
                 reference_number: `WLK-${Date.now().toString().slice(-6)}`
@@ -181,8 +182,8 @@ export function WalkInForm({ hosts, offices }: WalkInFormProps) {
         },
         onSuccess: (data) => {
             // Clear cache
-            queryClient.invalidateQueries(["today-appointments"]);
-            queryClient.invalidateQueries(["recent-check-ins"]);
+            queryClient.invalidateQueries({ queryKey: ["today-appointments"] });
+            queryClient.invalidateQueries({ queryKey: ["recent-check-ins"] });
 
             // Redirect to confirmation/print page
             router.push(`/reception/appointments/${data.id}/confirmed`);
@@ -229,6 +230,12 @@ export function WalkInForm({ hosts, offices }: WalkInFormProps) {
 
     // Debug current form values
     const currentValues = form.watch();
+    const appointmentDate = form.watch("date");
+    const formattedAppointmentDate = appointmentDate ? format(appointmentDate, "PPP") : "";
+    const appointmentTimeSlot = form.watch("time_slot") ?? "";
+    const appointmentPurpose = form.watch("purpose") ?? "";
+    const appointmentIdNumber = form.watch("id_number") ?? "";
+    const hasReturningCitizen = Boolean(searchCitizen.data?.length);
     console.log("Current form values:", currentValues); // Debug log
 
     return (
@@ -314,7 +321,7 @@ export function WalkInForm({ hosts, offices }: WalkInFormProps) {
                                                 Searching for existing citizen...
                                             </div>
                                         )}
-                                        {searchCitizen.data?.length > 0 && (
+                                        {hasReturningCitizen && (
                                             <Badge variant="default" className="bg-green-100 text-green-800 border-green-200">
                                                 ✓ Returning Citizen Found - Info Auto-filled
                                             </Badge>
@@ -564,13 +571,13 @@ export function WalkInForm({ hosts, offices }: WalkInFormProps) {
                                 <ConfirmationRow label="Host" value={selectedHost?.full_name || ""} />
                                 <ConfirmationRow label="Position" value={selectedHost?.position || ""} />
                                 <ConfirmationRow label="Office" value={offices.find(o => o.id === form.getValues("office_id"))?.name || ""} />
-                                <ConfirmationRow label="Date" value={format(form.getValues("date"), "PPP")} />
-                                <ConfirmationRow label="Time" value={form.getValues("time_slot")} />
-                                {form.getValues("purpose") && (
-                                    <ConfirmationRow label="Purpose" value={form.getValues("purpose")} />
+                                <ConfirmationRow label="Date" value={formattedAppointmentDate} />
+                                <ConfirmationRow label="Time" value={appointmentTimeSlot} />
+                                {appointmentPurpose && (
+                                    <ConfirmationRow label="Purpose" value={appointmentPurpose} />
                                 )}
-                                {form.getValues("id_number") && (
-                                    <ConfirmationRow label="ID Number" value={form.getValues("id_number")} />
+                                {appointmentIdNumber && (
+                                    <ConfirmationRow label="ID Number" value={appointmentIdNumber} />
                                 )}
                             </div>
 

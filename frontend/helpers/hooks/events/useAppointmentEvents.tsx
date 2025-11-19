@@ -25,7 +25,7 @@ export const useAppointmentEvents = (officeId: string): UseAppointmentEventsRetu
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
-  
+
   const eventSourceRef = useRef<EventSource | null>(null);
   const retryCountRef = useRef(0);
   const maxRetriesRef = useRef(5);
@@ -51,9 +51,9 @@ export const useAppointmentEvents = (officeId: string): UseAppointmentEventsRetu
 
     disconnect();
 
-    const url = `${process.env.NEXT_PUBLIC_API_URL}/appointments/events?office_id=${encodeURIComponent(officeId)}`;
+    const url = `/api/v1/appointments/events?office_id=${encodeURIComponent(officeId)}`;
     console.log('🔗 Connecting to SSE:', url);
-    
+
     eventSourceRef.current = new EventSource(url);
 
     eventSourceRef.current.onopen = () => {

@@ -54,7 +54,7 @@ const formSchema = z.object({
       return digitsOnly.length === 10 && digitsOnly.startsWith("063");
     }, "Phone format must start with 063 followed by 7 digits. Example: 063 123 4567"),
   purpose: z.string().min(5, "Purpose must be at least 5 characters"),
-  date: z.date({ required_error: "Date is required" }),
+  date: z.date("Date is required"),
   timeSlot: z.string().min(1, "Time slot is required"),
 });
 
@@ -84,7 +84,7 @@ export default function AddForm({
   const [loadingSlots, setLoadingSlots] = useState(false);
   const tomorrow = addDays(new Date(), 1);
   const today = new Date();
-    const queryClient = useQueryClient();
+  const queryClient = useQueryClient();
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -135,9 +135,9 @@ export default function AddForm({
       }
     };
 
-    
-            loadSlots()
-     
+
+    loadSlots()
+
   }, [office_id, localDate, host_id, token]);
 
   // Format phone number
@@ -183,58 +183,58 @@ export default function AddForm({
     setStep(stepNum);
   };
 
-const onSubmitForm = async (data: FormData) => {
-  setLoading(true);
+  const onSubmitForm = async (data: FormData) => {
+    setLoading(true);
 
-  try {
-    const requestData = {
-      citizen: {
-        firstname: data.firstName,
-        lastname: data.lastName,
-        email: data.email,
-        phone: data.phone,
-      },
-      appointment: {
-        host_id: host_id,
-        office_id: office_id,
-        purpose: data.purpose,
-        appointment_date: data.date.toISOString(),
-        time_slotted: data.timeSlot,
-        status: "PENDING",
-      },
-    };
+    try {
+      const requestData = {
+        citizen: {
+          firstname: data.firstName,
+          lastname: data.lastName,
+          email: data.email,
+          phone: data.phone,
+        },
+        appointment: {
+          host_id: host_id,
+          office_id: office_id,
+          purpose: data.purpose,
+          appointment_date: data.date.toISOString(),
+          time_slotted: data.timeSlot,
+          status: "PENDING" as const,
+        },
+      };
 
-    console.log("Sending to backend:", requestData);
-    const response = await client.createAppointment(requestData, token);
+      console.log("Sending to backend:", requestData);
+      const response = await client.createAppointment(requestData, token);
 
-    console.log("Success:", response);
-    toast.success("Appointment created successfully!");
-    form.reset();
-    setStep(1);
-     queryClient.invalidateQueries({ queryKey: ["appointments"] });
-  } catch (error: any) {
-    console.error("Error submitting form:", error);
+      console.log("Success:", response);
+      toast.success("Appointment created successfully!");
+      form.reset();
+      setStep(1);
+      queryClient.invalidateQueries({ queryKey: ["appointments"] });
+    } catch (error: any) {
+      console.error("Error submitting form:", error);
 
-    // Extract the actual error message
-    let errorMessage = "Failed to create appointment. Please try again.";
-    
-    if (error.message) {
-      errorMessage = error.message;
-      
-      // If it's a validation error about email, highlight the field
-      if (error.message.toLowerCase().includes('email')) {
-        form.setError("email", {
-          type: "manual",
-          message: "Please enter a valid email address with @ symbol",
-        });
+      // Extract the actual error message
+      let errorMessage = "Failed to create appointment. Please try again.";
+
+      if (error.message) {
+        errorMessage = error.message;
+
+        // If it's a validation error about email, highlight the field
+        if (error.message.toLowerCase().includes('email')) {
+          form.setError("email", {
+            type: "manual",
+            message: "Please enter a valid email address with @ symbol",
+          });
+        }
       }
+
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
     }
-    
-    toast.error(errorMessage);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   //
   const formatTime = (timeString: string): string => {
@@ -287,8 +287,8 @@ const onSubmitForm = async (data: FormData) => {
                         stepNum <= step
                           ? "bg-brand text-primary-foreground border-brand"
                           : stepNum === step
-                          ? "border-brand bg-background text-brand"
-                          : "bg-muted text-muted-foreground border-muted"
+                            ? "border-brand bg-background text-brand"
+                            : "bg-muted text-muted-foreground border-muted"
                       )}
                     >
                       {getStepIcon(stepNum)}
@@ -534,9 +534,9 @@ const onSubmitForm = async (data: FormData) => {
                                           className={cn(
                                             "h-14 flex-col gap-1 relative transition-all",
                                             isBooked &&
-                                              "opacity-50 cursor-not-allowed",
+                                            "opacity-50 cursor-not-allowed",
                                             isSelected &&
-                                              "bg-brand text-primary-foreground"
+                                            "bg-brand text-primary-foreground"
                                           )}
                                         >
                                           <span className="font-semibold text-sm">

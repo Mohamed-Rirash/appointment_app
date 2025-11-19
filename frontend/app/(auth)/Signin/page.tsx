@@ -23,6 +23,7 @@ import { Spinner } from "@/components/ui/spinner";
 import logo from "@/public/logo.png";
 
 const API = process.env.NEXT_PUBLIC_API_FRONT;
+const AP = process.env.NEXT_PUBLIC_API_FRONT;
 
 // define the form schema
 const formSchema = z.object({
@@ -31,19 +32,15 @@ const formSchema = z.object({
 });
 export default function Signin() {
   const [loading, setLoading] = useState(false);
-  const [_user, setUser] = useState<UserSession | null>(null);
-  useEffect(() => {
-    const getuser = async () => {
-      const User = await getUser();
-      console.log("userrrs", User);
-      setUser(User);
-    };
-    getuser();
-  }, []);
 
-  // if (!user) {
-  //   redirect("/")
-  // }
+
+  useEffect(() => {
+    console.log("All environment variables:", {
+      NEXT_PUBLIC_API_FRONT: process.env.NEXT_PUBLIC_API_FRONT,
+      NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+      NODE_ENV: process.env.NODE_ENV,
+    });
+  }, []);
 
   // define the form
   const form = useForm<z.infer<typeof formSchema>>({
@@ -142,7 +139,7 @@ export default function Signin() {
               name="password"
               render={({ field }) => (
                 <FormItem className="mt-4">
-                  <FormLabel className="text-lg text-semibold text-[#2c2c2c] ">
+                  <FormLabel className="text-lg text-semibold text-brand-black ">
                     Password
                   </FormLabel>
                   <FormControl>
@@ -155,7 +152,7 @@ export default function Signin() {
                   </FormControl>
                   <Link
                     href={"/forget-password"}
-                    className=" font-semibold underline cursor-pointer py-5 text-right text-[#2c2c2c]"
+                    className=" font-semibold underline cursor-pointer py-5 text-right text-brand-black"
                   >
                     {" "}
                     Forget Password?
