@@ -39,7 +39,7 @@ export function RejectAppointmentDialog({
         mutationFn: async (reason: string) => {
             const baseURL = process.env.NEXT_PUBLIC_API_URL;
             const res = await fetch(
-                `/api/v1/views/appointments/${appointmentId}/decision?status=DENIED&office_id=${office_id}`,
+                `/api/v1/appointments/${appointmentId}/decision?status=DENIED&office_id=${office_id}`,
                 {
                     method: "PATCH",
                     headers: {

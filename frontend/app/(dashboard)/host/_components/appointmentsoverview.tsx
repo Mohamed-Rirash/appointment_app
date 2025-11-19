@@ -133,7 +133,7 @@ export function HostTodaysAppointments({
     const approveAppointment = useMutation({
         mutationFn: async (appointmentId: string) => {
             const res = await fetch(
-                `/api/v1/views/appointments/${appointmentId}/decision?status=APPROVED&office_id=${office_id}`,
+                `/api/v1/appointments/${appointmentId}/decision?status=APPROVED&office_id=${office_id}`,
                 {
                     method: "PATCH",
                     headers: {
