@@ -119,9 +119,9 @@ export function PostponeAppointmentDialog({
             const newAppointmentDate = new Date(
                 `${newDate.toISOString().split('T')[0]}T${selectedTimeSlot}`
             ).toISOString();
-            'http://localhost/api/v1/appointments/b5626ea6-5062-48f1-b1bf-0028b2a26cb1/postpone'
+
             const res = await fetch(
-                `${baseURL}/appointments/${appointmentId}/postpone`,
+                `/api/v1/views/appointments/${appointmentId}/postpone`,
                 {
                     method: "POST",
                     headers: {
