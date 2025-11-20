@@ -53,13 +53,17 @@ class ViewAppointmentCrud:
         db,
         user_id: UUID,
         target_date: date,
+        status: str | None = None,
         limit: int = 20,
         offset: int = 0,
     ):
-        filters = and_(
+        base_filters = [
             appointment_details.c.issued_by == user_id,
             func.date(appointment_details.c.created_at) == target_date,
-        )
+        ]
+        if status:
+            base_filters.append(appointment_details.c.status == status.upper())
+        filters = and_(*base_filters)
 
         data_query = (
             ViewAppointmentCrud._base_query()
@@ -151,14 +155,16 @@ class ViewAppointmentCrud:
     async def get_all_appointments_by_date_and_status(
         db,
         on_date: date,
-        status: str,
+        status: str | None,
         limit: int = 20,
         offset: int = 0,
     ):
-        filters = and_(
-            appointment_details.c.status == status.upper(),
+        base_filters = [
             func.date(appointment_details.c.created_at) == on_date,
-        )
+        ]
+        if status:
+            base_filters.append(appointment_details.c.status == status.upper())
+        filters = and_(*base_filters)
 
         data_query = (
             ViewAppointmentCrud._base_query()
@@ -182,17 +188,22 @@ class ViewAppointmentCrud:
     @staticmethod
     async def get_all_past_appointments(
         db,
-        status: str,
+        status: str | None,
         office_id: UUID,
         date: date,
         limit: int = 20,
         offset: int = 0,
     ):
-        filters = and_(
-            appointment_details.c.status == status.upper(),
+        filters = [
             appointment_details.c.office_id == office_id,
-            appointment_details.c.appointment_date <= date,
-        )
+            appointment_details.c.appointment_date == date,
+        ]
+
+        # Only filter status if provided
+        if status:
+            filters.append(appointment_details.c.status == status.upper())
+
+        filters = and_(*filters)
 
         data_query = (
             ViewAppointmentCrud._base_query()
@@ -204,6 +215,7 @@ class ViewAppointmentCrud:
             .limit(limit)
             .offset(offset)
         )
+
         rows = await db.fetch_all(data_query)
 
         total_query = select(func.count()).select_from(
