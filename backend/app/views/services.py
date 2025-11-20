@@ -46,11 +46,13 @@ class ViewAppointmentService:
         user_id: UUID,
         target_date: date,
         db: Database,
+        status: str | None = None,
+
         limit: int = 20,
         offset: int = 0,
     ) -> PaginatedAppointments:
         rows, total = await ViewAppointmentCrud.get_appointments_by_user_and_date(
-            db, user_id, target_date, limit, offset
+            db, user_id, target_date, status, limit, offset
         )
         appointments: list[AppointmentDetails] = [
             ViewAppointmentService._map_row_to_model(row) for row in rows
@@ -101,7 +103,7 @@ class ViewAppointmentService:
     @staticmethod
     async def get_all_appointments_by_date_and_status(
         on_date: date,
-        status: str,
+        status: str | None,
         db: Database,
         limit: int = 20,
         offset: int = 0,
@@ -120,7 +122,7 @@ class ViewAppointmentService:
     async def get_all_past_appointments(
         office_id: UUID,
         date: date,
-        status: str,
+        status: str | None,
         db: Database,
         limit: int = 20,
         offset: int = 0,
