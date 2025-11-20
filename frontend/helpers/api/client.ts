@@ -2,7 +2,7 @@ import axios from "axios";
 import { Signout } from "../actions/signout";
 
 // Create an axios instance with base URL and default config
-const apiClient = axios.create({
+export const apiClient = axios.create({
   // baseURL: `${process.env.NEXT_PUBLIC_API_URL}`,
   baseURL: "/api/v1",
   headers: {
@@ -273,7 +273,6 @@ export const client = {
 
   // Get Users (Admin)
   async getUsers(token: string, params: Record<string, any>) {
-    console.log("Get");
     console.log("clinettt", process.env.NEXT_PUBLIC_API_URL);
     try {
       const response = await apiClient.get("/admin/users", {
@@ -287,6 +286,29 @@ export const client = {
       throw new Error(error.response?.data?.detail || "Failed to fetch users");
     }
   },
+
+  // get latest users created
+  // async getUserslist(token: string) {
+  //   try {
+  //     const response = await apiClient.get("/admin/users?page=1&size=200", {
+  //       headers: {
+  //         Authorization: `Bearer ${token}`,
+  //       },
+  //     });
+  //     return response.data;
+  //   } catch (error: any) {
+  //     // Log the full error for debugging
+  //     console.error("getUserslist error details:", {
+  //       status: error.response?.status,
+  //       data: error.response?.data,
+  //       message: error.message,
+  //     });
+  //     throw new Error(
+  //       error.response?.data?.detail ||
+  //         `Failed to fetch users: ${error.response?.status}`
+  //     );
+  //   }
+  // },
 
   // Delete users (Admin)
   async deleteUser(userId: string, token?: string) {

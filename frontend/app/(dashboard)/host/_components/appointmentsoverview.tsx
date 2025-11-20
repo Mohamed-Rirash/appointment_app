@@ -128,8 +128,7 @@ export function HostTodaysAppointments({
     );
 
     const displayedAppointments = showAll ? sortedAppointments : sortedAppointments.slice(0, 5);
-    console.log("pppp", appointmentsData)
-    console.log("pppp", displayedAppointments)
+
     const approveAppointment = useMutation({
         mutationFn: async (appointmentId: string) => {
             const res = await fetch(

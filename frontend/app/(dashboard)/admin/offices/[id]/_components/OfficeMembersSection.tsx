@@ -180,7 +180,7 @@ export default function OfficeMembersSection({
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                 <div>
                     <h2 className="text-2xl font-bold text-gray-900">Office Members</h2>
-                    <p className="text-gray-600 mt-1">Manage team members assigned to this office</p>
+                    <p className="text-brand-gray mt-1">Manage team members assigned to this office</p>
                 </div>
 
                 {filteredUnassigned.length > 0 && (
@@ -199,16 +199,6 @@ export default function OfficeMembersSection({
                 <CardContent className="p-6">
                     <div className="space-y-4">
                         {/* Section Header */}
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-blue-100 rounded-lg">
-                                <Users className="h-5 w-5 text-brand" />
-                            </div>
-                            <div>
-                                <h3 className="text-lg font-semibold text-gray-900">Find Members</h3>
-                                <p className="text-sm text-gray-600">Search by name, email, or filter by status</p>
-                            </div>
-                        </div>
-
                         {/* Search and Filters Row */}
                         <div className="flex flex-col lg:flex-row gap-4">
                             {/* Enhanced Search Bar */}
@@ -514,7 +504,7 @@ function EditMemberForm({
     const [position, setPosition] = useState(user.position);
     const [isPrimary, setIsPrimary] = useState(user.is_primary);
     const [isActive, setIsActive] = useState(user.membership_active);
-
+    const [opne, setOpen] = useState(false)
     useEffect(() => {
         setPosition(user.position);
         setIsPrimary(user.is_primary);
@@ -524,7 +514,6 @@ function EditMemberForm({
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        // Get today's date in the required format: "2025-11-16T17:34:08.418Z"
         const today = new Date();
         const endedAt = today.toISOString();
         onSave({
@@ -581,7 +570,7 @@ function AssignMembersDialog({
             <DialogContent className="sm:max-w-2xl max-h-[80vh]">
                 <DialogHeader>
                     <DialogTitle>Assign Members to Office</DialogTitle>
-                    <DialogDescription>
+                    <DialogDescription className="text-brand-gray">
                         Select team members to add to this office
                     </DialogDescription>
                 </DialogHeader>
@@ -599,7 +588,7 @@ function AssignMembersDialog({
                                     <div className="flex justify-between items-center">
                                         <div>
                                             <h4 className="font-medium text-gray-900">{user.first_name} {user.last_name}</h4>
-                                            <p className="text-sm text-gray-500">{user.email}</p>
+                                            <p className="text-sm text-gray-500">{user.email}do</p>
                                             <Badge className={
                                                 user.is_verified
                                                     ? "bg-blue-50 text-blue-700 text-xs mt-2"
@@ -608,13 +597,13 @@ function AssignMembersDialog({
                                                 {user.is_verified ? "Verified" : "Pending"}
                                             </Badge>
                                         </div>
-                                        <AssignMemberModal
+                                        {/* <AssignMemberModal
                                             officeId={officeId}
                                             token={token}
                                             users={[user]}
                                             selectedUserId={user.id}
                                             onSuccess={() => onOpenChange(false)}
-                                        />
+                                        /> */}
                                     </div>
                                 </div>
                             ))}

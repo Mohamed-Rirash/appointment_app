@@ -101,46 +101,9 @@ export default async function OfficesPage() {
               </p>
             </div>
           </div>
-
-          <div className="flex items-center gap-3 flex-wrap">
-            {stats && (
-              <>
-                <Badge variant="secondary" className="bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors">
-                  <Building2 className="h-3.5 w-3.5 mr-1.5" />
-                  {stats.total_offices} Total Offices
-                </Badge>
-                <Badge variant="secondary" className="bg-green-50 text-green-700 hover:bg-green-100 transition-colors">
-                  <Activity className="h-3.5 w-3.5 mr-1.5" />
-                  {stats.active_offices} Active
-                </Badge>
-                <Badge variant="secondary" className="bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors">
-                  <Users className="h-3.5 w-3.5 mr-1.5" />
-                  {stats.total_members} Members Assigned
-                </Badge>
-                {/* Additional stats badges */}
-                {stats.inactive_offices && (
-                  <Badge variant="secondary" className="bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors">
-                    <MapPin className="h-3.5 w-3.5 mr-1.5" />
-                    {stats.inactive_offices} Inactive
-                  </Badge>
-                )}
-                {stats.recently_created_offices && (
-                  <Badge variant="secondary" className="bg-cyan-50 text-cyan-700 hover:bg-cyan-100 transition-colors">
-                    <Plus className="h-3.5 w-3.5 mr-1.5" />
-                    {stats.recently_created_offices} New
-                  </Badge>
-                )}
-              </>
-            )}
-          </div>
         </div>
 
         <div className="flex gap-3">
-          <Button variant="outline" className="h-11 px-4 rounded-sm border-brand-secondary hover:bg-brand-secondary/90 font-medium text-brand-gray">
-            <Download className="h-4 w-4 mr-2" />
-            Export CSV
-          </Button>
-
           <Dialog>
             <DialogTrigger asChild>
               <Button className="h-11 px-4 bg-linear-to-r from-brand to-brand/80 hover:from-brand hover:to-brand/70 text-white font-semibold rounded-sm transition-all">

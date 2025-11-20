@@ -1,4 +1,3 @@
-// components/office/OfficeCardsSection.tsx
 "use client";
 
 import { useState } from "react";
@@ -82,19 +81,8 @@ export default function OfficeCardsSection({ token }: { token?: string }) {
         <div className="space-y-6">
             {/* Enhanced Search and Filters Section */}
             <Card className=" shadow-gren border-none!">
-                <CardContent className="p-6">
+                <CardContent className="">
                     <div className="space-y-4">
-                        {/* Section Header */}
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-brand-primary rounded-lg">
-                                <Search className="h-5 w-5 text-brand" />
-                            </div>
-                            <div>
-                                <h3 className="text-lg font-semibold text-gray-900">Find Offices</h3>
-                                <p className="text-sm text-brand-gray">Search by name, location, or description</p>
-                            </div>
-                        </div>
-
                         {/* Search and Filters Row */}
                         <div className="flex flex-col lg:flex-row gap-4">
                             {/* Enhanced Search Bar */}

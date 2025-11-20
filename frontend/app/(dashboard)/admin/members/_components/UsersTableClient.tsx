@@ -1,4 +1,3 @@
-// components/users/UsersTableClient.tsx
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
@@ -166,7 +165,7 @@ export default function UsersTableClient({ token }: { token?: string }) {
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">Failed to Load Users</h3>
           <p className="text-sm text-gray-500 mb-6 max-w-md mx-auto">
-            We couldn't retrieve your team members. Please try again.
+            We couldn't retrieve your users. Please try again.
           </p>
           <Button onClick={() => refetch()} variant="outline" size="sm">
             <RefreshCw className="h-4 w-4 mr-2" />
@@ -184,16 +183,6 @@ export default function UsersTableClient({ token }: { token?: string }) {
         <CardContent className="p-6 border-0">
           <div className="space-y-4">
             {/* Search Header */}
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-50 rounded-lg">
-                <Search className="h-5 w-5 text-blue-600" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">Find Team Members</h3>
-                <p className="text-sm text-gray-600">Search by name, email, or use filters</p>
-              </div>
-            </div>
-
             {/* Search Bar with Enhanced Design */}
             <div className="flex flex-col lg:flex-row gap-4">
               <div className="flex-1">
@@ -391,7 +380,7 @@ export default function UsersTableClient({ token }: { token?: string }) {
               <TableHead className="px-6 py-4 font-semibold text-gray-700">Status</TableHead>
               <TableHead className="px-6 py-4 font-semibold text-gray-700">Verification</TableHead>
               <TableHead className="px-6 py-4 font-semibold text-gray-700">Role</TableHead>
-              <TableHead className="px-6 py-4 font-semibold text-gray-700 text-right">Actions</TableHead>
+              <TableHead className="px-6 py-4 font-semibold text-gray-700">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -457,7 +446,7 @@ export default function UsersTableClient({ token }: { token?: string }) {
                           src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`}
                           alt={`${user.first_name} ${user.last_name}`}
                         />
-                        <AvatarFallback className="bg-gradient-to-br from-blue-500 to-blue-600 text-white font-semibold">
+                        <AvatarFallback className="bg-linear-to-br from-blue-500 to-blue-600 text-white font-semibold">
                           {user.first_name[0]}{user.last_name[0]}
                         </AvatarFallback>
                       </Avatar>

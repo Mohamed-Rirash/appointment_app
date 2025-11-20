@@ -81,7 +81,6 @@ export function EditUserModal({
   // Close dialog on success
   useEffect(() => {
     if (!isUpdating && !apiError && open) {
-      // This would be better handled by returning a promise from useEditUser
     }
   }, [isUpdating, apiError, open]);
 
@@ -153,7 +152,7 @@ export function EditUserModal({
             <div className="p-2 bg-white rounded-lg shadow-sm">
               <User className="h-5 w-5 text-brand" />
             </div>
-            Edit Team Member
+            Edit  Users
           </DialogTitle>
           <DialogDescription className="text-brand-gray mt-1">
             Update the details for {initialData.first_name} {initialData.last_name}

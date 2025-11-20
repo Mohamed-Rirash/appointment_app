@@ -5,11 +5,12 @@ import { QuickActions } from "./_components/quick-actions";
 import { StatsGrid } from "./_components/stats-grid";
 import type { Metric } from "./_components/stats-grid";
 import { RecentOfficesList } from "./_components/recent-offices-list";
-import { RecentActivityFeed } from "./_components/recent-activity-feed";
+import { RecentusersList } from "./_components/RecentusersList";
 import DashboardFooter from "../_components/Footer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Users, CalendarCheck, Clock, TrendingUp, Activity } from "lucide-react";
+import { Building2, } from "lucide-react";
+import { apiClient, } from "@/helpers/api/client";
 
 export const metadata = {
   title: "Admin Dashboard - KulanDesk",
@@ -40,6 +41,25 @@ export interface RecentOffice {
   created_at: string;
   updated_at: string;
 }
+export interface Recentuser {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  is_active: boolean;
+  is_system_user: boolean;
+  is_verified: boolean;
+  last_login: string | null;
+  login_count: number;
+  permissions: string[];
+  roles: ('host' | 'admin' | 'reception' | 'secretary')[];
+  created_at: string;
+  updated_at: string;
+  created_by: string | null;
+  updated_by: string | null;
+}
+
+
 
 
 export interface RecentActivity {
@@ -73,6 +93,22 @@ async function getOffices(token: string) {
   }
 }
 
+// get users
+async function getUsers(token: string) {
+  const baseUrl = process.env.API_URL || "http://localhost:8000/api/v1";
+  try {
+    const response = await apiClient.get("/admin/users", {
+      baseURL: baseUrl, // Override per request
+      headers: { Authorization: `Bearer ${token}` },
+      params: { limit: 100, offset: 0 }
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error:", error.response?.data || error.message);
+    return [];
+  }
+}
+
 export default async function AdminDashboard() {
   const session = await getSession()
   const token = session?.user.access_token
@@ -83,6 +119,33 @@ export default async function AdminDashboard() {
 
   // Fetch real office data
   const officesData = await getOffices(token)
+  const usersData = await getUsers(token)
+
+  // Transform users data to match Recentuser interface
+  const mappedUsers = usersData.users.map((user: Recentuser) => ({
+    id: user.id,
+    first_name: user.first_name,
+    last_name: user.last_name || "",
+    email: user.email,
+    is_active: user.is_active,
+    is_system_user: user.is_system_user,
+    is_verified: user.is_verified,
+    last_login: user.last_login,
+    login_count: user.login_count,
+    permissions: user.permissions || [],
+    roles: user.roles || [],
+    created_at: user.created_at,
+    updated_at: user.updated_at,
+    created_by: user.created_by,
+    updated_by: user.updated_by,
+  })) as Recentuser[]
+
+  const users = mappedUsers
+    .sort((a, b) =>
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    )
+    .slice(0, 5)
+
 
   // Transform and filter offices data
   const offices = officesData
@@ -120,69 +183,6 @@ export default async function AdminDashboard() {
     idle_hosts: 12
   };
 
-  // Dummy data for recent activity
-  const activities: RecentActivity[] = [
-    {
-      id: "1",
-      user: {
-        first_name: "Sarah",
-        last_name: "Johnson",
-        email: "sarah.j@company.com"
-      },
-      action: "APPOINTMENT_CREATED",
-      resource: "Meeting with Client",
-      timestamp: "2024-01-15T14:30:00Z",
-      office_name: "Downtown Headquarters"
-    },
-    {
-      id: "2",
-      user: {
-        first_name: "Admin",
-        last_name: "User",
-        email: "admin@company.com"
-      },
-      action: "USER_CREATED",
-      resource: "Mike Chen",
-      timestamp: "2024-01-15T13:15:00Z"
-    },
-    {
-      id: "3",
-      user: {
-        first_name: "Robert",
-        last_name: "Wilson",
-        email: "robert.w@company.com"
-      },
-      action: "APPOINTMENT_APPROVED",
-      resource: "Project Review",
-      timestamp: "2024-01-15T12:45:00Z",
-      office_name: "Tech Innovation Center"
-    },
-    {
-      id: "4",
-      user: {
-        first_name: "Admin",
-        last_name: "User",
-        email: "admin@company.com"
-      },
-      action: "OFFICE_DELETED",
-      resource: "London Branch",
-      timestamp: "2024-01-15T11:20:00Z"
-    },
-    {
-      id: "5",
-      user: {
-        first_name: "Lisa",
-        last_name: "Garcia",
-        email: "lisa.g@company.com"
-      },
-      action: "HOST_CREATED",
-      resource: "David Brown",
-      timestamp: "2024-01-15T10:10:00Z",
-      office_name: "Regional Office Chicago"
-    }
-  ];
-
-  // Calculate key metrics for stats cards with string identifiers
   const metrics = [
     {
       title: "Total Users",
@@ -227,7 +227,7 @@ export default async function AdminDashboard() {
       <div className="space-y-8 p-6">
         {/* Enhanced Page Header */}
         <Card className="border-0 bg-linear-to-r from-white to-brand-primary/50 shadow-gren">
-          <CardContent className="p-8">
+          <CardContent className="">
             <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
@@ -264,9 +264,9 @@ export default async function AdminDashboard() {
             <RecentOfficesList offices={offices} token={token} />
           </div>
 
-          {/* Recent Activity (1/3 width) */}
-          <div>
-            <RecentActivityFeed activities={activities} />
+          {/* Recent users */}
+          <div className="lg:col-span-1">
+            <RecentusersList users={users} token={token} />
           </div>
         </div>
       </div>
