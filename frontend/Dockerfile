@@ -17,6 +17,14 @@ COPY . .
 # Enable standalone output
 ENV NEXT_PRIVATE_STANDALONE=true
 
+# ✅ ADD THESE LINES - Accept build arguments
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_API_FRONT
+
+# ✅ OPTIONAL but recommended: Make them available as ENV during build
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+ENV NEXT_PUBLIC_API_FRONT=${NEXT_PUBLIC_API_FRONT}
+
 # Build Next.js app
 RUN pnpm build
 

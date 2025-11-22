@@ -3,8 +3,7 @@ import { Signout } from "../actions/signout";
 
 // Create an axios instance with base URL and default config
 export const apiClient = axios.create({
-  // baseURL: `${process.env.NEXT_PUBLIC_API_URL}`,
-  baseURL: "/api/v1",
+   baseURL: `${process.env.NEXT_PUBLIC_API_URL}`,
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",

@@ -158,6 +158,12 @@ services:
       context: ./frontend
       dockerfile: Dockerfile.dev
     container_name: frontend
+    args:
+    - NEXT_PUBLIC_API_URL=/api/v1
+    - NEXT_PUBLIC_API_FRONT=/api/auth
+    - IRON_SESSION_PASSWORD=WODq0lt63Dtc277vgjjUsjjfLudZrv1QEq0WnkBwXws=
+    - IRON_SESSION_COOKIE_NAME=app_session
+    - API_URL='http://localhost:8000/api/v1'
     env_file:
       - frontend/.env.local
     environment:
@@ -168,10 +174,6 @@ services:
       # Force Next.js standalone server to listen on all interfaces
       - HOSTNAME=0.0.0.0
       - PORT=3000
-      # NextAuth.js configuration
-      - AUTH_SECRET=${SECRET_KEY}
-      - AUTH_URL=${FRONTEND_HOST}
-      - AUTH_TRUST_HOST=true
     depends_on:
       - backend
     restart: unless-stopped
