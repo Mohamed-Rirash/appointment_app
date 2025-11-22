@@ -156,14 +156,12 @@ services:
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile
+      args:
+      - NEXT_PUBLIC_API_URL=/api/v1
+      - NEXT_PUBLIC_API_FRONT=/api/auth
+      - API_URL='http://localhost:8000/api/v1'
     container_name: frontend
-    args:
-    - NEXT_PUBLIC_API_URL=/api/v1
-    - NEXT_PUBLIC_API_FRONT=/api/auth
-    - IRON_SESSION_PASSWORD=WODq0lt63Dtc277vgjjUsjjfLudZrv1QEq0WnkBwXws=
-    - IRON_SESSION_COOKIE_NAME=app_session
-    - API_URL='http://localhost:8000/api/v1'
     env_file:
       - frontend/.env.local
     environment:
@@ -171,6 +169,8 @@ services:
       # Client-side API URL (browser) - relative path via nginx proxy
       # Server-side API URL (Next.js server) - internal Docker network URL
       - API_URL=http://backend:8000/api/v1
+      - IRON_SESSION_PASSWORD=WODq0lt63Dtc277vgjjUsjjfLudZrv1QEq0WnkBwXws
+      - IRON_SESSION_COOKIE_NAME=app_session
       # Force Next.js standalone server to listen on all interfaces
       - HOSTNAME=0.0.0.0
       - PORT=3000

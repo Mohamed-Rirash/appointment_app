@@ -3,15 +3,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { CheckCircle2, Clock, User, MoreHorizontal, Calendar } from "lucide-react";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 
@@ -37,10 +31,10 @@ interface Appointment {
 export function TodayAppointments() {
     const router = useRouter();
 
-    const { data: appointments, isLoading, error } = useQuery({
+    const { data: appointments, isLoading, error } = useQuery<Appointment[]>({
         queryKey: ["today-appointments"],
         queryFn: async () => {
-
+            return [];
         },
     });
 

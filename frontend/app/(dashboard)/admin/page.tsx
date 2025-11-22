@@ -104,7 +104,14 @@ async function getUsers(token: string) {
     });
     return response.data;
   } catch (error) {
-    console.error("Error:", error.response?.data || error.message);
+    if (error && typeof error === 'object' && 'response' in error) {
+      const axiosError = error as { response?: { data?: unknown }; message?: string };
+      console.error("Error:", axiosError.response?.data || axiosError.message);
+    } else if (error instanceof Error) {
+      console.error("Error:", error.message);
+    } else {
+      console.error("Error:", String(error));
+    }
     return [];
   }
 }
