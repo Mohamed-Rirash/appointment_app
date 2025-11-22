@@ -159,7 +159,8 @@ async def require_active_user(
     """Require user to be active"""
     if not current_user.is_active:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Account is deactivated"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account is deactivated",
         )
     return current_user
 
@@ -170,7 +171,8 @@ async def require_verified_user(
     """Require user to be verified"""
     if not current_user.is_verified:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Account is not verified"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account is not verified",
         )
     return current_user
 
