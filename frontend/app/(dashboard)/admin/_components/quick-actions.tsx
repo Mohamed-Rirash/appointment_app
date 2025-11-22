@@ -5,7 +5,6 @@ import {
     Plus,
     Users,
     Building2,
-    Calendar,
     FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -67,20 +66,6 @@ export function QuickActions({ token }: { token: string | undefined }) {
                             <span className="text-xs text-muted-foreground">Create new office location</span>
                         </div>
                     </DropdownMenuItem>
-
-                    {/* View All Appointments - Coming Soon */}
-                    <DropdownMenuItem className="flex items-center gap-3 p-3 text-brand-gray cursor-not-allowed">
-                        <div className="p-2 bg-gray-100 rounded-lg">
-                            <Calendar className="h-4 w-4 text-gray-400" />
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="font-medium">View Appointments</span>
-                            <Badge variant="outline" className="w-fit text-xs bg-orange-50 text-orange-600 border-orange-200">
-                                Coming Soon
-                            </Badge>
-                        </div>
-                    </DropdownMenuItem>
-
                     {/* Generate Report - Coming Soon */}
                     <DropdownMenuItem className="flex items-center gap-3 p-3 text-brand-gray cursor-not-allowed">
                         <div className="p-2 bg-gray-100 rounded-lg">

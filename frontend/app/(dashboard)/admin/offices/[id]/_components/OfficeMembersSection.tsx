@@ -8,8 +8,6 @@ import { MoreHorizontal, Search, X, Filter, Plus, Users, SlidersHorizontal } fro
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useEffect } from "react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { AssignMemberModal } from "./AssignMemberModal";
-import { useOfficeMembers } from "@/helpers/hooks/office/useOfficeMembers";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -24,6 +22,8 @@ import {
 import { Label } from "@/components/ui/label";
 import toast from "react-hot-toast";
 import { isAxiosError } from "axios";
+import { AssignMemberModal } from "./AssignMemberModal"; // adjust import path
+import { useOfficeMembers } from "@/helpers/hooks/office/useOfficeMembers";
 
 export interface User {
     user_id: string;
@@ -46,8 +46,6 @@ export interface UnassignedUser {
     is_verified: boolean;
 }
 
-
-
 export default function OfficeMembersSection({
     officeId,
     token,
@@ -65,6 +63,7 @@ export default function OfficeMembersSection({
 
     const queryClient = useQueryClient();
 
+    // Replace with your actual hook
     const { isLoading: membersLoading, members } = useOfficeMembers(officeId, token);
 
     const { data: unassignedData, isLoading: unassignedLoading } = useQuery({
@@ -79,10 +78,9 @@ export default function OfficeMembersSection({
 
     // Mutations
     const updateMemberMutation = useMutation({
-        mutationFn: async (data: { position: string; }) => {
+        mutationFn: async (data: { position: string; is_primary: boolean; is_active: boolean; ended_at: string }) => {
             if (!selectedUser) throw new Error("No user selected");
-            return await client.updatememberinOffice(officeId, selectedUser.user_id, data, token)
-
+            return await client.updatememberinOffice(officeId, selectedUser.user_id, data, token);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["office-members", officeId] });
@@ -91,14 +89,14 @@ export default function OfficeMembersSection({
             setSelectedUser(null);
         },
         onError: (error: any) => {
-            console.log("err", error)
+            console.log("err", error);
         },
     });
 
     const deleteMemberMutation = useMutation({
         mutationFn: async () => {
             if (!selectedUser) throw new Error("No user selected");
-            return await client.removefromOffice(selectedUser.user_id, officeId, token)
+            return await client.removefromOffice(selectedUser.user_id, officeId, token);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["office-members", officeId] });
@@ -139,7 +137,7 @@ export default function OfficeMembersSection({
         setShowDeleteDialog(true);
     };
 
-    const filteredMembers = members.filter((user: User) => {
+    const filteredMembers = members?.filter((user: User) => {
         const matchesSearch = !searchTerm ||
             user.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             user.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -150,7 +148,7 @@ export default function OfficeMembersSection({
             (statusFilter === "inactive" && !user.user_active);
 
         return matchesSearch && matchesStatus;
-    });
+    }) || [];
 
     const unassignedUsers = unassignedData || [];
     const filteredUnassigned = unassignedUsers.filter((user: UnassignedUser) => {
@@ -198,7 +196,6 @@ export default function OfficeMembersSection({
             <Card className="bg-linear-to-br from-white to-brand-primary/20 border-brand-primary shadow-gren">
                 <CardContent className="p-6">
                     <div className="space-y-4">
-                        {/* Section Header */}
                         {/* Search and Filters Row */}
                         <div className="flex flex-col lg:flex-row gap-4">
                             {/* Enhanced Search Bar */}
@@ -250,7 +247,7 @@ export default function OfficeMembersSection({
                                         value={statusFilter || undefined}
                                         onValueChange={(v) => setStatusFilter(v === "all" ? null : v)}
                                     >
-                                        <SelectTrigger className="w-full sm:w-44  rounded-xl border-gray-200 bg-white shadow-sm h-11">
+                                        <SelectTrigger className="w-full sm:w-44 rounded-xl border-gray-200 bg-white shadow-sm h-11">
                                             <div className="flex items-center gap-1">
                                                 <Filter className="h-4 w-4 text-gray-500" />
                                                 <SelectValue placeholder="Member Status" />
@@ -489,7 +486,7 @@ export default function OfficeMembersSection({
     );
 }
 
-// The EditMemberForm 
+// The EditMemberForm component
 function EditMemberForm({
     user,
     onSave,
@@ -497,21 +494,19 @@ function EditMemberForm({
     onCancel,
 }: {
     user: User;
-    onSave: (data: { position: string; is_primary: boolean, is_active: boolean, ended_at: string }) => void;
+    onSave: (data: { position: string; is_primary: boolean; is_active: boolean; ended_at: string }) => void;
     isLoading: boolean;
     onCancel: () => void;
 }) {
     const [position, setPosition] = useState(user.position);
     const [isPrimary, setIsPrimary] = useState(user.is_primary);
     const [isActive, setIsActive] = useState(user.membership_active);
-    const [opne, setOpen] = useState(false)
+
     useEffect(() => {
         setPosition(user.position);
         setIsPrimary(user.is_primary);
         setIsActive(user.membership_active);
-
     }, [user]);
-
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         const today = new Date();
@@ -522,7 +517,6 @@ function EditMemberForm({
             is_active: isActive,
             ended_at: endedAt
         });
-
     };
 
     return (
@@ -552,6 +546,7 @@ function EditMemberForm({
     );
 }
 
+// The nested AssignMembersDialog component
 function AssignMembersDialog({
     open,
     onOpenChange,
@@ -588,7 +583,7 @@ function AssignMembersDialog({
                                     <div className="flex justify-between items-center">
                                         <div>
                                             <h4 className="font-medium text-gray-900">{user.first_name} {user.last_name}</h4>
-                                            <p className="text-sm text-gray-500">{user.email}do</p>
+                                            <p className="text-sm text-gray-500">{user.email}</p>
                                             <Badge className={
                                                 user.is_verified
                                                     ? "bg-blue-50 text-blue-700 text-xs mt-2"
@@ -597,13 +592,14 @@ function AssignMembersDialog({
                                                 {user.is_verified ? "Verified" : "Pending"}
                                             </Badge>
                                         </div>
-                                        {/* <AssignMemberModal
+                                        <AssignMemberModal
+                                            key={user.id} // ← IMPORTANT: unique key per instance
                                             officeId={officeId}
                                             token={token}
                                             users={[user]}
                                             selectedUserId={user.id}
-                                            onSuccess={() => onOpenChange(false)}
-                                        /> */}
+                                            onSuccess={() => onOpenChange(false)} // close parent on success
+                                        />
                                     </div>
                                 </div>
                             ))}

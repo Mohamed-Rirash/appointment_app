@@ -59,12 +59,12 @@ export default async function ReceptionAppointments() {
                             <Calendar className="h-5 w-5 text-brand" />
                         </div>
                         <h1 className="text-3xl font-bold tracking-tight">
-                            Office Appointments
+                            View Appointments
                         </h1>
                     </div>
-                    <p className="text-base text-muted-foreground md:max-w-2xl">
+                    {/* <p className="text-base text-muted-foreground md:max-w-2xl">
                         Check in guests, update appointment statuses, and manage your daily schedule efficiently.
-                    </p>
+                    </p> */}
                 </div>
 
                 {/* Main Content Card */}
@@ -73,11 +73,6 @@ export default async function ReceptionAppointments() {
                         <AppointmentView office_id={officeId} token={token} />
                     </Suspense>
                 </div>
-
-                {/* Footer Helper Text */}
-                <p className="mx-auto mt-6 max-w-2xl text-center text-xs text-muted-foreground">
-                    Appointments update automatically. Refresh the page if data appears out of sync.
-                </p>
             </div>
         </div>
     );

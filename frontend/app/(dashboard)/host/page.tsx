@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/helpers/actions/getsession";
 import { QuickStats } from "./_components/quick-stats";
-import { HostTodaysAppointments } from "./_components/appointmentsoverview";
 import { CalendarView } from "./_components/calendar-view";
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -16,9 +15,7 @@ import {
   Building2
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import Link from "next/link";
 import { Appointment } from "@/helpers/api/client";
 import { Signout } from "@/helpers/actions/signout";
 
@@ -182,8 +179,6 @@ export default async function HostDashboard() {
     );
   }
 
-
-  console.log("us", user)
   const limit = 50;
   const offset = 0;
 
@@ -193,7 +188,7 @@ export default async function HostDashboard() {
 
   try {
     const res = await fetch(
-      `${process.env.API_URL}/views/${office_id}/allpastappointments?&limit=${limit}&offset=${offset}`,
+      `${process.env.API_URL}/views/${office_id}/appointments?status=PENDING&limit=${limit}&offset=${offset}`,
       {
         headers: { Authorization: `Bearer ${token}` },
       }
@@ -220,30 +215,33 @@ export default async function HostDashboard() {
     <div className="min-h-screen bg-brand-primary/20 p-6">
       {/* Header Section */}
       <div className="mb-8 space-y-4">
-        <div className="flex items-start justify-between flex-wrap gap-4">
-          <div>
-            <p className="text-brand-black text-3xl font-bold max-w-md">
-              Welcome back! <span className="text-brand">{user.first_name}</span> Here's what's happening{" "}
-              <span className="text-brand font-medium">today</span>
-            </p>
-            <div className="flex items-center gap-3 mt-5">
-              <Badge variant="outline" className="bg-white shadow-gren text-brand-gray p-2 ">
-                <Calendar className="h-3.5 w-3.5 mr-1.5" />
-                {formattedDate}
-              </Badge>
-              <Badge
-                variant="secondary"
-                className="bg-green-50 text-green-700 hover:bg-green-100 transition-colors cursor-pointer"
-              >
-                <TrendingUp className="h-3.5 w-3.5 mr-1.5" />
-                Live Updates
-              </Badge>
+        <Card className="border-0 bg-linear-to-r from-white to-brand-primary/50 shadow-gren">
+          <CardContent>
+            <div className="flex items-start justify-between flex-wrap gap-4 ">
+              <div>
+                <h1 className="text-4xl font-bold">Dashboard</h1>
+                <div className="flex items-center gap-3 mt-2">
+                  <Badge variant="outline" className="bg-white shadow-gren text-brand-gray p-2 ">
+                    <Calendar className="h-3.5 w-3.5 mr-1.5" />
+                    {formattedDate}
+                  </Badge>
+                  <Badge
+                    variant="secondary"
+                    className="bg-green-50 text-green-700 hover:bg-green-100 transition-colors cursor-pointer"
+                  >
+                    <TrendingUp className="h-3.5 w-3.5 mr-1.5" />
+                    Live Updates
+                  </Badge>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
+
+
 
         {/* Quick Actions Bar */}
-        <div className="flex items-center gap-2 flex-wrap">
+        {/* <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sm text-gray-500 font-medium">Quick Actions:</span>
           <Button variant="ghost" size="sm" className="h-8 text-brand hover:bg-blue-50">
             <Users className="h-3.5 w-3.5 mr-2" />
@@ -254,7 +252,7 @@ export default async function HostDashboard() {
               <Calendar className="h-3.5 w-3.5 mr-2" />
               Manage Availability
             </Button></Link>
-        </div>
+        </div> */}
       </div>
 
       {/* Stats Section */}
@@ -279,7 +277,7 @@ export default async function HostDashboard() {
       </Suspense>
 
       {/* Appointments Queue Section */}
-      <section className="mb-8">
+      {/* <section className="mb-8">
         {error ? (
           <Card className="w-full border-orange-200">
             <CardContent className="p-8 text-center">
@@ -299,19 +297,12 @@ export default async function HostDashboard() {
           />
 
         )}
-      </section>
+      </section> */}
 
       {/* Calendar Section */}
       <section className="my-4">
         <CalendarView office_id={office_id} token={token} />
       </section>
-
-      {/* Last Updated Footer */}
-      <div className="mt-8 pt-6 border-t border-gray-200 text-center">
-        <p className="text-xs text-gray-500">
-          Last updated: {format(new Date(), "h:mm:ss a")} • Auto-refreshes every minute
-        </p>
-      </div>
     </div>
   );
 }

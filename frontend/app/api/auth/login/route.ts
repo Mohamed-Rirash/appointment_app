@@ -16,9 +16,9 @@ export async function POST(req: NextRequest) {
     }
 
     const loginData = new URLSearchParams({
-      grant_type: 'password',
+      grant_type: "password",
       username: email,
-      password: password
+      password: password,
     }).toString();
 
     const loginRes = await fetch(`${process.env.API_URL}/users/login`, {
@@ -26,11 +26,13 @@ export async function POST(req: NextRequest) {
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
       },
-      body: loginData, // Fixed: Added missing body
+      body: loginData,
     });
 
     if (!loginRes.ok) {
-      const errorData = await loginRes.json().catch(() => ({ detail: "Invalid credentials" }));
+      const errorData = await loginRes
+        .json()
+        .catch(() => ({ detail: "Invalid credentials" }));
       return NextResponse.json(
         { error: errorData.detail || "Invalid credentials" },
         { status: loginRes.status }
@@ -50,7 +52,7 @@ export async function POST(req: NextRequest) {
     const userRes = await fetch(`${process.env.API_URL}/users/me`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    
+
     if (!userRes.ok) {
       return NextResponse.json(
         { error: "Failed to fetch user profile" },
@@ -70,29 +72,29 @@ export async function POST(req: NextRequest) {
     const jwtSession: UserSession = {
       id: user.id,
       email: user.email,
-      first_name: user.first_name || '',
-      last_name: user.last_name || '',
+      first_name: user.first_name || "",
+      last_name: user.last_name || "",
       is_active: user.is_active ?? false,
       is_verified: user.is_verified ?? false,
       is_system_user: user.is_system_user ?? false,
       roles: user.roles || [],
       access_token: token,
+      created_at: user.created_at,
       expires_at: Math.floor(Date.now() / 1000) + data.expires_in,
-      office_id: user.office_id || '', // Fixed: Changed null to empty string
-      position: user.position || '',
+      office_id: user.office_id || "",
+      position: user.position || "",
     };
 
-    const nextRes = NextResponse.json({ 
+    const nextRes = NextResponse.json({
       success: true,
-      user: {
-        id: user.id,
-        email: user.email,
-        first_name: user.first_name,
-        last_name: user.last_name,
-      }
     });
-    
-  const session = (await getIronSession(
+
+    const setCookieHeader = loginRes.headers.get("set-cookie");
+    if (setCookieHeader) {
+      nextRes.headers.set("set-cookie", setCookieHeader);
+    }
+    console.log("cok", setCookieHeader);
+    const session = (await getIronSession(
       req,
       nextRes,
       sessionOptions
@@ -101,7 +103,6 @@ export async function POST(req: NextRequest) {
     await session.save();
 
     return nextRes;
-
   } catch (error: any) {
     console.error("Login error:", error);
 
@@ -109,7 +110,7 @@ export async function POST(req: NextRequest) {
     let statusCode = 500;
 
     if (error instanceof Error) {
-      if (error.name === 'AbortError' || error.message.includes('timeout')) {
+      if (error.name === "AbortError" || error.message.includes("timeout")) {
         errorMessage = "Request timeout. Please try again.";
         statusCode = 408;
       } else {
@@ -117,9 +118,6 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    return NextResponse.json(
-      { error: errorMessage }, 
-      { status: statusCode }
-    );
+    return NextResponse.json({ error: errorMessage }, { status: statusCode });
   }
 }

@@ -10,6 +10,7 @@ export type UserSession = {
   is_verified: boolean;
   is_system_user: boolean;
   roles: string[];
+  created_at: string;
   access_token?: string;
   // expires unix timestamp (seconds)
   expires_at?: number;

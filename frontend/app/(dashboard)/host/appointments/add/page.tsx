@@ -1,7 +1,6 @@
 import { getSession } from "@/helpers/actions/getsession";
 import { redirect } from "next/navigation";
 import AppointmentManager from "./_components/AppointmentManager";
-import AppointmentReceptionManager from "./_components/AppointmentReceptionManager";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, ArrowRight, Building2, Clock, RefreshCw, Users } from "lucide-react";
@@ -24,7 +23,7 @@ export default async function AddAppointment() {
 
 
     // Authorization check
-    const allowedRoles = ["host", "secretary", "reception"];
+    const allowedRoles = ["host", "secretary"];
     if (!role || !allowedRoles.includes(role)) {
       redirect("/unauthorized");
     }
@@ -151,18 +150,11 @@ export default async function AddAppointment() {
 
     return (
       <main className="my-8">
-        {/* Show appropriate form based on role */}
-        {role === "host" ? (
-          <AppointmentManager
-            officeId={officeId}
-            token={token}
-            hostId={hostId}
-          />
-        ) : (
-          <div className="text-center p-8">
-            <AppointmentReceptionManager token={token} />
-          </div>
-        )}
+        <AppointmentManager
+          officeId={officeId}
+          token={token}
+          hostId={hostId}
+        />
       </main>
     );
   } catch (error) {

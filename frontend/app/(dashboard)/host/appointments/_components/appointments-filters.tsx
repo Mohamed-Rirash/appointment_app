@@ -125,20 +125,9 @@ export function AppointmentsFilters({
     };
 
     return (
-        <Card className="bg-linear-to-br from-white to-brand-primary/50 border-0 shadow-lg">
+        <Card className="bg-linear-to-br from-white to-brand-primary/50 border-0 shadow-gren!">
             <CardContent className="p-6">
                 <div className="space-y-6">
-                    {/* Header */}
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-brand-primary rounded-lg">
-                            <SlidersHorizontal className="h-5 w-5 text-brand" />
-                        </div>
-                        <div>
-                            <h2 className="text-xl font-bold text-gray-900">Filter Appointments</h2>
-                            <p className="text-sm text-gray-600">Find specific appointments using filters and search</p>
-                        </div>
-                    </div>
-
                     {/* Enhanced Search Bar */}
                     <div className="flex gap-3">
                         <div className="relative flex-1 group">

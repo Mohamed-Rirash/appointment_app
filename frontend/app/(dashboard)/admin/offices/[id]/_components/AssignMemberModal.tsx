@@ -5,9 +5,9 @@ import {
     DialogContent,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
     DialogDescription,
     DialogFooter,
+    DialogTrigger,
 } from "@/components/ui/dialog";
 import {
     Form,
@@ -42,7 +42,7 @@ interface AssignMemberModalProps {
     token?: string;
     users: any[];
     selectedUserId?: string;
-    onSuccess?: () => void;
+    onSuccess?: () => void; // only need this to close parent
 }
 
 export function AssignMemberModal({
@@ -72,7 +72,7 @@ export function AssignMemberModal({
             queryClient.invalidateQueries({ queryKey: ["unassigned-users"] });
 
             form.reset();
-            onSuccess?.();
+            onSuccess?.(); // close parent dialog
         } catch (error: any) {
             toast.error(error.message || "Failed to assign member");
         }

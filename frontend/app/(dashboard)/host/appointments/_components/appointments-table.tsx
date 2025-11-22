@@ -1,6 +1,4 @@
 "use client";
-
-import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import {
     Table,
@@ -21,7 +19,6 @@ import {
     Clock,
     CheckCircle2,
     XCircle,
-    Eye,
     ChevronLeft,
     ChevronRight,
     Phone,
@@ -31,9 +28,6 @@ import {
     ChevronFirst,
     ChevronLast,
     MapPin,
-    Building2,
-    ArrowUpRight,
-    MoreHorizontal,
 } from "lucide-react";
 
 interface Appointment {
@@ -187,7 +181,7 @@ export function AppointmentsTable({
     return (
         <div className="space-y-6">
             {/* Enhanced Header Card */}
-            <Card className="border-0 bg-linear-to-br from-white to-brand-primary/50 shadow-gren">
+            {/* <Card className="border-0 bg-linear-to-br from-white to-brand-primary/50 shadow-gren">
                 <CardHeader className="pb-4">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div className="flex items-center gap-4">
@@ -211,7 +205,7 @@ export function AppointmentsTable({
                         </div>
                     </div>
                 </CardHeader>
-            </Card>
+            </Card> */}
 
             {/* Enhanced Table Card */}
             <Card className="border-0 bg-white shadow-gren overflow-hidden">

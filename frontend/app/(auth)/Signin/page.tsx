@@ -34,13 +34,6 @@ export default function Signin() {
   const [loading, setLoading] = useState(false);
 
 
-  useEffect(() => {
-    console.log("All environment variables:", {
-      NEXT_PUBLIC_API_FRONT: process.env.NEXT_PUBLIC_API_FRONT,
-      NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
-      NODE_ENV: process.env.NODE_ENV,
-    });
-  }, []);
 
   // define the form
   const form = useForm<z.infer<typeof formSchema>>({
@@ -60,7 +53,7 @@ export default function Signin() {
   async function Submit(values: z.infer<typeof formSchema>) {
     form.clearErrors();
     setLoading(true);
-    console.log("Api", API);
+
 
     try {
       const { data } = await axios.post<LoginResponse>(`/api/auth/login`, values);

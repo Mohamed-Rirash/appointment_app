@@ -5,8 +5,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format, parseISO, isToday, isPast } from "date-fns";
 import { Calendar as CalendarIcon, Clock, User, FileText, Eye, RefreshCw, Users, CalendarDays, Plus, ListTodo, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { useState } from "react";
@@ -15,7 +13,6 @@ import { cn } from "@/libs/utils";
 
 export default function AppointmentList({ token }: { token?: string }) {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(20);
 
@@ -77,14 +74,6 @@ export default function AppointmentList({ token }: { token?: string }) {
   const goToPreviousPage = () => goToPage(Math.max(1, currentPage - 1));
   const goToNextPage = () => goToPage(Math.min(totalPages, currentPage + 1));
 
-  // Reset to first page when date changes
-  const handleDateChange = (date: Date | undefined) => {
-    if (date) {
-      setSelectedDate(date);
-      setCurrentPage(1);
-      setIsCalendarOpen(false);
-    }
-  };
 
   if (isLoading) {
     return (
@@ -148,7 +137,7 @@ export default function AppointmentList({ token }: { token?: string }) {
                 <ListTodo className="w-6 h-6 text-brand" />
               </div>
               <div>
-                {isSelectedDateToday ? "Today's Created Appointments" : "My Created Appointments"}
+                {"Today's Created Appointments"}
                 <div className="flex items-center gap-2 mt-1">
                   <Badge variant="secondary" className="text-xs font-normal">
                     <Users className="w-3 h-3 mr-1" />
@@ -163,56 +152,6 @@ export default function AppointmentList({ token }: { token?: string }) {
                 : `Appointments you created for ${format(selectedDate, 'EEEE, MMMM d, yyyy')}`
               }
             </CardDescription>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
-              <PopoverTrigger asChild className="hover:bg-brand-primary">
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-[240px] justify-start text-left font-normal gap-2",
-                    !selectedDate && "text-brand-gray"
-                  )}
-                >
-                  <CalendarIcon className="w-4 h-4" />
-                  Appointments for {format(selectedDate, "MMM d, yyyy")}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="end">
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={handleDateChange}
-                  className="p-3"
-                />
-              </PopoverContent>
-            </Popover>
-
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => refetch()}
-              disabled={isLoading}
-              className="shrink-0"
-            >
-              <RefreshCw className={cn("w-4 h-4", isLoading && "animate-spin")} />
-            </Button>
-
-            {!isSelectedDateToday && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setSelectedDate(new Date());
-                  setCurrentPage(1);
-                }}
-                className="shrink-0 gap-2"
-              >
-                <CalendarIcon className="w-4 h-4" />
-                Today's
-              </Button>
-            )}
           </div>
         </div>
       </CardHeader>
@@ -237,19 +176,6 @@ export default function AppointmentList({ token }: { token?: string }) {
                 <Plus className="w-4 h-4" />
                 Create New Appointment
               </Button>
-              {!isSelectedDateToday && (
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setSelectedDate(new Date());
-                    setCurrentPage(1);
-                  }}
-                  className="gap-2"
-                >
-                  <CalendarDays className="w-4 h-4" />
-                  View Today's
-                </Button>
-              )}
             </div>
           </div>
         ) : (
@@ -366,7 +292,7 @@ export default function AppointmentList({ token }: { token?: string }) {
 
                             {/* Status description */}
                             <p className="text-xs text-slate-400">
-                              {statusConfig.description}shit
+                              {statusConfig.description}
                             </p>
                           </div>
                         </div>

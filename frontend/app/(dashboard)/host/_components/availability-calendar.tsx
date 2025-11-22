@@ -304,10 +304,14 @@ export default function AvailabilityCalendar({ officeId, token }: AvailabilityCa
                 )
             );
 
+
             const backendData = convertToBackendFormat(changedSlots);
-            await Promise.all(
+            // console.log("saved..", backendData)
+            const dat = await Promise.all(
                 backendData.map((record) => client.setHostAvailability(officeId, record, token))
             );
+
+            await loadAvailability();
 
             setSavedSlots(new Set(selectedSlots));
             toast.success("Availability saved successfully!");
@@ -318,7 +322,7 @@ export default function AvailabilityCalendar({ officeId, token }: AvailabilityCa
         } finally {
             setSaving(false);
         }
-    }, [selectedSlots, savedSlots, officeId, token, saving]);
+    }, [selectedSlots, savedSlots, officeId, token, saving, loadAvailability]);
 
     const TimeSlotCell = useCallback(({ day, time }: { day: string; time: string }) => {
         const key = `${day}-${time}`;
@@ -368,7 +372,7 @@ export default function AvailabilityCalendar({ officeId, token }: AvailabilityCa
     }, [loadAvailability]);
 
     return (
-        <Card className="p-6 select-none border border-gray-200 bg-white rounded-xl shadow-sm max-w-6xl mx-auto">
+        <Card className="p-6 select-none border-none!  bg-white rounded-xl shadow-none! max-w-6xl mx-auto">
             <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 pb-6 border-b border-gray-100">
 
                 <div className="flex flex-col gap-2">
@@ -429,7 +433,7 @@ export default function AvailabilityCalendar({ officeId, token }: AvailabilityCa
             </CardHeader>
 
             <CardContent className="mt-6 space-y-6">
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 p-4 bg-brand-primary border border-brand/20 rounded-xl">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 p-4 bg-brand-primary/20 border border-brand-primary rounded-xl">
                     <div className="flex items-center gap-6 text-sm">
                         <div className="flex items-center gap-3">
                             <div className="flex flex-col">
@@ -442,11 +446,6 @@ export default function AvailabilityCalendar({ officeId, token }: AvailabilityCa
                                 <span className="font-bold text-green-700 text-lg">{savedSlots.size}</span>
                             </div>
                         </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 text-xs text-gray-600 bg-white px-3 py-2 rounded-lg border border-brand/20">
-                        <MousePointer2 className="h-3 w-3" />
-                        <span>Click and drag to select multiple time slots</span>
                     </div>
 
                     <div className="flex items-center gap-4 text-xs">

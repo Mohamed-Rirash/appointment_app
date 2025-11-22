@@ -11,7 +11,6 @@ import {
     AlertCircle,
     RefreshCw,
     Mail,
-    ArrowRight,
     UserCheck,
     Users
 } from "lucide-react";
@@ -22,13 +21,15 @@ export const metadata = {
 
 export default async function AvailabilityPage() {
     const session = await getSession()
+
+    if (!session.user) {
+        redirect("/Signin");
+    }
     const token = session?.user.access_token
     const officeId = session?.user.office_id
     const user = session?.user
 
-    if (!token) {
-        redirect("/Signin");
-    }
+
 
     if (!officeId) {
         return (
@@ -137,16 +138,16 @@ export default async function AvailabilityPage() {
         <div className="min-h-screen bg-linear-to-br from-brand-primary to-brand-primary/50 p-6">
             {/* Header Section */}
             <div className="max-w-7xl mx-auto space-y-6">
-                <Card className="border-0 bg-linear-to-r from-white to-brand-50/50 shadow-gren">
+                <Card className="border-0 bg-linear-to-r from-white to-brand-primary/50 shadow-gren">
                     <CardContent className="p-8">
                         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
                             <div className="flex items-center gap-4">
-                                <div className="p-3 bg-linear-to-br from-brand/50 to-brand rounded-2xl shadow-lg">
-                                    <Calendar className="h-7 w-7 text-white" />
+                                <div className="p-3 bg-linear-to-br from-brand-primary/50 to-brand-primary rounded-2xl shadow-gren">
+                                    <Calendar className="h-7 w-7 text-brand" />
                                 </div>
                                 <div>
                                     <h1 className="text-4xl font-bold text-gray-900">
-                                        My Availability
+                                        Set Availability
                                     </h1>
                                     <p className="text-lg text-gray-600 mt-2">
                                         Set your weekly appointment schedule and manage your working hours
@@ -161,73 +162,6 @@ export default async function AvailabilityPage() {
                                 </Badge>
                             </div>
                         </div>
-
-                        {/* Quick Stats */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-                            <div className="flex items-center gap-4 p-4 bg-white rounded-xl border border-gray-200 shadow-sm">
-                                <div className="p-2 bg-green-100 rounded-lg">
-                                    <Clock className="h-5 w-5 text-green-600" />
-                                </div>
-                                <div>
-                                    <p className="text-2xl font-bold text-gray-900">24/7</p>
-                                    <p className="text-sm text-gray-600">Flexible Scheduling</p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-4 p-4 bg-white rounded-xl border border-gray-200 shadow-sm">
-                                <div className="p-2 bg-blue-100 rounded-lg">
-                                    <Calendar className="h-5 w-5 text-blue-600" />
-                                </div>
-                                <div>
-                                    <p className="text-2xl font-bold text-gray-900">Weekly</p>
-                                    <p className="text-sm text-gray-600">Recurring Schedule</p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-4 p-4 bg-white rounded-xl border border-gray-200 shadow-sm">
-                                <div className="p-2 bg-purple-100 rounded-lg">
-                                    <UserCheck className="h-5 w-5 text-purple-600" />
-                                </div>
-                                <div>
-                                    <p className="text-2xl font-bold text-gray-900">Real-time</p>
-                                    <p className="text-sm text-gray-600">Live Updates</p>
-                                </div>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* Instructions Card */}
-                <Card className="border-0 bg-amber-50/50 shadow-sm">
-                    <CardContent className="p-6">
-                        <div className="flex items-start gap-4">
-                            <div className="p-2 bg-amber-100 rounded-lg flex-shrink-0">
-                                <AlertCircle className="h-5 w-5 text-amber-600" />
-                            </div>
-                            <div>
-                                <h3 className="font-semibold text-amber-900 text-lg mb-2">
-                                    Setting Your Availability
-                                </h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-amber-800">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
-                                        <span>Click and drag to set available time slots</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
-                                        <span>Your schedule updates automatically</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
-                                        <span>Set different hours for each day</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
-                                        <span>Changes affect future appointments</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
                     </CardContent>
                 </Card>
 
@@ -240,13 +174,6 @@ export default async function AvailabilityPage() {
                         />
                     </CardContent>
                 </Card>
-
-                {/* Footer Note */}
-                <div className="text-center">
-                    <p className="text-sm text-gray-500">
-                        Your availability schedule syncs automatically across all platforms
-                    </p>
-                </div>
             </div>
         </div>
     );

@@ -266,7 +266,7 @@ export default async function AdminDashboard() {
 
           {/* Recent users */}
           <div className="lg:col-span-1">
-            <RecentusersList users={users} token={token} />
+            <RecentusersList users={users} />
           </div>
         </div>
       </div>

@@ -158,38 +158,6 @@ export function AppointmentView({
 
     return (
         <div className="space-y-8">
-            {/* View Type Tabs */}
-            <Card className="border-0 bg-white shadow-sm">
-                <CardContent className="p-4">
-                    <Tabs value={viewType} className="w-full">
-                        <TabsList className="grid w-full grid-cols-3">
-                            <TabsTrigger
-                                value="current"
-                                onClick={() => handleFilterChange({ status: "all", date: "today", search: "" })}
-                                className="data-[state=active]:bg-blue-100 data-[state=active]:text-blue-700"
-                            >
-                                <CalendarDays className="h-4 w-4 mr-2" />
-                                Current
-                            </TabsTrigger>
-                            <TabsTrigger
-                                value="filtered"
-                                className="data-[state=active]:bg-purple-100 data-[state=active]:text-purple-700"
-                            >
-                                <Filter className="h-4 w-4 mr-2" />
-                                Filtered
-                            </TabsTrigger>
-                            <TabsTrigger
-                                value="search"
-                                className="data-[state=active]:bg-green-100 data-[state=active]:text-green-700"
-                            >
-                                <Users className="h-4 w-4 mr-2" />
-                                Search
-                            </TabsTrigger>
-                        </TabsList>
-                    </Tabs>
-                </CardContent>
-            </Card>
-
             {/* Filters */}
             <AppointmentsFilters
                 currentStatus={searchParams.status}
@@ -198,38 +166,6 @@ export function AppointmentView({
                 totalCount={totalCount}
                 onFilterChange={handleFilterChange}
             />
-
-            {/* Enhanced Endpoint Info Banner */}
-            {viewType !== "current" && (
-                <Alert className={`border-0 shadow-sm ${viewType === "search"
-                    ? "bg-green-50 border-green-200"
-                    : "bg-purple-50 border-purple-200"
-                    }`}>
-                    <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-lg ${viewType === "search" ? "bg-green-100" : "bg-purple-100"
-                            }`}>
-                            <Filter className={`h-4 w-4 ${viewType === "search" ? "text-green-600" : "text-purple-600"
-                                }`} />
-                        </div>
-                        <div className="flex-1">
-                            <AlertDescription className={`font-medium ${viewType === "search" ? "text-green-800" : "text-purple-800"
-                                }`}>
-                                <span className="capitalize font-semibold">{viewType} view</span> • {getEndpointDescription()}
-                            </AlertDescription>
-                        </div>
-                        <Badge
-                            variant="outline"
-                            className={
-                                viewType === "search"
-                                    ? "bg-green-100 text-green-700 border-green-200"
-                                    : "bg-purple-100 text-purple-700 border-purple-200"
-                            }
-                        >
-                            {appointments.length} results
-                        </Badge>
-                    </div>
-                </Alert>
-            )}
 
             {/* Appointments Table */}
             <AppointmentsTable
@@ -251,7 +187,7 @@ export function AppointmentViewSkeleton() {
     return (
         <div className="space-y-8">
             {/* Header Skeleton */}
-            <Card className="border-0 bg-gradient-to-br from-white to-blue-50/30 shadow-lg">
+            <Card className="border-0 bg-linear-to-br from-white to-blue-50/30 shadow-lg">
                 <CardContent className="p-8">
                     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                         <div className="flex items-center gap-4">

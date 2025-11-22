@@ -1,7 +1,6 @@
-// components/appointments/calendar-view.tsx
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format, parseISO, isToday, isSameDay, setHours, setMinutes } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,18 +11,17 @@ import {
     RefreshCw,
     Calendar,
     Clock,
-    User,
     MapPin,
-    ChevronLeft,
-    ChevronRight,
     CheckCircle2,
     Phone,
     Inbox,
-    AlertCircle
+    AlertCircle,
+    Loader2
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/libs/utils";
 import { client } from "@/helpers/api/client";
+import toast from "react-hot-toast";
 
 interface CalendarViewProps {
     office_id: string;
@@ -52,6 +50,7 @@ interface TimeSlot {
 
 export function CalendarView({ office_id, token }: CalendarViewProps) {
     const [currentDate, setCurrentDate] = useState(new Date());
+    const queryClient = useQueryClient();
 
     const { data: appointmentsData, isLoading, isError, refetch } = useQuery({
         queryKey: ["calendar-appointments", office_id, format(currentDate, "yyyy-MM-dd")],
@@ -68,9 +67,10 @@ export function CalendarView({ office_id, token }: CalendarViewProps) {
         enabled: !!token,
     });
 
+    // Filter only today's approved appointments
     const todaysAppointments = appointmentsData?.appointments?.filter(appointment => {
         const appointmentDate = parseISO(appointment.appointment_date);
-        return isSameDay(appointmentDate, currentDate) && appointment.status === "APPROVED";
+        return isToday(appointmentDate) && appointment.status === "APPROVED";
     }) || [];
 
     const generateTimeSlots = (): TimeSlot[] => {
@@ -96,15 +96,6 @@ export function CalendarView({ office_id, token }: CalendarViewProps) {
 
     const timeSlots = generateTimeSlots();
     const totalAppointments = todaysAppointments.length;
-    const isCurrentDay = isToday(currentDate);
-
-    const navigateDate = (direction: 'prev' | 'next') => {
-        const newDate = new Date(currentDate);
-        newDate.setDate(newDate.getDate() + (direction === 'prev' ? -1 : 1));
-        setCurrentDate(newDate);
-    };
-
-    const goToToday = () => setCurrentDate(new Date());
 
     if (isLoading) return <CalendarViewSkeleton />;
 
@@ -129,83 +120,42 @@ export function CalendarView({ office_id, token }: CalendarViewProps) {
     }
 
     return (
-        <Card className="w-full bg-white/80 backdrop-blur-sm border-gray-200">
+        <Card className="w-full bg-white/80 backdrop-blur-sm border-brand-secondary">
             <CardHeader className="pb-5 px-6">
                 <div className="flex items-center justify-between flex-wrap gap-4">
                     <div className="flex items-center gap-4">
-                        <div className="p-2.5 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl">
-                            <Calendar className="h-6 w-6 text-blue-700" />
+                        <div className="p-2.5 bg-brand-primary/50 rounded-xl">
+                            <Calendar className="h-6 w-6 text-brand" />
                         </div>
                         <div>
                             <CardTitle className="text-2xl font-bold text-gray-900 tracking-tight">
-                                {isCurrentDay ? "Today's Schedule" : "Your Schedule"}
+                                Today's Appointments
                             </CardTitle>
                             <div className="flex items-center gap-2 mt-1.5">
                                 <Badge
                                     variant="outline"
-                                    className={cn(
-                                        "text-sm font-medium",
-                                        isCurrentDay
-                                            ? "bg-green-50 text-green-700 border-green-200"
-                                            : "bg-gray-50 text-gray-600 border-gray-200"
-                                    )}
+                                    className="bg-brand-primary/20 text-brand border-brand-primary/80 text-sm font-medium"
                                 >
-                                    {format(currentDate, "EEEE, MMMM d, yyyy")}
+                                    {format(new Date(), "EEEE, MMMM d, yyyy")}
                                 </Badge>
                                 <Badge
                                     variant="secondary"
-                                    className="bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
+                                    className="bg-brand-primary text-brand hover:bg-brand-primary/80 transition-colors"
                                 >
-                                    {totalAppointments} {totalAppointments === 1 ? "visitor" : "visitors"} scheduled
+                                    {totalAppointments} {totalAppointments === 1 ? "appointment" : "appointments"} today
                                 </Badge>
                             </div>
                         </div>
                     </div>
-
-                    <div className="flex items-center gap-2">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => navigateDate('prev')}
-                            className="h-9 w-9 p-0 hover:bg-gray-100 transition-colors"
-                        >
-                            <ChevronLeft className="h-4 w-4" />
-                        </Button>
-
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={goToToday}
-                            disabled={isCurrentDay}
-                            className={cn(
-                                "h-9 px-3 transition-all",
-                                !isCurrentDay && "bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200"
-                            )}
-                        >
-                            Today
-                        </Button>
-
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => navigateDate('next')}
-                            className="h-9 w-9 p-0 hover:bg-gray-100 transition-colors"
-                        >
-                            <ChevronRight className="h-4 w-4" />
-                        </Button>
-
-                        <div className="w-px h-6 bg-gray-200 mx-1" />
-
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => refetch()}
-                            disabled={isLoading}
-                            className="h-9 px-3 hover:bg-gray-100 transition-colors"
-                        >
-                            <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
-                        </Button>
-                    </div>
+                    <Button
+                        onClick={() => refetch()}
+                        variant="outline"
+                        size="sm"
+                        className="flex items-center gap-2"
+                    >
+                        <RefreshCw className="h-4 w-4" />
+                        Refresh
+                    </Button>
                 </div>
             </CardHeader>
 
@@ -213,7 +163,7 @@ export function CalendarView({ office_id, token }: CalendarViewProps) {
                 <div className="border-t border-gray-200">
                     {timeSlots.map((slot) => {
                         const hasAppointments = slot.appointments.length > 0;
-                        const isPastSlot = new Date().setHours(slot.hour, 0, 0, 0) < new Date().setHours(0, 0, 0, 0);
+                        const isPastSlot = slot.hour < new Date().getHours();
 
                         return (
                             <div
@@ -222,14 +172,15 @@ export function CalendarView({ office_id, token }: CalendarViewProps) {
                                     "flex border-b last:border-b-0 transition-colors",
                                     hasAppointments
                                         ? "bg-white hover:bg-blue-50/30"
-                                        : "bg-gray-50/60 hover:bg-gray-50",
-                                    !hasAppointments && !isCurrentDay && "opacity-80"
+                                        : "bg-gray-50/60",
+                                    isPastSlot && "opacity-70"
                                 )}
                             >
-                                <div className="w-28 flex-shrink-0 border-r border-gray-200 p-4">
+                                <div className="w-28 shrink-0 border-r border-gray-200 p-4">
                                     <div className={cn(
-                                        "text-sm font-semibold text-gray-900",
-                                        !hasAppointments && "text-gray-500"
+                                        "text-sm font-semibold",
+                                        hasAppointments ? "text-gray-900" : "text-gray-500",
+                                        isPastSlot && "text-gray-400"
                                     )}>
                                         {slot.time}
                                     </div>
@@ -250,13 +201,23 @@ export function CalendarView({ office_id, token }: CalendarViewProps) {
                                                 <AppointmentCard
                                                     key={appointment.appointment_id}
                                                     appointment={appointment}
+                                                    token={token}
+                                                    onStatusChange={() => {
+                                                        refetch();
+                                                        queryClient.invalidateQueries({
+                                                            queryKey: ["calendar-appointments"]
+                                                        });
+                                                    }}
                                                 />
                                             ))}
                                         </div>
                                     ) : (
                                         <div className="h-full flex items-center justify-center">
-                                            <span className="text-sm text-gray-400 font-medium">
-                                                Available for booking
+                                            <span className={cn(
+                                                "text-sm font-medium",
+                                                isPastSlot ? "text-gray-400" : "text-gray-500"
+                                            )}>
+                                                {isPastSlot ? "Time slot passed" : "No appointments"}
                                             </span>
                                         </div>
                                     )}
@@ -272,11 +233,10 @@ export function CalendarView({ office_id, token }: CalendarViewProps) {
                             <Inbox className="h-8 w-8 text-gray-400" />
                         </div>
                         <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                            No Scheduled Visitors
+                            No Appointments Today
                         </h3>
                         <p className="text-sm text-gray-500 max-w-md mx-auto">
-                            You have no confirmed appointments for {format(currentDate, "MMMM d, yyyy")}.
-                            {isCurrentDay && " New bookings will appear here automatically."}
+                            You have no confirmed appointments for today. New bookings will appear here automatically.
                         </p>
                     </div>
                 )}
@@ -285,7 +245,40 @@ export function CalendarView({ office_id, token }: CalendarViewProps) {
     );
 }
 
-function AppointmentCard({ appointment }: { appointment: Appointment }) {
+interface AppointmentCardProps {
+    appointment: Appointment;
+    token: string | undefined;
+    onStatusChange: () => void;
+}
+
+function AppointmentCard({ appointment, token, onStatusChange }: AppointmentCardProps) {
+    const [isCompleting, setIsCompleting] = useState(false);
+
+    const completeMutation = useMutation({
+        mutationFn: async () => {
+            if (!token) throw new Error("Authentication required");
+            return await client.updateAppointmentStatus(
+                appointment.appointment_id,
+                token
+            );
+        },
+        onSuccess: () => {
+            toast.success("Appointment marked as completed!");
+            onStatusChange();
+        },
+        onError: (error: any) => {
+            toast.error(error.message || "Failed to complete appointment");
+        },
+        onSettled: () => {
+            setIsCompleting(false);
+        }
+    });
+
+    const handleComplete = async () => {
+        setIsCompleting(true);
+        completeMutation.mutate();
+    };
+
     const formatTime = (timeString: string) => {
         const [hours, minutes] = timeString.split(':');
         const hour = parseInt(hours);
@@ -294,11 +287,16 @@ function AppointmentCard({ appointment }: { appointment: Appointment }) {
         return `${displayHour}:${minutes} ${ampm}`;
     };
 
+    const isPastAppointment = () => {
+        const appointmentHour = parseInt(appointment.time_slotted.split(':')[0]);
+        return appointmentHour < new Date().getHours();
+    };
+
     return (
         <div className={cn(
             "bg-white border border-gray-200 rounded-xl p-4 transition-all",
-            "hover:shadow-lg hover:border-blue-200 hover:translate-x-1",
-            "cursor-pointer"
+            "hover:shadow-lg hover:border-blue-200",
+            isPastAppointment() && "opacity-80"
         )}>
             <div className="flex items-start gap-4">
                 <Avatar className="h-12 w-12 ring-2 ring-white shadow-sm">
@@ -306,7 +304,7 @@ function AppointmentCard({ appointment }: { appointment: Appointment }) {
                         src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${appointment.citizen_email}`}
                         alt={`${appointment.citizen_firstname} ${appointment.citizen_lastname}`}
                     />
-                    <AvatarFallback className="bg-gradient-to-br from-blue-500 to-blue-600 text-white font-semibold">
+                    <AvatarFallback className="bg-linear-to-br from-blue-500 to-blue-600 text-white font-semibold">
                         {appointment.citizen_firstname[0]}{appointment.citizen_lastname[0]}
                     </AvatarFallback>
                 </Avatar>
@@ -330,7 +328,7 @@ function AppointmentCard({ appointment }: { appointment: Appointment }) {
                         </Badge>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500">
+                    <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500 mb-3">
                         <div className="flex items-center gap-1.5 font-medium">
                             <Clock className="h-3.5 w-3.5 text-gray-400" />
                             <span>{formatTime(appointment.time_slotted)}</span>
@@ -346,19 +344,36 @@ function AppointmentCard({ appointment }: { appointment: Appointment }) {
                         {appointment.host_first_name && (
                             <div className="flex items-center gap-1.5 font-medium">
                                 <MapPin className="h-3.5 w-3.5 text-gray-400" />
-                                <span>Room: {appointment.host_first_name}</span>
+                                <span>Host: {appointment.host_first_name} {appointment.host_last_name}</span>
                             </div>
                         )}
                     </div>
-                </div>
 
-                <Button
-                    size="sm"
-                    variant="ghost"
-                    className="opacity-0 group-hover:opacity-100 transition-opacity h-8 px-3 hover:bg-blue-50 ml-2"
-                >
-                    Details
-                </Button>
+                    {/* Complete Button */}
+                    <div className="flex justify-end">
+                        <Button
+                            size="sm"
+                            onClick={handleComplete}
+                            disabled={isCompleting}
+                            className={cn(
+                                "bg-green-600 hover:bg-green-700 text-white font-medium",
+                                isCompleting && "opacity-70"
+                            )}
+                        >
+                            {isCompleting ? (
+                                <>
+                                    <Loader2 className="h-3 w-3 mr-2 animate-spin" />
+                                    Completing...
+                                </>
+                            ) : (
+                                <>
+                                    <CheckCircle2 className="h-3 w-3 mr-2" />
+                                    Mark Complete
+                                </>
+                            )}
+                        </Button>
+                    </div>
+                </div>
             </div>
         </div>
     );
@@ -376,12 +391,7 @@ function CalendarViewSkeleton() {
                             <Skeleton className="h-5 w-40" />
                         </div>
                     </div>
-                    <div className="flex gap-2">
-                        <Skeleton className="h-9 w-9 rounded-lg" />
-                        <Skeleton className="h-9 w-16 rounded-lg" />
-                        <Skeleton className="h-9 w-9 rounded-lg" />
-                        <Skeleton className="h-9 w-9 rounded-lg" />
-                    </div>
+                    <Skeleton className="h-9 w-24 rounded-lg" />
                 </div>
             </CardHeader>
             <CardContent className="p-0">

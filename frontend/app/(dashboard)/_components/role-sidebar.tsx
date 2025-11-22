@@ -96,10 +96,10 @@ const navigationConfig = {
   ],
   host: [
     {
-      title: "My Schedule",
+      title: "Dashboard",
       href: "/host",
       icon: Calendar,
-      description: "Today's appointments",
+      description: "Dashboard",
     },
     {
       title: "Availability",
@@ -108,13 +108,13 @@ const navigationConfig = {
       description: "Set availability",
     },
     {
-      title: "new Appointments",
+      title: "New Appointments",
       href: "/host/appointments/add",
       icon: PlusCircle,
-      description: "Create appointment",
+      description: "New appointment",
     },
     {
-      title: "view Appointments",
+      title: "View Appointments",
       href: "/host/appointments",
       icon: EyeIcon,
       description: "View appointment",
@@ -162,14 +162,17 @@ export function RoleSidebar({ role, user, className }: RoleSidebarProps) {
           {/* Logo Section - Fixed */}
           <div className="flex items-center justify-between p-4 border-b">
             {open && (
-              <div className="flex items-center space-x-2 flex-1">
-                <Image
-                  src={logo}
-                  alt="logo"
-                  className="h-8 w-auto object-contain"
-                  priority
-                />
-              </div>
+              <Link href={"/"}>
+                <div className="flex items-center space-x-2 flex-1">
+                  <Image
+                    src={logo}
+                    alt="logo"
+                    className="h-24 w-auto object-contain"
+                    priority
+                  />
+                </div>
+              </Link>
+
             )}
             <Button
               variant="ghost"

@@ -803,6 +803,13 @@ export const client = {
       );
     }
   },
+  async updateAppointmentStatus(id: string, token: string) {
+    "http://localhost/api/v1/appointments/3fa85f64-5717-4562-b3fc-2c963f66afa6/complete";
+    const response = await apiClient.post(`/appointments/${id}/complete`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  },
   // ... other methods ...
 
   //   async getAllPastAppointments (
