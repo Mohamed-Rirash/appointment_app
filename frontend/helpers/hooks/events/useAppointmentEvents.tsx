@@ -1,155 +1,115 @@
-"use client";
+"use client"
+import { useEffect, useRef } from 'react';
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
+import { useNotificationStore } from '@/helpers/store/notificationStore';
 
-interface Appointment {
-  id: string;
-  office_id: string;
-  appointment_date: string;
-  time_slotted: string;
-  status: string;
-  citizen_id: string;
-  purpose?: string;
+// Backend event interface
+interface NewAppointmentEvent {
+  event: 'new_appointment';
+  data: {
+    appointment: {
+      id: string;
+      status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED' | 'RESCHEDULED';
+      appointment_date: string; // ISO date
+      time_slotted: string; // "HH:MM:SS"
+      purpose: string;
+      created_at: string;
+      office_id: string;
+    };
+    citizen: {
+      firstname: string;
+      lastname: string;
+      email: string;
+      phone?: string;
+    };
+  };
 }
 
-interface UseAppointmentEventsReturn {
-  isConnected: boolean;
-  isLoading: boolean;
-  error: string | null;
-  appointments: Appointment[];
-  reconnect: () => void;
-}
+export const useAppointmentEvents = (officeId: string, token: string | undefined) => {
 
-export const useAppointmentEvents = (officeId: string): UseAppointmentEventsReturn => {
-  const [isConnected, setIsConnected] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-
+  const addNotification = useNotificationStore((state) => state.addNotification);
+  const queryClient = useQueryClient();
   const eventSourceRef = useRef<EventSource | null>(null);
-  const retryCountRef = useRef(0);
-  const maxRetriesRef = useRef(5);
-  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const disconnect = useCallback(() => {
-    if (retryTimeoutRef.current) {
-      clearTimeout(retryTimeoutRef.current);
-      retryTimeoutRef.current = null;
-    }
+  useEffect(() => {
+    if (!token || !officeId) return;
+
+    // Close existing connection
     if (eventSourceRef.current) {
       eventSourceRef.current.close();
-      eventSourceRef.current = null;
     }
-    setIsConnected(false);
-  }, []);
+    const url = `${process.env.NEXT_PUBLIC_API_URL}/appointments/events?office_id=${encodeURIComponent(officeId)}`;
+    // Connect to backend SSE endpoint
+    const eventSource = new EventSource(url);
 
-  const connect = useCallback(() => {
-    if (!officeId) {
-      setIsLoading(false);
-      return;
-    }
+    eventSourceRef.current = eventSource;
 
-    disconnect();
-
-    const url = `/api/v1/appointments/events?office_id=${encodeURIComponent(officeId)}`;
-    console.log('🔗 Connecting to SSE:', url);
-
-    eventSourceRef.current = new EventSource(url);
-
-    eventSourceRef.current.onopen = () => {
-      console.log('✅ Connected to real-time updates');
-      setIsConnected(true);
-      setIsLoading(false);
-      setError(null);
-      retryCountRef.current = 0;
-    };
-
-    eventSourceRef.current.onmessage = (event) => {
+    eventSource.onmessage = (event) => {
       try {
-        const data = JSON.parse(event.data);
-        console.log('📨 Update received:', data);
+        const message = JSON.parse(event.data) as NewAppointmentEvent;
+        console.log('📨 New appointment event received:', message);
 
-        if (data.event === 'new_appointment' && data.data?.appointment) {
-          const newAppointment = data.data.appointment;
-          setAppointments(prev => [newAppointment, ...prev].slice(0, 50)); // Keep last 50
-          retryCountRef.current = 0;
+        // Check if it's a new appointment event
+        if (message.event === 'new_appointment') {
+          const { appointment, citizen } = message.data;
 
-          // Play sound and show notification
-          playNotificationSound();
-          showBrowserNotification(newAppointment);
+          // Only handle PENDING appointments that need host decision
+          if (appointment.status === 'PENDING') {
+            // Combine date and time into ISO datetime
+            const appointmentDateTime = `${appointment.appointment_date.split('T')[0]}T${appointment.time_slotted}`;
+
+            addNotification({
+              id: `notif-${appointment.id}`,
+              appointmentId: appointment.id,
+              citizenName: `${citizen.firstname} ${citizen.lastname}`,
+              serviceName: appointment.purpose || 'Appointment Request',
+              appointmentDate: appointmentDateTime,
+              status: 'pending_approval',
+              createdAt: appointment.created_at,
+              isRead: false,
+            });
+            console.log('➕ Adding notification ID:', `notif-${appointment.id}`);
+            // Show toast notification for immediate feedback
+            // toast.success('New appointment request',  `${citizen.firstname} ${citizen.lastname} - ${appointment.purpose}`,
+            //  { icon: '📅',}
+            // );
+            toast.success("new appointment request")
+
+            // Invalidate relevant queries to refresh UI
+            queryClient.invalidateQueries({
+              queryKey: ['pending-appointments', officeId]
+            });
+            queryClient.invalidateQueries({
+              queryKey: ['appointments', officeId]
+            });
+          }
         }
-      } catch (err) {
-        console.error('❌ Failed to parse event data:', err);
+      } catch (error) {
+        console.error('Failed to parse event data:', error);
       }
     };
 
-    eventSourceRef.current.onerror = (event) => {
-      console.error('❌ EventSource error:', event);
-      setIsConnected(false);
-      setError('Connection error - retrying...');
+    eventSource.onerror = (error) => {
+      console.error('EventSource failed:', error);
+      eventSource.close();
 
-      if (retryCountRef.current < maxRetriesRef.current) {
-        const delay = 2000 * Math.pow(2, retryCountRef.current);
-        retryTimeoutRef.current = setTimeout(() => {
-          retryCountRef.current += 1;
-          connect();
-        }, delay);
-      } else {
-        setIsLoading(false);
-        setError('Failed to maintain connection after multiple attempts');
-      }
+      // Fallback to polling every 30 seconds
+      toast.error('Live updates disconnected, using polling fallback');
+
+      const interval = setInterval(() => {
+        queryClient.invalidateQueries({
+          queryKey: ['pending-appointments', officeId]
+        });
+      }, 30000);
+
+      // Cleanup interval on component unmount
+      return () => clearInterval(interval);
     };
 
-  }, [officeId, disconnect]);
-
-  const playNotificationSound = () => {
-    try {
-      const audio = new Audio('/notification.mp3');
-      audio.volume = 0.5;
-      audio.play().catch(err => console.log('Audio play failed:', err));
-    } catch (err) {
-      console.log('Audio creation failed:', err);
-    }
-  };
-
-  const showBrowserNotification = (appointment: Appointment) => {
-    if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification('New Appointment', {
-        body: `📝 ${appointment.purpose || 'New booking'} \n📅 ${appointment.appointment_date}`,
-        icon: '/favicon.ico',
-        tag: 'appointment-' + appointment.id
-      });
-    }
-  };
-
-  useEffect(() => {
-    connect();
-    return () => disconnect();
-  }, [connect, disconnect]);
-
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && !isConnected) {
-        reconnect();
-      }
+    return () => {
+      eventSource.close();
     };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [isConnected]);
-
-  const reconnect = useCallback(() => {
-    retryCountRef.current = 0;
-    setError(null);
-    setIsLoading(true);
-    connect();
-  }, [connect]);
-
-  return {
-    isConnected,
-    isLoading,
-    error,
-    appointments,
-    reconnect,
-  };
+  }, [token, officeId, addNotification, queryClient]);
 };

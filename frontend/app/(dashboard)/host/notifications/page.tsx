@@ -1,21 +1,32 @@
+import { Metadata } from 'next';
+import { HostTodaysAppointments } from './_components/AppointmentDashboard';
 import { getSession } from '@/helpers/actions/getsession';
-import { AppointmentDashboard } from './_components/AppointmentDashboard';
 
-export default async function NotificationPage() {
-  const session = await getSession();
-  const officeId = session?.user.office_id;
+export const metadata: Metadata = {
+  title: 'Appointment Decisions',
+  description: 'Review and manage pending appointment requests',
+};
 
-  if (!officeId) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center p-8 bg-white rounded-lg shadow-sm">
-          <div className="text-4xl mb-4">🔒</div>
-          <h2 className="text-lg font-semibold text-gray-900">Access Denied</h2>
-          <p className="text-gray-600">Please log in with an office account</p>
-        </div>
+export default async function NotificationsPage() {
+  const session = await getSession()
+  const user = session?.user
+  return (
+    <div className="container mx-auto py-8 px-6">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold tracking-tight">
+          Appointment Decisions
+        </h1>
+        <p className="text-muted-foreground mt-2">
+          Review pending appointments and take action
+        </p>
       </div>
-    );
-  }
-
-  return <AppointmentDashboard officeId={officeId} />;
+      <HostTodaysAppointments
+        office_id={session.user.office_id}
+        token={user.access_token}
+        variant="notifications-page"
+        limit={50}
+        user={user}
+      />
+    </div>
+  );
 }

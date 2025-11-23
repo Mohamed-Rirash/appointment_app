@@ -3,7 +3,7 @@ import { Signout } from "../actions/signout";
 
 // Create an axios instance with base URL and default config
 export const apiClient = axios.create({
-   baseURL: `${process.env.NEXT_PUBLIC_API_URL}`,
+  baseURL: `${process.env.NEXT_PUBLIC_API_URL}`,
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",
@@ -12,40 +12,40 @@ export const apiClient = axios.create({
 });
 
 // Response interceptor to handle unauthorized errors
-apiClient.interceptors.response.use(
-  (response) => {
-    return response;
-  },
-  async (error) => {
-    const originalRequest = error.config;
+// apiClient.interceptors.response.use(
+//   (response) => {
+//     return response;
+//   },
+//   async (error) => {
+//     const originalRequest = error.config;
 
-    // Check if the error is due to unauthorized access (401)
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
+//     // Check if the error is due to unauthorized access (401)
+//     if (error.response?.status === 401 && !originalRequest._retry) {
+//       originalRequest._retry = true;
 
-      try {
-        // Try to refresh the token first
-        await client.refreshAccessToken();
+//       try {
+//         // Try to refresh the token first
+//         await client.refreshAccessToken();
 
-        // Retry the original request with new token
-        return apiClient(originalRequest);
-      } catch (refreshError) {
-        // If refresh fails, sign out the user
-        console.error("Token refresh failed, signing out:", refreshError);
-        await Signout();
-        return Promise.reject(error);
-      }
-    }
+//         // Retry the original request with new token
+//         return apiClient(originalRequest);
+//       } catch (refreshError) {
+//         // If refresh fails, sign out the user
+//         console.error("Token refresh failed, signing out:", refreshError);
+//         await Signout();
+//         return Promise.reject(error);
+//       }
+//     }
 
-    // For other unauthorized errors or if retry failed, sign out
-    if (error.response?.status === 401) {
-      console.error("Unauthorized access, signing out");
-      await Signout();
-    }
+//     // For other unauthorized errors or if retry failed, sign out
+//     if (error.response?.status === 401) {
+//       console.error("Unauthorized access, signing out");
+//       await Signout();
+//     }
 
-    return Promise.reject(error);
-  }
-);
+//     return Promise.reject(error);
+//   }
+// );
 
 // Define types
 interface Userdata {
@@ -630,20 +630,6 @@ export const client = {
     }
   },
 
-  // Get host dashboard stats
-  // async getHostDashboardStats(token: string) {
-  //   try {
-  //     const response = await apiClient.get("/host/dashboard/stats", {
-  //       headers: { Authorization: `Bearer ${token}` },
-  //     });
-  //     return response.data;
-  //   } catch (error: any) {
-  //     throw new Error(
-  //       error.response?.data?.detail || "Failed to fetch host dashboard stats"
-  //     );
-  //   }
-  // },
-
   // host appointview
   async getOfficeAppointments(
     officeId: string,
@@ -679,9 +665,10 @@ export const client = {
     if (status && status !== "all") params.append("status", status);
     params.append("limit", limit.toString());
     params.append("offset", offset.toString());
-
+    console.log(`the stat ${params}`);
+    ("/views/offices/6af1a50b-9fbc-4c33-a2f8-8213d98457c2/appointments/past?status=DENIED&on_date=2025-11-22&limit=20&offset=0");
     const response = await apiClient.get(
-      `/views/${officeId}/allpastappointments?${params}`,
+      `/views/offices/${officeId}/appointments/past?${params}`,
       {
         headers: { Authorization: `Bearer ${token}` },
       }
@@ -701,7 +688,7 @@ export const client = {
     params.append("offset", offset.toString());
 
     const response = await apiClient.get(
-      `/views/${officeId}/search?${params}`,
+      `/views/offices/${officeId}/appointments/search?${params}`,
       {
         headers: { Authorization: `Bearer ${token}` },
       }
@@ -724,6 +711,7 @@ export const client = {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
+      console.log("sooooo", response.data);
       return response.data;
     } catch (error: any) {
       throw new Error(
@@ -802,47 +790,14 @@ export const client = {
       );
     }
   },
-  async updateAppointmentStatus(id: string, token: string) {
-    "http://localhost/api/v1/appointments/3fa85f64-5717-4562-b3fc-2c963f66afa6/complete";
-    const response = await apiClient.post(`/appointments/${id}/complete`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+  async updateAppointmentStatus(id: string, token: string | undefined) {
+    const response = await axios.post(
+      `http://localhost/api/v1/appointments/${id}/complete`,
+      {},
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
     return response.data;
   },
-  // ... other methods ...
-
-  //   async getAllPastAppointments (
-  //     office_id: string,
-  //     date: string,
-  //     status: string,
-  //     limit: number,
-  //     offset: number,
-  //     token: string
-  // ): Promise<AppointmentsResponse>{
-  //     const params = new URLSearchParams({
-  //         limit: limit.toString(),
-  //         offset: offset.toString(),
-  //     });
-
-  //     // Only add date if provided (not empty)
-  //     if (date) {
-  //         params.append('date', date);
-  //     }
-
-  //     // Only add status if provided (not empty)
-  //     if (status) {
-  //         params.append('status', status);
-  //     }
-
-  //     const response = await apiClient.get(
-  //         `/views/${office_id}/allpastappointments?${params}`,
-  //         {
-  //             headers: {
-  //                 'Authorization': `Bearer ${token}`,
-  //                 'Content-Type': 'application/json',
-  //             },
-  //         }
-  //     );
-  //     return response.data
-  // },
 };

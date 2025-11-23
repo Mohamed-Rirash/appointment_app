@@ -24,6 +24,7 @@ import { format, parseISO } from "date-fns";
 import { RejectAppointmentDialog } from "./reject";
 import { PostponeAppointmentDialog } from "./postponeAppointment";
 import { cn } from "@/libs/utils";
+import { useNotificationStore } from "@/helpers/store/notificationStore";
 
 interface Appointment {
     appointment_id: string;
@@ -121,6 +122,9 @@ export function HostTodaysAppointments({
             originalData: appointment
         }));
     };
+
+    const markAsRead = useNotificationStore((state) => state.markAsRead);
+    const removeNotification = useNotificationStore((state) => state.removeNotification);
 
     const allAppointments = transformAppointments(appointmentsData);
     const sortedAppointments = allAppointments.sort(

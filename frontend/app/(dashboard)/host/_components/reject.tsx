@@ -39,7 +39,7 @@ export function RejectAppointmentDialog({
         mutationFn: async (reason: string) => {
             const baseURL = process.env.NEXT_PUBLIC_API_URL;
             const res = await fetch(
-                `/api/v1/appointments/${appointmentId}/decision?status=DENIED&office_id=${office_id}`,
+                `${baseURL}/appointments/${appointmentId}/decision?status=DENIED&office_id=${office_id}`,
                 {
                     method: "PATCH",
                     headers: {
@@ -53,7 +53,8 @@ export function RejectAppointmentDialog({
             return res.json();
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["todays-appointments"] });
+            queryClient.invalidateQueries({ queryKey: ['pending-appointments', office_id] });
+            queryClient.invalidateQueries({ queryKey: ['calendar-appointments'] });
             onOpenChange(false);
             setRejectionReason("");
         },

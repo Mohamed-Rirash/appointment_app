@@ -3,15 +3,12 @@
 import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, } from "@/components/ui/card";
-import { Filter, RefreshCw, AlertCircle, CalendarDays, Users, TrendingUp, Clock } from "lucide-react";
+import { RefreshCw, AlertCircle, } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AppointmentsFilters } from "./appointments-filters";
 import { AppointmentsTable } from "./appointments-table";
 import { client } from "@/helpers/api/client";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface AppointmentsViewProps {
     office_id: string;
@@ -72,13 +69,16 @@ export function AppointmentView({
                     if (!token) throw new Error("No token provided");
                     return await client.getOfficeAppointments(office_id, status, limit, offset, token);
                 },
-                queryKey: ["reception-appointments", "status", office_id, status, page]
+                queryKey: ["past-appointments", "status", office_id, status, page]
             };
         }
     };
 
-    const endpointConfig = getEndpointConfig();
 
+
+    const endpointConfig = getEndpointConfig();
+    console.log("DAATE", searchParams.date)
+    console.log("all_app", endpointConfig)
     const { data: appointmentsData, isLoading, isError, error } = useQuery({
         queryKey: endpointConfig.queryKey,
         queryFn: endpointConfig.queryFn,

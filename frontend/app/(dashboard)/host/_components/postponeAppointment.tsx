@@ -146,8 +146,8 @@ export function PostponeAppointmentDialog({
             return res.json();
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["todays-appointments"] });
-            queryClient.invalidateQueries({ queryKey: ["appointments"] });
+            queryClient.invalidateQueries({ queryKey: ['pending-appointments', office_id] });
+            queryClient.invalidateQueries({ queryKey: ['calendar-appointments'] });
             onOpenChange(false);
             resetForm();
         },

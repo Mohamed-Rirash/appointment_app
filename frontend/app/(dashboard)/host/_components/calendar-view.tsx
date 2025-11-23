@@ -67,7 +67,8 @@ export function CalendarView({ office_id, token }: CalendarViewProps) {
         enabled: !!token,
     });
 
-    // Filter only today's approved appointments
+
+    //Filter only today's approved appointments
     const todaysAppointments = appointmentsData?.appointments?.filter(appointment => {
         const appointmentDate = parseISO(appointment.appointment_date);
         return isToday(appointmentDate) && appointment.status === "APPROVED";
@@ -79,7 +80,7 @@ export function CalendarView({ office_id, token }: CalendarViewProps) {
         const endHour = 18;
 
         for (let hour = startHour; hour <= endHour; hour++) {
-            const appointmentsForSlot = todaysAppointments.filter(appointment => {
+            const appointmentsForSlot = todaysAppointments?.filter(appointment => {
                 const appointmentHour = parseInt(appointment.time_slotted.split(':')[0]);
                 return appointmentHour === hour;
             });

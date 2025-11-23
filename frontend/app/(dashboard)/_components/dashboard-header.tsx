@@ -9,28 +9,28 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Signout } from "@/helpers/actions/signout";
+import { NotificationBell } from "./NotificationBell";
 
 interface DashboardHeaderProps {
   user: {
     first_name: string;
     last_name: string;
     email: string;
+
   };
 }
 
 export function DashboardHeader({ user }: DashboardHeaderProps) {
+
   return (
-    <header className="flex h-16 items-center justify-between border-b bg-card px-6">
-      <div>
-        <h1 className="text-lg font-semibold">Dashboard</h1>
-      </div>
-      
+    <header className="flex h-16 items-center justify-end border-b bg-card px-6">
+
+
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
-          <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-red-500" />
-        </Button>
-        
+        <div className="">
+          <NotificationBell user={user} />
+        </div>
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="sm">
@@ -43,11 +43,11 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
             <DropdownMenuItem asChild>
               <a href="/profile">Profile Settings</a>
             </DropdownMenuItem>
-            <DropdownMenuItem>Support</DropdownMenuItem>
+
             <DropdownMenuSeparator />
             <DropdownMenuItem className="text-red-600" asChild>
               <form action={Signout} className="w-full">
-                <button type="submit" className="w-full text-left">Logout</button>
+                <button type="submit" className="w-full text-left py-5">Logout</button>
               </form>
             </DropdownMenuItem>
           </DropdownMenuContent>
