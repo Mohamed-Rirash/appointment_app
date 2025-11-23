@@ -1,6 +1,6 @@
 # app/views/routes.py
 
-from datetime import date, timedelta
+from datetime import date
 from uuid import UUID
 
 from databases import Database
@@ -138,17 +138,12 @@ async def get_all_past_appointments(
     status: AppointmentStatus | None = Query(
         None, description="Filter by appointment status"
     ),
-    on_date: date | None = Query(
-        None, description="Filter by specific date (default: yesterday)"
-    ),
+    on_date: date = Query(default_factory=date.today),
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
     db: Database = Depends(get_db),
     _: CurrentUser = Depends(require_any_role("secretary", "host")),
 ):
-    # Set default to yesterday if no date is provided
-    if on_date is None:
-        on_date = date.today() - timedelta(days=1)
     try:
         return await ViewAppointmentService.get_all_past_appointments(
             office_id=office_id,
