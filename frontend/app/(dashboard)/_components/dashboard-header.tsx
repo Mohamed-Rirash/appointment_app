@@ -1,4 +1,3 @@
-import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -10,13 +9,16 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Signout } from "@/helpers/actions/signout";
 import { NotificationBell } from "./NotificationBell";
+import Link from "next/link";
 
 interface DashboardHeaderProps {
   user: {
     first_name: string;
     last_name: string;
     email: string;
-
+    access_token: string,
+    office_id: string,
+    roles: string[],
   };
 }
 
@@ -31,27 +33,27 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
           <NotificationBell user={user} />
         </div>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm">
-              {user.first_name} {user.last_name}
-            </Button>
-          </DropdownMenuTrigger>
+        {/* <DropdownMenu>
+          <DropdownMenuTrigger asChild> */}
+        <Button variant="ghost" size="sm">
+          {user.first_name} {user.last_name}
+        </Button>
+        {/* </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>My Account</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <a href="/profile">Profile Settings</a>
+              <Link href="/profile">Profile Settings</Link>
             </DropdownMenuItem>
 
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-red-600" asChild>
+            <DropdownMenuItem className="text-red-100 bg-red-500" asChild>
               <form action={Signout} className="w-full">
-                <button type="submit" className="w-full text-left py-5">Logout</button>
+                <button type="submit" className="w-full text-left py-2">Logout</button>
               </form>
             </DropdownMenuItem>
           </DropdownMenuContent>
-        </DropdownMenu>
+        </DropdownMenu> */}
       </div>
     </header>
   );

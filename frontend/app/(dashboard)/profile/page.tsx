@@ -9,7 +9,6 @@ export default async function ProfilePage() {
   if (!session?.user || !session.user.access_token) {
     redirect("/Signin");
   }
-  console.log("profile", session?.user)
 
   const user = {
     email: session.user.email,

@@ -49,7 +49,7 @@ export const useAppointmentEvents = (officeId: string, token: string | undefined
     eventSource.onmessage = (event) => {
       try {
         const message = JSON.parse(event.data) as NewAppointmentEvent;
-        console.log('📨 New appointment event received:', message);
+        // console.log('📨 New appointment event received:', message);
 
         // Check if it's a new appointment event
         if (message.event === 'new_appointment') {

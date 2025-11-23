@@ -14,9 +14,18 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useNotificationStore } from '@/helpers/store/notificationStore';
 import { useAppointmentEvents } from '@/helpers/hooks/events/useAppointmentEvents';
 
+interface User {
 
+    first_name: string;
+    last_name: string;
+    email: string;
+    access_token: string,
+    office_id: string,
+    roles: string[],
 
-export function NotificationBell({ user }) {
+}
+
+export function NotificationBell({ user }: { user: User }) {
     const router = useRouter();
 
     const officeId = user?.office_id;
@@ -60,7 +69,7 @@ export function NotificationBell({ user }) {
         router.push(`/host/notifications?appointment=${appointmentId}`);
         setIsOpen(false);
     };
-    console.log("nooooooote", notifications)
+    // console.log("nooooooote", notifications)
     return (
         <Popover open={isOpen} onOpenChange={setIsOpen}>
             <PopoverTrigger asChild>

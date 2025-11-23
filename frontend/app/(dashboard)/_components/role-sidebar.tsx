@@ -29,6 +29,9 @@ import { useEffect } from "react";
 import Image from "next/image";
 import logo from "@/public/logo.png";
 import useLocalStorage from "@/helpers/hooks/sidebar/useLocalStorage";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Separator } from "@/components/ui/separator";
+import { Label } from "@/components/ui/label";
 
 interface RoleSidebarProps {
   role: string;
@@ -202,7 +205,7 @@ export function RoleSidebar({ role, user, className }: RoleSidebarProps) {
                       <Link href={item.href}>
                         <Button
                           // variant={isActive ? "secondary" : "ghost"}
-                          className={`w-full justify-start gap-3  ${isActive ? "bg-brand-black hover:bg-brand-black/80" : "text-brand-gray bg-transparent hover:bg-brand-primary hover:text-brand-black hover:font-semibold"} ${open ? "px-3" : "px-2 "
+                          className={`w-full justify-start gap-3  ${isActive ? "bg-brand hover:bg-brand/90" : "text-brand-gray bg-transparent hover:bg-brand-primary hover:text-brand-black hover:font-semibold"} ${open ? "px-3" : "px-2 "
                             }`}
                           size="lg"
                         >
@@ -226,28 +229,86 @@ export function RoleSidebar({ role, user, className }: RoleSidebarProps) {
 
           {/* User Profile Section - Fixed */}
           <div className="mt-auto border-t p-4">
-            <div className="flex items-center gap-3 mb-4">
-              <Avatar className="shrink-0">
-                <AvatarImage
-                  src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`}
-                />
-                <AvatarFallback>
-                  {user.first_name[0]}
-                  {user.last_name[0]}
-                </AvatarFallback>
-              </Avatar>
-              {open && (
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium truncate">
-                    {user.first_name} {user.last_name}
-                  </p>
-                  <p className="text-xs text-muted-foreground capitalize truncate">
-                    {role}
-                  </p>
-                </div>
-              )}
-            </div>
 
+            <Popover>
+              <PopoverTrigger asChild>
+                <div className="flex items-center gap-3 mb-4 cursor-pointer">
+                  <Avatar className="shrink-0">
+                    <AvatarImage
+                      src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`}
+                    />
+                    <AvatarFallback>
+                      {user.first_name[0]}
+                      {user.last_name[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                  {open && (
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium truncate">
+                        {user.first_name} {user.last_name}
+                      </p>
+                      <p className="text-xs text-muted-foreground capitalize truncate">
+                        {role}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </PopoverTrigger>
+              <PopoverContent className="w-80">
+                <div className="grid gap-4">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-12 w-12">
+                      <AvatarImage
+                        src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`}
+                      />
+                      <AvatarFallback className="text-sm">
+                        {user.first_name[0]}
+                        {user.last_name[0]}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1">
+                      <h4 className="text-sm font-semibold truncate">
+                        {user.first_name} {user.last_name}
+                      </h4>
+                      <p className="text-xs text-muted-foreground capitalize">
+                        {role}
+                      </p>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">Email</Label>
+                      <p className="text-sm font-semibold">{user.email}</p>
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">Full Name</Label>
+                      <p className="text-sm font-semibold">{user.first_name} {user.last_name}</p>
+                    </div>
+
+                    {/* {user.username && (
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Username</Label>
+                        <p className="text-sm">@{user.username}ddd</p>
+                      </div>
+                    )} */}
+                  </div>
+
+                  <Separator />
+
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" className="flex-1 py-4" asChild>
+                      <Link href="/profile">
+                        View Profile
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
             <Button
               variant="outline"
               className={`w-full gap-2 ${open ? "justify-start" : "justify-center"
