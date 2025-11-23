@@ -185,11 +185,16 @@ class OfficeMembershipMgmtCRUD:
 
     @staticmethod
     async def delete_membership(db, office_id, membership_id):
-        query = delete(office_memberships).where(
-            office_memberships.c.id == membership_id,
-            office_memberships.c.office_id == office_id,
+        query = (
+            delete(office_memberships)
+            .where(
+                office_memberships.c.id == membership_id,
+                office_memberships.c.office_id == office_id,
+            )
+            .returning(office_memberships.c.id)
         )
-        return await db.execute(query)
+        result = await db.fetch_one(query)
+        return result  # None if nothing deleted
 
     @staticmethod
     async def get_user_memberships(db, user_id):
