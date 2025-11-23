@@ -120,7 +120,7 @@ const navigationConfig = {
       description: "View appointment",
     },
     {
-      title: "Notifications",
+      title: "Incoming Appointments",
       href: "/host/notifications",
       icon: Bell,
       description: "Appointment requests",
@@ -201,8 +201,8 @@ export function RoleSidebar({ role, user, className }: RoleSidebarProps) {
                     <TooltipTrigger asChild>
                       <Link href={item.href}>
                         <Button
-                          variant={isActive ? "secondary" : "ghost"}
-                          className={`w-full justify-start gap-3 hover:to-brand-primary ${isActive ? "" : "text-brand-gray"} ${open ? "px-3" : "px-2 "
+                          // variant={isActive ? "secondary" : "ghost"}
+                          className={`w-full justify-start gap-3  ${isActive ? "bg-brand-black hover:bg-brand-black/80" : "text-brand-gray bg-transparent hover:bg-brand-primary hover:text-brand-black hover:font-semibold"} ${open ? "px-3" : "px-2 "
                             }`}
                           size="lg"
                         >

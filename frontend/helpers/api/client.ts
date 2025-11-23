@@ -675,6 +675,7 @@ export const client = {
     );
     return response.data;
   },
+  // searchs appointment history
   async searchAppointments(
     officeId: string,
     search: string,
@@ -790,8 +791,10 @@ export const client = {
       );
     }
   },
+
+  // completes appointment
   async updateAppointmentStatus(id: string, token: string | undefined) {
-    const response = await axios.post(
+    const response = await apiClient.post(
       `http://localhost/api/v1/appointments/${id}/complete`,
       {},
       {
@@ -799,5 +802,43 @@ export const client = {
       }
     );
     return response.data;
+  },
+
+  //approrove appointment
+  async approveAppointment(
+    token: string | undefined,
+    appointmentId: string,
+    officeId: string
+  ) {
+    const responce = await apiClient.patch(
+      `/appointments/${appointmentId}/decision?status=APPROVED&office_id=${officeId}`,
+      {}, // Empty body
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    return responce.data;
+  },
+
+ async  rejectAppointment(
+    token: string,
+    appointmentId: string,
+    officeId: string,
+    reason: string
+  ) {
+    const { data } = await apiClient.patch(
+      `/appointments/${appointmentId}/decision?status=DENIED&office_id=${officeId}`,
+      { reason }, // Request body
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+    return data;
   },
 };

@@ -35,7 +35,6 @@ export default async function HostDashboard() {
   const token = session.user.access_token;
   const office_id = session.user.office_id;
   const user = session?.user
-  console.log("t", token)
   if (!office_id) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50/30 flex items-center justify-center p-6">
@@ -206,7 +205,7 @@ export default async function HostDashboard() {
     error = err instanceof Error ? err.message : "Unknown error";
     console.error("Dashboard fetch error:", err);
   }
-  console.log("deteeeeee", appointments)
+  // console.log("deteeeeee", appointments)
 
   const today = new Date();
   const formattedDate = format(today, "EEEE, MMMM d, yyyy");

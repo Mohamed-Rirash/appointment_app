@@ -198,25 +198,8 @@ export function HostTodaysAppointments({
   console.log("ddddddddd", displayedAppointments)
   const approveAppointment = useMutation({
     mutationFn: async (appointmentId: string) => {
-      const res = await fetch(
-        `${baseURL}/appointments/${appointmentId}/decision?status=APPROVED&office_id=${office_id}`,
-        {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => null);
-        console.error('Approval failed:', errorData);
-        throw new Error('Failed to approve appointment');
-      }
-      const data = await res.json()
-      console.log("the return", data)
-      return data;
+      const responce = await client.approveAppointment(token, appointmentId, office_id)
+      return responce.data;
     },
     onSuccess: (_, appointmentId) => {
       queryClient.invalidateQueries({ queryKey: ['pending-appointments', office_id] });
@@ -224,14 +207,11 @@ export function HostTodaysAppointments({
       console.log("onSuc", appointmentId)
       removeNotification(`notif-${appointmentId}`);
       markAsRead(`notif-${appointmentId}`);
-      console.log('➖ Removing notification ID:', `notif-${appointmentId}`);
-
       toast.success('Appointment approved successfully', {
         icon: '✅',
       });
     },
     onError: (error: any) => {
-      console.log("shit errr", error)
       toast.error('Failed to approve appointment', {
         description: error.message,
       });

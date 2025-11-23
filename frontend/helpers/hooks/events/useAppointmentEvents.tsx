@@ -70,7 +70,7 @@ export const useAppointmentEvents = (officeId: string, token: string | undefined
               createdAt: appointment.created_at,
               isRead: false,
             });
-            console.log('➕ Adding notification ID:', `notif-${appointment.id}`);
+            // console.log('➕ Adding notification ID:', `notif-${appointment.id}`);
             // Show toast notification for immediate feedback
             // toast.success('New appointment request',  `${citizen.firstname} ${citizen.lastname} - ${appointment.purpose}`,
             //  { icon: '📅',}

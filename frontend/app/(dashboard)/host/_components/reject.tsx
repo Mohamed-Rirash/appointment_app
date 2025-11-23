@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { XCircle } from "lucide-react";
+import { client } from "@/helpers/api/client";
 
 interface RejectAppointmentDialogProps {
     open: boolean;
@@ -38,19 +39,8 @@ export function RejectAppointmentDialog({
     const rejectAppointment = useMutation({
         mutationFn: async (reason: string) => {
             const baseURL = process.env.NEXT_PUBLIC_API_URL;
-            const res = await fetch(
-                `${baseURL}/appointments/${appointmentId}/decision?status=DENIED&office_id=${office_id}`,
-                {
-                    method: "PATCH",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`,
-                    },
-                    body: JSON.stringify({ reason }),
-                }
-            );
-            if (!res.ok) throw new Error("Failed to reject appointment");
-            return res.json();
+            const responce = await client.rejectAppointment(token, appointmentId, office_id, reason)
+            return responce.data
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['pending-appointments', office_id] });
