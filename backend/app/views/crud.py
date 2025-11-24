@@ -196,7 +196,7 @@ class ViewAppointmentCrud:
     ):
         filters = [
             appointment_details.c.office_id == office_id,
-            appointment_details.c.appointment_date == date,
+            appointment_details.c.appointment_date <= date,
         ]
 
         # Only filter status if provided
