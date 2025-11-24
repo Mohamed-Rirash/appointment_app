@@ -28,9 +28,10 @@ interface PostponeAppointmentDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     appointmentId: string;
-    token: string;
+    token: string | undefined;
     citizenName: string;
     office_id: string;
+    onSuccess?: () => void;
 }
 
 interface TimeSlot {
@@ -47,6 +48,7 @@ export function PostponeAppointmentDialog({
     token,
     citizenName,
     office_id,
+    onSuccess,
 }: PostponeAppointmentDialogProps) {
     const queryClient = useQueryClient();
     const [newDate, setNewDate] = useState<Date | undefined>(undefined);
@@ -121,7 +123,7 @@ export function PostponeAppointmentDialog({
             ).toISOString();
 
             const res = await fetch(
-                `/api/v1/views/appointments/${appointmentId}/postpone`,
+                `${baseURL}/views/appointments/${appointmentId}/postpone`,
                 {
                     method: "POST",
                     headers: {
@@ -150,6 +152,7 @@ export function PostponeAppointmentDialog({
             queryClient.invalidateQueries({ queryKey: ['calendar-appointments'] });
             onOpenChange(false);
             resetForm();
+            onSuccess?.();
         },
         onError: (error) => {
             console.error("Postpone error:", error);

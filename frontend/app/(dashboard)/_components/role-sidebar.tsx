@@ -73,17 +73,17 @@ const navigationConfig = {
   ],
   reception: [
     {
-      title: "Overview",
+      title: "Dashboard",
       href: "/reception",
       icon: LayoutDashboard,
       description: "System statistics",
     },
-    {
-      title: "Check-In",
-      href: "/reception/check-in",
-      icon: UserCheck,
-      description: "Citizen check-in",
-    },
+    // {
+    //   title: "Check-In",
+    //   href: "/reception/check-in",
+    //   icon: UserCheck,
+    //   description: "Citizen check-in",
+    // },
     {
       title: "new Appointments",
       href: "/reception/appointments/add",

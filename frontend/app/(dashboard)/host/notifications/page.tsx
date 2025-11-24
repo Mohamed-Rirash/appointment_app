@@ -25,7 +25,6 @@ export default async function NotificationsPage() {
         token={user.access_token}
         variant="notifications-page"
         limit={50}
-        user={user}
       />
     </div>
   );

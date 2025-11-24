@@ -100,7 +100,6 @@ export function HostTodaysAppointments({
   token,
   variant = 'dashboard',
   limit = 100,
-  user
 }: HostTodaysAppointmentsProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -212,9 +211,9 @@ export function HostTodaysAppointments({
       });
     },
     onError: (error: any) => {
-      toast.error('Failed to approve appointment', {
-        description: error.message,
-      });
+      toast.error(
+        error.message,
+      );
     },
   });
 

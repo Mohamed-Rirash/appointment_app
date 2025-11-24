@@ -43,11 +43,11 @@ export default async function ReceptionDashboard() {
             {/* Header */}
             <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="space-y-2">
-                    <h1 className="text-3xl sm:text-4xl font-bold tracking-tight bg-linear-to-r from-brand-black to-brand via-brand bg-clip-text text-transparent">
-                        Reception Desk
+                    <h1 className="text-3xl sm:text-4xl font-bold tracking-tight ">
+                        Dashboard
                     </h1>
                     <p className="text-brand-gray text-lg max-w-2xl">
-                        Streamline citizen check-ins and manage walk-in appointments in real-time
+                        Create and Manage appointments
                     </p>
                 </div>
                 <time className="text-base font-semibold text-brand bg-brand-primary/20 px-4 py-3 rounded-xl border border-brand/20 shadow-gren">
@@ -92,9 +92,9 @@ export default async function ReceptionDashboard() {
             </section>
 
             {/* Main Content Grid */}
-            <div className="grid gap-8 lg:grid-cols-3">
+            <div className="grid gap-8 lg:grid-cols-1">
                 {/* Quick Actions */}
-                <section className="lg:col-span-1">
+                {/* <section className="lg:col-span-1">
                     <div className="flex items-center gap-3 mb-6">
                         <div className="w-1 h-8 bg-brand-primary rounded-full"></div>
                         <h2 className="text-2xl font-bold text-brand-black">
@@ -112,12 +112,11 @@ export default async function ReceptionDashboard() {
                             shortcut="⌘+W"
                         />
                     </div>
-                </section>
-
+                </section> */}
                 {/* Today's Schedule */}
-                <section className="lg:col-span-2">
+                <section className="lg:col-span-1">
                     <div className="rounded-2xl border border-gray-200 bg-white shadow-gren hover:shadow-md transition-all duration-300 overflow-hidden">
-                        <div className="bg-linear-to-r from-brand-primary/30 to-brand-primary/80 p-6">
+                        {/* <div className="bg-linear-to-r from-brand-primary/30 to-brand-primary/80 p-6">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-white rounded-lg shadow-sm">
                                     <Calendar className="w-6 h-6 text-brand" />
@@ -131,9 +130,9 @@ export default async function ReceptionDashboard() {
                                     </p>
                                 </div>
                             </div>
-                        </div>
+                        </div> */}
                         <div className="p-6">
-                            <TodayAppointments />
+                            <TodayAppointments token={token} />
                         </div>
                     </div>
                 </section>

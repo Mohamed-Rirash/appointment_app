@@ -21,8 +21,9 @@ interface RejectAppointmentDialogProps {
     onOpenChange: (open: boolean) => void;
     appointmentId: string;
     office_id: string;
-    token: string;
+    token: string | undefined;
     citizenName: string;
+    onSuccess?: () => void;
 }
 
 export function RejectAppointmentDialog({
@@ -32,6 +33,7 @@ export function RejectAppointmentDialog({
     office_id,
     token,
     citizenName,
+    onSuccess,
 }: RejectAppointmentDialogProps) {
     const queryClient = useQueryClient();
     const [rejectionReason, setRejectionReason] = useState("");
@@ -47,6 +49,7 @@ export function RejectAppointmentDialog({
             queryClient.invalidateQueries({ queryKey: ['calendar-appointments'] });
             onOpenChange(false);
             setRejectionReason("");
+            onSuccess?.();
         },
     });
 

@@ -1,25 +1,3 @@
-// import Navbar from "@/components/Navbar";
-// import Sidebar from "@/components/Sidebar";
-
-// export default function DashboardLayout({
-//   children,
-// }: {
-//   children: React.ReactNode;
-// }) {
-//   return (
-//     <>
-//       <div className="flex h-screen">
-//         <Sidebar />
-//         <div className="flex flex-col flex-1 overflow-hidden">
-//           <Navbar />
-//           <main className="flex-1 overflow-auto p-4">{children}</main>
-//         </div>
-//       </div>
-//     </>
-
-//   );
-// }
-
 import { redirect } from "next/navigation";
 
 import { RoleSidebar } from "@/app/(dashboard)/_components/role-sidebar";
@@ -50,15 +28,15 @@ export default async function DashboardLayout({
   return (
     <div className="flex h-screen overflow-hidden">
       {/* Role-Specific Sidebar */}
-      <RoleSidebar 
-        role={userRole} 
+      <RoleSidebar
+        role={userRole}
         user={user}
       />
-      
+
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Top Navigation Bar */}
         <DashboardHeader user={user} />
-        
+
         {/* Main Content */}
         <main className="flex-1 overflow-y-auto bg-background ">
           <div className="mx-auto max-w-7xl">{children}</div>

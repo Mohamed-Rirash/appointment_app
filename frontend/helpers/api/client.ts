@@ -699,7 +699,7 @@ export const client = {
 
   // Get appointment queue
   async getAppointmentQueue(
-    token: string,
+    token: string | undefined,
     office_id: string,
     limit: number,
     offset: number
@@ -823,8 +823,8 @@ export const client = {
     return responce.data;
   },
 
- async  rejectAppointment(
-    token: string,
+  async rejectAppointment(
+    token: string | undefined,
     appointmentId: string,
     officeId: string,
     reason: string
@@ -835,7 +835,7 @@ export const client = {
       {
         headers: {
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       }
     );
