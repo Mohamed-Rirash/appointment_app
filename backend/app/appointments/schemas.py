@@ -10,7 +10,7 @@ from app.appointments.constants import AppointmentStatus
 class CitizenCreate(BaseModel):
     firstname: str
     lastname: str
-    email: EmailStr
+    email: EmailStr | None = None
     phone: str
 
 
@@ -67,28 +67,27 @@ class Slot(BaseModel):
 
 class AppointmentDecision(BaseModel):
     status: AppointmentStatus = Field(
-        ...,
-        description="Decision status: approved, denied, or postponed"
+        ..., description="Decision status: approved, denied, or postponed"
     )
     reason: str | None = Field(
         "",
-        description="Reason for the decision (required for denied/postponed)"
+        description="Reason for the decision (required for denied/postponed)",
     )
     new_appointment_date: datetime | None = Field(
         None,
-        description="New appointment date (required when status is postponed)"
+        description="New appointment date (required when status is postponed)",
     )
     new_time_slot: time | None = Field(
-        None,
-        description="New time slot (required when status is postponed)"
+        None, description="New time slot (required when status is postponed)"
     )
 
 
 class AppointmentDecisionReason(BaseModel):
     """Request body for appointment decision - only contains optional reason"""
+
     reason: str | None = Field(
         None,
-        description="Reason for the decision (optional for approved, recommended for denied)"
+        description="Reason for the decision (optional for approved, recommended for denied)",
     )
 
 
