@@ -59,7 +59,7 @@ class ViewAppointmentCrud:
     ):
         base_filters = [
             appointment_details.c.issued_by == user_id,
-            func.date(appointment_details.c.created_at) == target_date,
+            appointment_details.c.appointment_date == target_date,
         ]
         if status:
             base_filters.append(appointment_details.c.status == status.upper())
