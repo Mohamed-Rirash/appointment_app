@@ -10,7 +10,7 @@ from app.appointments.constants import AppointmentStatus
 class CitizenCreate(BaseModel):
     firstname: str
     lastname: str
-    email: EmailStr | None = None
+    email: EmailStr | None
     phone: str
 
 
