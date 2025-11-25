@@ -4,7 +4,7 @@ from datetime import date, datetime
 from typing import Any
 
 from databases import Database
-from sqlalchemy import func, or_
+from sqlalchemy import func, literal_column, or_
 
 from app.appointments import schemas as sch
 from app.appointments.constants import AppointmentStatus
@@ -474,13 +474,27 @@ class AppointmentService:
     @staticmethod
     async def search_approved_appointments(db: Database, search_term: str):
         """Search for approved appointments by citizen info"""
+
+        # Normalize (remove double spaces)
+        normalized = " ".join(search_term.split())
+
         conditions = [
             appointment_details.c.appointment_active.is_(True),
             or_(
-                appointment_details.c.citizen_firstname.ilike(f"%{search_term}%"),
-                appointment_details.c.citizen_lastname.ilike(f"%{search_term}%"),
-                appointment_details.c.citizen_phone.ilike(f"%{search_term}%"),
-                appointment_details.c.citizen_email.ilike(f"%{search_term}%"),
+                # Firstname
+                appointment_details.c.citizen_firstname.ilike(f"%{normalized}%"),
+                # Lastname
+                appointment_details.c.citizen_lastname.ilike(f"%{normalized}%"),
+                # Phone
+                appointment_details.c.citizen_phone.ilike(f"%{normalized}%"),
+                # Email
+                appointment_details.c.citizen_email.ilike(f"%{normalized}%"),
+                # Full name search (firstname + space + lastname)
+                func.concat(
+                    appointment_details.c.citizen_firstname,
+                    literal_column("' '"),
+                    appointment_details.c.citizen_lastname,
+                ).ilike(f"%{normalized}%"),
             ),
         ]
 

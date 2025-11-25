@@ -27,7 +27,7 @@ def upgrade() -> None:
         sa.Column("firstname", sa.String(length=100), nullable=False),
         sa.Column("lastname", sa.String(length=100), nullable=False),
         sa.Column("email", sa.String(length=100), nullable=False),
-        sa.Column("phone", sa.String(length=20), nullable=False),
+        sa.Column("phone", sa.String(length=20), nullable=True),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("phone"),
     )
@@ -38,11 +38,14 @@ def upgrade() -> None:
         sa.Column("citizen_id", sa.UUID(), nullable=False),
         sa.Column("host_id", sa.UUID(), nullable=False),
         sa.Column("office_id", sa.UUID(), nullable=False),
-        sa.Column("purpose", sa.Text(), nullable=False),
+        sa.Column("purpose", sa.Text(), nullable=True),
         sa.Column("appointment_date", sa.DateTime(timezone=True), nullable=False),
         sa.Column("time_slotted", sa.Time(), nullable=False),
         sa.Column(
-            "is_active", sa.Boolean(), server_default=sa.text("true"), nullable=False
+            "is_active",
+            sa.Boolean(),
+            server_default=sa.text("true"),
+            nullable=False,
         ),
         sa.Column(
             "created_at",
