@@ -18,7 +18,7 @@ class CitizenCreate(BaseModel):
 class AppointmentCreate(BaseModel):
     host_id: UUID
     office_id: UUID
-    purpose: str
+    purpose: str | None = None
     appointment_date: datetime
     time_slotted: time
     status: AppointmentStatus = AppointmentStatus.PENDING
