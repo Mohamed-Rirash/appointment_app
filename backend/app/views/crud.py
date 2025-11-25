@@ -190,23 +190,26 @@ class ViewAppointmentCrud:
         db,
         status: str | None,
         office_id: UUID,
-        date: date,
+        date: date | None,
         limit: int = 20,
         offset: int = 0,
     ):
-        filters = [
-            appointment_details.c.office_id == office_id,
-            appointment_details.c.appointment_date <= date,
-        ]
+        filters = [appointment_details.c.office_id == office_id]
 
-        # Only filter status if provided
+        if date:
+            filters.append(appointment_details.c.appointment_date == date)
+        else:
+            filters.append(
+                appointment_details.c.appointment_date <= func.current_date()
+            )
+
         if status:
             filters.append(appointment_details.c.status == status.upper())
 
         filters = and_(*filters)
 
         data_query = (
-            ViewAppointmentCrud._base_query()
+            select(appointment_details)
             .where(filters)
             .order_by(
                 appointment_details.c.appointment_date.asc(),
@@ -219,7 +222,7 @@ class ViewAppointmentCrud:
         rows = await db.fetch_all(data_query)
 
         total_query = select(func.count()).select_from(
-            ViewAppointmentCrud._base_query().where(filters).alias("subq")
+            select(appointment_details).where(filters).alias("subq")
         )
         total = await db.fetch_val(total_query)
 
