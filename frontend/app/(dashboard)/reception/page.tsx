@@ -23,13 +23,7 @@ export default async function ReceptionDashboard() {
         redirect("/Signin");
     }
 
-    // Live dashboard metrics (replace with API data)
-    const metrics = {
-        checked_in: { value: 24, trend: '+12%' },
-        pending: { value: 8, trend: '-5%' },
-        walk_ins: { value: 12, trend: '+8%' },
-        no_shows: { value: 3, trend: '-2%' }
-    };
+
 
     const today = new Date().toLocaleDateString("en-US", {
         weekday: "long",
@@ -55,82 +49,13 @@ export default async function ReceptionDashboard() {
                 </time>
             </header>
 
-            {/* Live Metrics */}
-            <section className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-4">
-                <MetricCard
-                    title="Checked In"
-                    value={metrics.checked_in.value}
-                    icon={UserCheck}
-                    color="text-emerald-600"
-                    bgColor="bg-emerald-50"
-                    borderColor="border-emerald-200"
-                />
-                <MetricCard
-                    title="Awaiting"
-                    value={metrics.pending.value}
-                    icon={Clock}
-                    color="text-amber-600"
-                    bgColor="bg-amber-50"
-                    borderColor="border-amber-200"
-                />
-                <MetricCard
-                    title="Walk-ins"
-                    value={metrics.walk_ins.value}
-                    icon={UserPlus}
-                    color="text-blue-600"
-                    bgColor="bg-blue-50"
-                    borderColor="border-blue-200"
-                />
-                <MetricCard
-                    title="No-shows"
-                    value={metrics.no_shows.value}
-                    icon={CalendarX}
-                    color="text-rose-600"
-                    bgColor="bg-rose-50"
-                    borderColor="border-rose-200"
-                />
-            </section>
+
 
             {/* Main Content Grid */}
             <div className="grid gap-8 lg:grid-cols-1">
-                {/* Quick Actions */}
-                {/* <section className="lg:col-span-1">
-                    <div className="flex items-center gap-3 mb-6">
-                        <div className="w-1 h-8 bg-brand-primary rounded-full"></div>
-                        <h2 className="text-2xl font-bold text-brand-black">
-                            Quick Actions
-                        </h2>
-                    </div>
-                    <div className="space-y-4">
-                        <div className=""> <CheckInSearchCard /></div>
-                        <QuickActionCard
-                            icon={`walk-in`}
-                            title="Register Walk-in"
-                            description="Create on-the-spot appointments for citizens without prior booking"
-                            href="/reception/walk-in"
-                            variant="secondary"
-                            shortcut="⌘+W"
-                        />
-                    </div>
-                </section> */}
                 {/* Today's Schedule */}
                 <section className="lg:col-span-1">
                     <div className="rounded-2xl border border-gray-200 bg-white shadow-gren hover:shadow-md transition-all duration-300 overflow-hidden">
-                        {/* <div className="bg-linear-to-r from-brand-primary/30 to-brand-primary/80 p-6">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-white rounded-lg shadow-sm">
-                                    <Calendar className="w-6 h-6 text-brand" />
-                                </div>
-                                <div>
-                                    <h2 className="text-2xl font-bold text-brand-black">
-                                        Today's Appointments
-                                    </h2>
-                                    <p className="text-brand-gray mt-1">
-                                        Real-time schedule of all citizen appointments
-                                    </p>
-                                </div>
-                            </div>
-                        </div> */}
                         <div className="p-6">
                             <TodayAppointments token={token} />
                         </div>
