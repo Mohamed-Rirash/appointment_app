@@ -243,7 +243,7 @@ class AppointmentService:
             return await AppointmentCrud.get_appointment_by_id(db, appointment_id)
 
     @staticmethod
-    async def postpone_appointment(db, appointment_id, decision, user_id):
+    async def reschedule_appointment(db, appointment_id, decision, user_id):
         async with db.transaction():
             appointment = await AppointmentCrud.get_appointment_by_id(db, appointment_id)
             if not appointment:
@@ -331,6 +331,86 @@ class AppointmentService:
             )
 
             # return updated appointment row
+            return updated
+
+    @staticmethod
+    async def postpone_approved_appointment(db, appointment_id, decision, user_id):
+        async with db.transaction():
+            appointment = await AppointmentCrud.get_appointment_by_id(db, appointment_id)
+            if not appointment:
+                appointment = await AppointmentCrud.get_appointment_row_by_id(
+                    db, appointment_id
+                )
+            if not appointment:
+                raise AppointmentNotFound()
+
+            # Only allow when current status is APPROVED (normalize)
+            status_raw = getattr(appointment, "status", None)
+            current_status = str(getattr(status_raw, "value", status_raw)).upper()
+            if current_status == "SCHEDULED":
+                current_status = AppointmentStatus.PENDING.value
+            if current_status != AppointmentStatus.APPROVED.value:
+                raise AppointmentPostponementNotAllowed(
+                    "Only approved appointments can be postponed"
+                )
+
+            # Validate new slot inputs
+            if not decision.new_appointment_date or not decision.new_time_slot:
+                raise AppointmentPostponementNotAllowed(
+                    "Both new_appointment_date and new_time_slot are required"
+                )
+
+            slot_date = decision.new_appointment_date.date()
+
+            # Convert ISO string → time
+            if isinstance(decision.new_time_slot, str):
+                slot_time = datetime.fromisoformat(
+                    decision.new_time_slot.replace("Z", "")
+                ).time()
+            else:
+                slot_time = decision.new_time_slot
+
+            new_slot = await AppointmentCrud.get_slot_by_start_time(
+                db, slot_date, slot_time
+            )
+            if not new_slot or new_slot["is_booked"]:
+                raise AppointmentPostponementNotAllowed("New time slot is not available")
+
+            # --- free old slot ---
+            old_slot_date = appointment.appointment_date.date()
+            old_slot_time = appointment.time_slotted
+            from datetime import time as _Time
+            if isinstance(old_slot_time, str):
+                try:
+                    old_slot_time = _Time.fromisoformat(old_slot_time)
+                except ValueError:
+                    old_slot_time = datetime.fromisoformat(
+                        old_slot_time.replace("Z", "")
+                    ).time()
+
+            old_slot = await AppointmentCrud.get_slot_by_start_time(
+                db, old_slot_date, old_slot_time
+            )
+            if old_slot:
+                await AppointmentCrud.free_slot(db, old_slot["id"])
+
+            # --- book new slot ---
+            await AppointmentCrud.mark_slot_booked(db, new_slot["id"])
+
+            # Update appointment to POSTPONED with new date/time
+            update_data = {
+                "status": AppointmentStatus.POSTPONED,
+                "decision_reason": decision.reason,
+                "decided_at": datetime.now(),
+                "decided_by": user_id,
+                "appointment_date": decision.new_appointment_date,
+                "time_slotted": slot_time,
+            }
+
+            updated = await AppointmentCrud.update_appointment(
+                db, appointment_id, update_data
+            )
+
             return updated
 
     @staticmethod

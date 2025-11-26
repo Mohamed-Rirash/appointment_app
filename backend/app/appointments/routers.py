@@ -287,8 +287,8 @@ async def decide_appointment(
 # routes.py
 
 
-@appointment_router.post("/{appointment_id}/postpone")
-async def postpone_appointment(
+@appointment_router.post("/{appointment_id}/reschedule")
+async def reschedule_appointment(
     appointment_id: UUID,
     decision: sch.AppointmentDecision,
     background_tasks: BackgroundTasks,
@@ -296,7 +296,7 @@ async def postpone_appointment(
     current_user: CurrentUser = Depends(require_any_role("host", "secretary")),
 ):
     try:
-        updated = await AppointmentService.postpone_appointment(
+        updated = await AppointmentService.reschedule_appointment(
             db, appointment_id, decision, current_user.id
         )
 
@@ -360,6 +360,89 @@ async def postpone_appointment(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
+@appointment_router.post("/{appointment_id}/postpone")
+async def postpone_appointment(
+    appointment_id: UUID,
+    decision: sch.AppointmentDecision,
+    background_tasks: BackgroundTasks,
+    db: Database = Depends(get_db),
+    current_user: CurrentUser = Depends(require_any_role("host", "secretary")),
+):
+    try:
+        # Fetch old details BEFORE update for notifications
+        old_details = await AppointmentCrud.get_appointment_by_id(db, appointment_id)
+
+        updated = await AppointmentService.postpone_approved_appointment(
+            db, appointment_id, decision, current_user.id
+        )
+
+        # Notifications for postponed appointment
+        if updated and background_tasks:
+            # After update, fetch latest appointment details
+            appointment = await AppointmentCrud.get_appointment_by_id(db, appointment_id)
+            if appointment and old_details:
+                citizen_name = (
+                    f"{appointment.citizen_firstname} {appointment.citizen_lastname}"
+                )
+
+                # Old and new datetime formatted
+                old_dt = old_details.appointment_date
+                new_dt = decision.new_appointment_date
+                # Pretty strings
+                old_date_str = old_dt.strftime("%B %d, %Y")
+                old_time_str = old_dt.strftime("%I:%M %p")
+                new_date_str = new_dt.strftime("%B %d, %Y") if new_dt else ""
+                new_time_str = (
+                    new_dt.strftime("%I:%M %p") if isinstance(new_dt, type(old_dt)) and new_dt else ""
+                )
+
+                # SMS: postponed
+                background_tasks.add_task(
+                    SMSService.send_appointment_postponed_sms,
+                    str(appointment_id),
+                    appointment.citizen_phone,
+                    citizen_name,
+                    f"{old_date_str} {old_time_str}",
+                    f"{new_date_str} {new_time_str}",
+                    decision.reason or "",
+                )
+
+                # Email: postponed using provided template
+                if appointment.citizen_email:
+                    email_context = {
+                        "app_name": settings.PROJECT_NAME,
+                        "citizen_name": citizen_name,
+                        "appointment_id": str(appointment_id),
+                        "old_appointment_date": old_date_str,
+                        "old_appointment_time": old_time_str,
+                        "new_appointment_date": new_date_str,
+                        "new_appointment_time": new_time_str,
+                        "purpose": appointment.purpose,
+                        "office_name": getattr(appointment, "office_name", "Office"),
+                        "reason": decision.reason or "",
+                    }
+
+                    background_tasks.add_task(
+                        send_email,
+                        recipients=appointment.citizen_email,
+                        subject=f"Appointment Postponed - {settings.PROJECT_NAME}",
+                        context=email_context,
+                        background_tasks=background_tasks,
+                        template_name="appointments/appointment-postponed-inline.html",
+                    )
+
+        return updated
+
+    except AppointmentNotFound:
+        raise HTTPException(status_code=404, detail="Appointment not found")
+    except AppointmentPostponementNotAllowed as e:
+        raise HTTPException(
+            status_code=400,
+            detail=str(e) or "Cannot postpone this appointment",
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @appointment_router.put(
     "/{appointment_id}",
@@ -585,3 +668,5 @@ async def print_appointment_slip(
         raise HTTPException(status_code=404, detail="Appointment not found")
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+

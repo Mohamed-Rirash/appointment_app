@@ -28,13 +28,11 @@ def internal_error(msg: str, exc: Exception):
 @view_router.get(
     "/my/appointments",
     response_model=PaginatedAppointments,
-    summary="Get appointments created or hosted by current user on a given date",
+    summary="Get appointments created by the current user on a given date",
 )
 async def get_my_appointments_on_date(
     on_date: date = Query(default_factory=date.today),
-    status: AppointmentStatus | None = Query(
-        None, description="Filter by appointment status (optional)"
-    ),
+    status: AppointmentStatus | None = Query(None),
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
     db: Database = Depends(get_db),
@@ -46,7 +44,7 @@ async def get_my_appointments_on_date(
         return await ViewAppointmentService.get_user_appointments_on_date(
             user_id=current_user.id,
             target_date=on_date,
-            status=(status.value if status else None),  # pyright: ignore[reportArgumentType]
+            status=status.value if status else None,
             db=db,
             limit=limit,
             offset=offset,
@@ -72,14 +70,18 @@ async def get_all_appointments_by_status(
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
     db: Database = Depends(get_db),
-    current_user: CurrentUser = Depends(require_role("reception")),  # pyright: ignore[reportUnknownMemberType]
+    current_user: CurrentUser = Depends(
+        require_role("reception")
+    ),  # pyright: ignore[reportUnknownMemberType]
 ):
     try:
         return await ViewAppointmentService.get_user_appointments_on_date(
             user_id=current_user.id,
             target_date=on_date,
             db=db,
-            status=(status.value if status else None),  # pyright: ignore[reportArgumentType]
+            status=(
+                status.value if status else None
+            ),  # pyright: ignore[reportArgumentType]
             limit=limit,
             offset=offset,
         )
@@ -108,7 +110,9 @@ async def get_all_appointments_by_date_and_status(
     try:
         return await ViewAppointmentService.get_all_appointments_by_date_and_status(
             on_date=on_date,
-            status=(status.value if status else None),  # pyright: ignore[reportArgumentType]
+            status=(
+                status.value if status else None
+            ),  # pyright: ignore[reportArgumentType]
             db=db,
             limit=limit,
             offset=offset,
@@ -140,7 +144,9 @@ async def get_all_past_appointments(
         return await ViewAppointmentService.get_all_past_appointments(
             office_id=office_id,
             date=on_date,
-            status=(status.value if status else None),  # pyright: ignore[reportArgumentType]
+            status=(
+                status.value if status else None
+            ),  # pyright: ignore[reportArgumentType]
             db=db,
             limit=limit,
             offset=offset,
