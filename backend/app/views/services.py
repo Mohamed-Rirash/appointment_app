@@ -47,18 +47,20 @@ class ViewAppointmentService:
         target_date: date,
         db: Database,
         status: str | None = None,
-
         limit: int = 20,
         offset: int = 0,
     ) -> PaginatedAppointments:
         rows, total = await ViewAppointmentCrud.get_appointments_by_user_and_date(
             db, user_id, target_date, status, limit, offset
         )
-        appointments: list[AppointmentDetails] = [
-            ViewAppointmentService._map_row_to_model(row) for row in rows
-        ]
+
+        appointments = [ViewAppointmentService._map_row_to_model(row) for row in rows]
+
         return PaginatedAppointments(
-            total=total, limit=limit, offset=offset, appointments=appointments
+            total=total,
+            limit=limit,
+            offset=offset,
+            appointments=appointments,
         )
 
     @staticmethod
