@@ -243,55 +243,78 @@ class AppointmentService:
             return await AppointmentCrud.get_appointment_by_id(db, appointment_id)
 
     @staticmethod
-    async def postpone_appointment(
-        db: Database,
-        appointment_id: uuid.UUID,
-        decision: sch.AppointmentDecision,
-        user_id: uuid.UUID,
-    ):
-        """Postpone an appointment to a new date/time slot"""
+    async def postpone_appointment(db, appointment_id, decision, user_id):
         async with db.transaction():
-            appointment = await AppointmentCrud.get_appointment_by_id(
-                db, appointment_id
-            )
+            appointment = await AppointmentCrud.get_appointment_by_id(db, appointment_id)
+            if not appointment:
+                # Fallback: try base table in case the view join hides the row
+                appointment = await AppointmentCrud.get_appointment_row_by_id(
+                    db, appointment_id
+                )
             if not appointment:
                 raise AppointmentNotFound()
 
-            # Validate status
-            if appointment.status not in [
-                AppointmentStatus.PENDING,
-                AppointmentStatus.APPROVED,
-                AppointmentStatus.POSTPONED,
-            ]:
-                raise AppointmentPostponementNotAllowed()
+            # Allowed statuses (normalize to string for safe comparison)
+            status_raw = getattr(appointment, "status", None)
+            current_status = str(getattr(status_raw, "value", status_raw))
+            # Map legacy/alternate values
+            normalized_status = current_status.upper()
+            if normalized_status == "SCHEDULED":
+                normalized_status = AppointmentStatus.PENDING.value
 
-            # Validate new date/time provided
+            if normalized_status not in [
+                AppointmentStatus.PENDING.value,
+                AppointmentStatus.APPROVED.value,
+                AppointmentStatus.POSTPONED.value,
+            ]:
+                raise AppointmentPostponementNotAllowed(
+                    f"Cannot postpone when status is '{current_status}'. Allowed: PENDING, APPROVED, POSTPONED"
+                )
+
+            # Validate new slot
             if not decision.new_appointment_date or not decision.new_time_slot:
-                raise ValueError(
+                raise AppointmentPostponementNotAllowed(
                     "Both new_appointment_date and new_time_slot are required"
                 )
 
-            # Check and book new slot
             slot_date = decision.new_appointment_date.date()
-            slot_time = decision.new_time_slot
+
+            # Convert ISO string → time
+            if isinstance(decision.new_time_slot, str):
+                slot_time = datetime.fromisoformat(
+                    decision.new_time_slot.replace("Z", "")
+                ).time()
+            else:
+                slot_time = decision.new_time_slot
+
             new_slot = await AppointmentCrud.get_slot_by_start_time(
                 db, slot_date, slot_time
             )
             if not new_slot or new_slot["is_booked"]:
-                raise AppointmentNotFound("New time slot is not available")
+                raise AppointmentPostponementNotAllowed("New time slot is not available")
 
-            await AppointmentCrud.mark_slot_booked(db, new_slot["id"])
-
-            # Free old slot
+            # --- free old slot ---
             old_slot_date = appointment.appointment_date.date()
             old_slot_time = appointment.time_slotted
+            # Normalize to time object if needed
+            from datetime import time as _Time
+            if isinstance(old_slot_time, str):
+                try:
+                    # Accept HH:MM or HH:MM:SS
+                    old_slot_time = _Time.fromisoformat(old_slot_time)
+                except ValueError:
+                    old_slot_time = datetime.fromisoformat(
+                        old_slot_time.replace("Z", "")
+                    ).time()
+
             old_slot = await AppointmentCrud.get_slot_by_start_time(
                 db, old_slot_date, old_slot_time
             )
             if old_slot:
-                await db.execute(
-                    f"UPDATE time_slot SET is_booked = false WHERE id = '{old_slot['id']}'"
-                )
+                await AppointmentCrud.free_slot(db, old_slot["id"])
+
+            # --- book new slot ---
+            await AppointmentCrud.mark_slot_booked(db, new_slot["id"])
 
             # Update appointment
             update_data = {
@@ -300,49 +323,15 @@ class AppointmentService:
                 "decided_at": datetime.now(),
                 "decided_by": user_id,
                 "appointment_date": decision.new_appointment_date,
-                "time_slotted": decision.new_time_slot,
+                "time_slotted": slot_time,
             }
-            await AppointmentCrud.update_appointment(db, appointment_id, update_data)
 
-            # Get updated slots for both dates
-            from app.office_mgnt.crud import TimeSlotCRUD
-
-            old_date_slots = await TimeSlotCRUD.get_slots_by_date(
-                db, appointment.office_id, old_slot_date
-            )
-            new_date_slots = await TimeSlotCRUD.get_slots_by_date(
-                db, appointment.office_id, slot_date
+            updated = await AppointmentCrud.update_appointment(
+                db, appointment_id, update_data
             )
 
-            # Broadcast postponement event
-            await broadcast_event(
-                office_id=str(appointment.office_id),
-                event={
-                    "type": "appointment_postponed",
-                    "appointment_id": str(appointment_id),
-                    "old_date": appointment.appointment_date.isoformat(),
-                    "old_time": str(appointment.time_slotted),
-                    "new_date": decision.new_appointment_date.isoformat(),
-                    "new_time": str(decision.new_time_slot),
-                    "updated_slots": {
-                        "old_date": {
-                            "date": str(old_slot_date),
-                            "slots": [
-                                serialize_database_record(s) for s in old_date_slots
-                            ],
-                        },
-                        "new_date": {
-                            "date": str(slot_date),
-                            "slots": [
-                                serialize_database_record(s) for s in new_date_slots
-                            ],
-                        },
-                    },
-                },
-            )
-            logger.info("📡 Sent appointment_postponed event")
-
-            return await AppointmentCrud.get_appointment_by_id(db, appointment_id)
+            # return updated appointment row
+            return updated
 
     @staticmethod
     async def edit_appointment(

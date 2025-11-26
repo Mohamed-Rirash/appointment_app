@@ -22,6 +22,7 @@ from app.appointments.exceptions import (
     AppointmentDecisionNotAllowed,
     AppointmentEditNotAllowed,
     AppointmentNotFound,
+    AppointmentPostponementNotAllowed,
 )
 from app.appointments.services import AppointmentService
 from app.appointments.sms_service import SMSService
@@ -283,9 +284,10 @@ async def decide_appointment(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@appointment_router.post(
-    "/{appointment_id}/postpone",
-)
+# routes.py
+
+
+@appointment_router.post("/{appointment_id}/postpone")
 async def postpone_appointment(
     appointment_id: UUID,
     decision: sch.AppointmentDecision,
@@ -293,91 +295,70 @@ async def postpone_appointment(
     db: Database = Depends(get_db),
     current_user: CurrentUser = Depends(require_any_role("host", "secretary")),
 ):
-    """
-    Postpone an appointment to a new date/time and mark it as approved.
-
-    This endpoint reschedules a pending appointment to a new date and time,
-    then marks it as APPROVED. The citizen will receive a notification with
-    the new appointment details.
-
-    **Request Body:**
-    - `new_appointment_date`: New appointment date/time (required)
-    - `new_time_slot`: New time slot (required)
-    - `reason`: Optional reason for the postponement
-    """
     try:
-        updated_appointment = await AppointmentService.postpone_appointment(
+        updated = await AppointmentService.postpone_appointment(
             db, appointment_id, decision, current_user.id
         )
 
-        # Send SMS and Email notifications in background for rescheduled appointment
-        if background_tasks and updated_appointment:
-            try:
-                # Get appointment details with citizen info for notifications
-                appointment_details = await AppointmentCrud.get_appointment_by_id(
-                    db, appointment_id
+        # Notifications
+        if updated and background_tasks:
+            appointment = await AppointmentCrud.get_appointment_by_id(
+                db, appointment_id
+            )
+            if appointment:
+                citizen_name = (
+                    f"{appointment.citizen_firstname} {appointment.citizen_lastname}"
                 )
-                if appointment_details:
-                    citizen_name = f"{appointment_details.citizen_firstname} {appointment_details.citizen_lastname}"
 
-                    # Format new appointment date/time (current appointment_date is now the new date)
-                    new_datetime = appointment_details.appointment_date
-                    new_date_str = new_datetime.strftime(
-                        "%B %d, %Y"
-                    )  # e.g., "October 25, 2025"
-                    new_time_str = new_datetime.strftime("%I:%M %p")  # e.g., "10:00 AM"
-                    new_datetime_str = new_datetime.strftime("%Y-%m-%d %H:%M")
+                # Date & time formatted
+                dt = appointment.appointment_date
+                new_date_str = dt.strftime("%B %d, %Y")
+                new_time_str = dt.strftime("%I:%M %p")
 
-                    # Send SMS notification for approved appointment with new date
+                # SMS
+                background_tasks.add_task(
+                    SMSService.send_appointment_approved_sms,
+                    str(appointment_id),
+                    appointment.citizen_phone,
+                    citizen_name,
+                    dt.strftime("%Y-%m-%d %H:%M"),
+                    getattr(appointment, "office_name", "Office"),
+                )
+
+                # Email
+                if appointment.citizen_email:
+                    email_context = {
+                        "app_name": settings.PROJECT_NAME,
+                        "citizen_name": citizen_name,
+                        "appointment_id": str(appointment_id),
+                        "appointment_date": new_date_str,
+                        "appointment_time": new_time_str,
+                        "purpose": appointment.purpose,
+                        "office_name": getattr(
+                            appointment, "office_name", "Government Office"
+                        ),
+                    }
+
                     background_tasks.add_task(
-                        SMSService.send_appointment_approved_sms,
-                        str(appointment_id),
-                        appointment_details.citizen_phone,
-                        citizen_name,
-                        new_datetime_str,
-                        getattr(appointment_details, "office_name", "Office"),
+                        send_email,
+                        recipients=appointment.citizen_email,
+                        subject=f"Appointment Approved - {settings.PROJECT_NAME}",
+                        context=email_context,
+                        background_tasks=background_tasks,
+                        template_name="appointments/appointment-approved-inline.html",
                     )
 
-                    # Send Email notification for approved appointment with new date
-                    if appointment_details.citizen_email:
-                        email_context = {
-                            "app_name": settings.PROJECT_NAME,
-                            "citizen_name": citizen_name,
-                            "appointment_id": str(appointment_id),
-                            "appointment_date": new_date_str,
-                            "appointment_time": new_time_str,
-                            "purpose": appointment_details.purpose,
-                            "office_name": getattr(
-                                appointment_details,
-                                "office_name",
-                                "Government Office",
-                            ),
-                        }
-
-                        background_tasks.add_task(
-                            send_email,
-                            recipients=appointment_details.citizen_email,
-                            subject=f"Appointment Approved - {settings.PROJECT_NAME}",
-                            context=email_context,
-                            background_tasks=background_tasks,
-                            template_name="appointments/appointment-approved-inline.html",
-                        )
-            except Exception as e:
-                # Log error but don't fail the request
-                raise HTTPException(status_code=500, detail=str(e))
-
-        return updated_appointment
+        return updated
 
     except AppointmentNotFound:
         raise HTTPException(status_code=404, detail="Appointment not found")
-    except AppointmentAlreadyApproved:
-        raise HTTPException(status_code=400, detail="Appointment already decided")
-    except AppointmentDecisionNotAllowed:
+    except AppointmentPostponementNotAllowed as e:
         raise HTTPException(
-            status_code=400, detail="Can only postpone pending appointments"
+            status_code=400,
+            detail=str(e) or "Cannot postpone this appointment",
         )
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @appointment_router.put(
