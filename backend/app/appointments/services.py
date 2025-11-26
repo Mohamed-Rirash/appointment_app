@@ -87,20 +87,41 @@ class AppointmentService:
         """
         try:
             async with db.transaction():
-                # 1️⃣ Create Citizen
+                # 1️⃣ Find or Create Citizen (by phone)
                 citizen_data = payload.citizen.model_dump()
-                citizen_data.setdefault("id", uuid.uuid4())
+                phone = citizen_data.get("phone")
 
-                logger.info(f"Creating citizen: {citizen_data['id']}")
-                citizen_record = await AppointmentCrud.create_citizen(db, citizen_data)
-                if not citizen_record:
-                    raise AppointmentNotFound("Failed to create citizen record.")
+                logger.info(f"Looking up citizen by phone: {phone}")
+                existing_citizen = await AppointmentCrud.get_citizen_by_phone(db, phone)
 
-                citizen_dict = dict(citizen_record)
-                logger.info(f"✅ Citizen created: {citizen_dict['id']}")
+                if existing_citizen:
+                    citizen_dict = dict(existing_citizen)
+                    logger.info(f"✅ Reusing existing citizen: {citizen_dict['id']}")
+                else:
+                    citizen_data.setdefault("id", uuid.uuid4())
+                    logger.info(f"Creating citizen: {citizen_data['id']}")
+                    citizen_record = await AppointmentCrud.create_citizen(
+                        db, citizen_data
+                    )
+                    if not citizen_record:
+                        raise AppointmentNotFound("Failed to create citizen record.")
 
-                # 2️⃣ Validate and book slot
+                    citizen_dict = dict(citizen_record)
+                    logger.info(f"✅ Citizen created: {citizen_dict['id']}")
+
+                # 2️⃣ Check ongoing appointment in same office for this citizen
                 appointment_data = payload.appointment.model_dump()
+                existing_active = (
+                    await AppointmentCrud.get_active_appointment_for_citizen_office(
+                        db, citizen_dict["id"], appointment_data["office_id"]
+                    )
+                )
+                if existing_active:
+                    raise AppointmentEditNotAllowed(
+                        "Guest already has an ongoing appointment in this office. Please complete the previous appointment first."
+                    )
+
+                # 3️⃣ Validate and book slot
                 slot_date = appointment_data["appointment_date"].date()
                 slot_time = appointment_data["time_slotted"]
 
@@ -119,7 +140,7 @@ class AppointmentService:
                 logger.info(f"Marking slot {slot['id']} as booked")
                 await AppointmentCrud.mark_slot_booked(db, slot["id"])
 
-                # 3️⃣ Create Appointment
+                # 4️⃣ Create Appointment
                 appointment_data["citizen_id"] = citizen_dict["id"]
                 appointment_data.setdefault("id", uuid.uuid4())
                 appointment_data.setdefault("issued_by", user_id)
@@ -142,7 +163,7 @@ class AppointmentService:
             traceback.print_exc()
             raise
 
-        # 4️⃣ Broadcast events after successful commit
+        # 5️⃣ Broadcast events after successful commit
         if "office_id" in appointment_dict:
             office_id = str(appointment_dict["office_id"])
 

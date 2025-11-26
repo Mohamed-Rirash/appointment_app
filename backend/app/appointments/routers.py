@@ -69,6 +69,10 @@ async def create_with_citizen(
     except AppointmentNotFound as e:
         raise HTTPException(status_code=404, detail=str(e))
 
+    except AppointmentEditNotAllowed as e:
+        # Citizen already has an ongoing appointment in this office
+        raise HTTPException(status_code=400, detail=str(e))
+
     except Exception as e:
         # Log the full error with traceback
         import traceback

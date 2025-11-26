@@ -7,6 +7,11 @@ from app.appointments.view import appointment_details
 
 class AppointmentCrud:
     @staticmethod
+    async def get_citizen_by_phone(db: Database, phone: str):
+        query = select(citizen_info).where(citizen_info.c.phone == phone)
+        return await db.fetch_one(query)
+
+    @staticmethod
     async def create_citizen(db: Database, citizen_data: dict):
         query = insert(citizen_info).values(**citizen_data).returning(citizen_info)
         return await db.fetch_one(query)
@@ -14,6 +19,33 @@ class AppointmentCrud:
     @staticmethod
     async def create_appointment(db: Database, appointment_data: dict):
         query = insert(appointments).values(**appointment_data).returning(appointments)
+        return await db.fetch_one(query)
+
+    @staticmethod
+    async def get_active_appointment_for_citizen_office(
+        db: Database, citizen_id, office_id
+    ):
+        """Return an active ongoing appointment for this citizen in this office, if any."""
+        from app.appointments.constants import AppointmentStatus
+
+        query = (
+            select(appointments)
+            .where(
+                and_(
+                    appointments.c.citizen_id == citizen_id,
+                    appointments.c.office_id == office_id,
+                    appointments.c.is_active.is_(True),
+                    appointments.c.status.in_(
+                        [
+                            AppointmentStatus.PENDING,
+                            AppointmentStatus.APPROVED,
+                            AppointmentStatus.POSTPONED,
+                        ]
+                    ),
+                )
+            )
+            .order_by(appointments.c.created_at.desc())
+        )
         return await db.fetch_one(query)
 
     @staticmethod
