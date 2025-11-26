@@ -42,14 +42,14 @@ class AppointmentCrud:
     #     )
     #     return await db.fetch_one(query)
     #
-    # @staticmethod
-    # async def is_slot_booked(db: Database, slot_id):
-    #     """Check if slot is booked"""
-    #     query = select(time_slot.c.is_booked).where(time_slot.c.id == slot_id)
-    #     result = await db.fetch_one(query)
-    #
-    #     return result and result["is_booked"]
-    #
+    @staticmethod
+    async def is_slot_booked(db: Database, slot_id):
+        """Check if slot is booked"""
+        query = select(time_slot.c.is_booked).where(time_slot.c.id == slot_id)
+        result = await db.fetch_one(query)
+
+        return result and result["is_booked"]
+
     # @staticmethod
     # async def update_appointment(db, appointment_id, appointment_data):
     #     query = (
@@ -66,7 +66,7 @@ class AppointmentCrud:
     #         appointment_details.c.appointment_id == appointment_id
     #     )
     #     return await db.fetch_one(query)
-    #
+
     @staticmethod
     async def get_all_appointments(db, conditions=None):
         query = select(appointment_details)
