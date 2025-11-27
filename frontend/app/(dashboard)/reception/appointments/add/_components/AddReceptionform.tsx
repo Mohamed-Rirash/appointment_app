@@ -32,6 +32,8 @@ import {
   FileText,
   Clock,
   Building,
+  Globe,
+  Search,
 } from "lucide-react";
 import { cn } from "@/libs/utils";
 import { client } from "@/helpers/api/client";
@@ -48,7 +50,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Check, ChevronsUpDown } from "lucide-react";
 // Zod schemas for validation
 interface Office {
   id: string;
@@ -86,16 +97,37 @@ interface AddReception {
 const formSchema = z.object({
   firstName: z.string().min(1, "First name is required").max(50),
   lastName: z.string().min(1, "Last name is required").max(50),
-  email: z.email("Invalid email format").optional().or(z.literal("")),
+  email: z.string().email("Invalid email format").optional().or(z.literal("")),
   phone: z
     .string()
     .min(1, "Phone number is required")
     .refine((value) => {
       const digitsOnly = value.replace(/\D/g, "");
-      return digitsOnly.length === 10 && digitsOnly.startsWith("063");
-    }, "Phone format must start with 063 followed by 7 digits. Example: 063 123 4567"),
-  purpose: z.string().min(5, "Purpose must be at least 5 characters"),
-  date: z.date("Date is required"),
+
+      // Basic validation for phone numbers
+      // - Minimum 7 digits (short numbers)
+      // - Maximum 15 digits (with country code)
+      // - Must contain only numbers after cleaning
+      if (digitsOnly.length < 7 || digitsOnly.length > 15) {
+        return false;
+      }
+
+      // Additional validation for common patterns
+      // Check if it's a reasonable phone number format
+      if (!/^\d+$/.test(digitsOnly)) {
+        return false;
+      }
+
+      // Specific validation for local numbers (like 063 123 4567)
+      if (digitsOnly.startsWith('063')) {
+        return digitsOnly.length === 10; // 063 + 7 digits
+      }
+
+      // For other numbers, basic length check is sufficient
+      return true;
+    }, "Please enter a valid phone number (e.g., 063 123 4567 or +1 555 123 4567)"),
+  purpose: z.string().optional().or(z.literal("")),
+  date: z.date({ required_error: "Date is required" }),
   timeSlot: z.string().min(1, "Time slot is required"),
   officeId: z.string().min(1, "Office selection is required"),
   hostId: z.string().min(1, "Host selection is required"),
@@ -112,6 +144,11 @@ export default function AddReceptionform({ token }: AddReception) {
   const [loadingOffices, setLoadingOffices] = useState(false);
   const [loadingHosts, setLoadingHosts] = useState(false);
 
+  // Search states
+  const [officeSearch, setOfficeSearch] = useState("");
+  const [hostSearch, setHostSearch] = useState("");
+  const [officePopoverOpen, setOfficePopoverOpen] = useState(false);
+  const [hostPopoverOpen, setHostPopoverOpen] = useState(false);
   // Use startOfDay to normalize dates
   const tomorrow = startOfDay(addDays(new Date(), 1));
   const queryClient = useQueryClient();
@@ -145,7 +182,6 @@ export default function AddReceptionform({ token }: AddReception) {
   };
 
   // Load offices when component mounts
-
   useEffect(() => {
     const loadOffices = async () => {
       if (!token) return;
@@ -188,7 +224,7 @@ export default function AddReceptionform({ token }: AddReception) {
     };
 
     loadHosts();
-  }, [form.watch("officeId"), token]);
+  }, [form.watch("officeId"), token, form]);
 
   // Load time slots when office or date changes
   useEffect(() => {
@@ -240,6 +276,44 @@ export default function AddReceptionform({ token }: AddReception) {
     form.setValue("phone", formatted, { shouldValidate: true });
   };
 
+  // Clean phone number for backend
+  const cleanPhoneNumber = (phone: string): string => {
+    return phone.replace(/\D/g, "");
+  };
+
+  // Check if phone number is valid
+  const isPhoneValid = (phone: string): boolean => {
+    const digitsOnly = phone.replace(/\D/g, "");
+
+    if (digitsOnly.length < 7 || digitsOnly.length > 15) {
+      return false;
+    }
+
+    if (!/^\d+$/.test(digitsOnly)) {
+      return false;
+    }
+
+    if (digitsOnly.startsWith('063')) {
+      return digitsOnly.length === 10;
+    }
+
+    return true;
+  };
+
+  // Filter offices based on search
+  const filteredOffices = offices.filter(office =>
+    office.name.toLowerCase().includes(officeSearch.toLowerCase()) ||
+    office.location?.toLowerCase().includes(officeSearch.toLowerCase()) ||
+    office.description?.toLowerCase().includes(officeSearch.toLowerCase())
+  );
+
+  // Filter hosts based on search
+  const filteredHosts = hosts.filter(host =>
+    `${host.first_name} ${host.last_name}`.toLowerCase().includes(hostSearch.toLowerCase()) ||
+    host.position?.toLowerCase().includes(hostSearch.toLowerCase()) ||
+    host.email?.toLowerCase().includes(hostSearch.toLowerCase())
+  );
+
   const nextStep = async () => {
     let fields: (keyof FormData)[] = [];
 
@@ -274,13 +348,18 @@ export default function AddReceptionform({ token }: AddReception) {
       // Format date as string to avoid timezone issues
       const appointmentDateStr = format(data.date, "yyyy-MM-dd");
 
+      const citizenData: any = {
+        firstname: data.firstName,
+        lastname: data.lastName,
+        phone: cleanPhoneNumber(data.phone),
+      };
+
+      // Only add email if it exists and is not empty
+      if (data.email && data.email.trim().length > 0) {
+        citizenData.email = data.email;
+      }
       const requestData = {
-        citizen: {
-          firstname: data.firstName,
-          lastname: data.lastName,
-          email: data.email,
-          phone: data.phone,
-        },
+        citizen: citizenData,
         appointment: {
           host_id: data.hostId,
           office_id: data.officeId,
@@ -290,15 +369,16 @@ export default function AddReceptionform({ token }: AddReception) {
           status: "PENDING" as const,
         },
       };
-
+      console.log("Submitting data:", requestData);
 
       const response = await client.createAppointment(requestData, token);
       toast.success("Appointment created successfully!");
       form.reset();
       setStep(1);
+      setOfficeSearch("");
+      setHostSearch("");
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
     } catch (error: any) {
-
       // Handle unique constraint violation
       if (error.response?.data?.detail?.error_type === "UniqueViolationError") {
         const errorMsg = error.response.data.detail.error;
@@ -398,7 +478,7 @@ export default function AddReceptionform({ token }: AddReception) {
                         stepNum <= step ? "text-foreground" : "text-muted-foreground"
                       )}
                     >
-                      {stepNum === 1 && "Citizen Info"}
+                      {stepNum === 1 && "Guest Info"}
                       {stepNum === 2 && "Office & Host"}
                       {stepNum === 3 && "Purpose"}
                       {stepNum === 4 && "Schedule"}
@@ -420,16 +500,16 @@ export default function AddReceptionform({ token }: AddReception) {
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmitForm)} className="space-y-8">
-              {/* STEP 1: Citizen Information */}
+              {/* STEP 1: Guest Information */}
               {step === 1 && (
                 <div className="space-y-6">
                   <div className="space-y-2">
-                    <h3 className="text-xl font-semibold flex  gap-2">
+                    <h3 className="text-xl font-semibold flex gap-2">
                       <User className="w-5 h-5 text-brand" />
-                      Citizen Information
+                      Guest Information
                     </h3>
                     <p className="text-brand-gray text-start">
-                      Enter the citizen's personal details for the appointment
+                      Enter the guest's personal details for the appointment
                     </p>
                   </div>
 
@@ -472,15 +552,27 @@ export default function AddReceptionform({ token }: AddReception) {
                           <FormLabel className="flex items-center gap-2">
                             <Phone className="w-4 h-4" />
                             Phone Number
+                            {isPhoneValid(field.value) && (
+                              <Badge variant="secondary" className="text-xs">
+                                ✓ Valid
+                              </Badge>
+                            )}
                           </FormLabel>
                           <FormControl>
-                            <Input
-                              type="tel"
-                              placeholder="(063) 123-4567"
-                              value={field.value}
-                              onChange={handlePhoneChange}
-                              className="py-5"
-                            />
+                            <div className="space-y-2">
+                              <Input
+                                type="tel"
+                                placeholder="(063) 123-4567"
+                                value={field.value}
+                                onChange={handlePhoneChange}
+                                className="py-5"
+                              />
+                              {field.value && (
+                                <div className="text-xs text-muted-foreground">
+                                  Cleaned: {cleanPhoneNumber(field.value)}
+                                </div>
+                              )}
+                            </div>
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -499,7 +591,7 @@ export default function AddReceptionform({ token }: AddReception) {
                           <FormControl>
                             <Input
                               type="email"
-                              placeholder="citizen@example.com"
+                              placeholder="guest@example.com"
                               className="py-5"
                               {...field}
                             />
@@ -509,14 +601,28 @@ export default function AddReceptionform({ token }: AddReception) {
                       )}
                     />
                   </div>
+
+                  <div className="bg-brand-primary/50 border border-brand-primary rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      <Globe className="w-5 h-5 text-brand mt-0.5" />
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium text-brand">
+                          Phone Number Formats Accepted
+                        </p>
+                        <p className="text-xs text-brand">
+                          Local: (063) 123-4567 • International: +1 (555) 123-4567
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
 
-              {/* STEP 2: Office & Host Selection */}
+              {/* STEP 2: Office & Host Selection WITH SEARCH */}
               {step === 2 && (
                 <div className="space-y-6">
                   <div className="space-y-2">
-                    <h3 className="text-xl font-semibold flex  gap-2">
+                    <h3 className="text-xl font-semibold flex gap-2">
                       <Building className="w-5 h-5 text-brand" />
                       Office & Host Selection
                     </h3>
@@ -525,104 +631,172 @@ export default function AddReceptionform({ token }: AddReception) {
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 ">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Office Selection with Search */}
                     <FormField
                       control={form.control}
                       name="officeId"
                       render={({ field }) => (
-                        <FormItem>
+                        <FormItem className="flex flex-col">
                           <FormLabel className="flex items-center gap-2">
                             <Building className="w-4 h-4" />
                             Select Office
                           </FormLabel>
-                          <FormControl>
-                            {loadingOffices ? (
-                              <div className="h-10 w-full bg-muted rounded-md animate-pulse" />
-                            ) : offices.length > 0 ? (
-                              <Select onValueChange={field.onChange} value={field.value} >
-                                <SelectTrigger className="py-5 w-full">
-                                  <SelectValue placeholder="Select an office" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectGroup>
-                                    <SelectLabel>Available Offices</SelectLabel>
-                                    {offices.map((office) => (
-                                      <SelectItem key={office.id} value={office.id}>
-                                        {office.name}
-                                      </SelectItem>
+                          <Popover open={officePopoverOpen} onOpenChange={setOfficePopoverOpen}>
+                            <PopoverTrigger asChild>
+                              <FormControl>
+                                <Button
+                                  variant="outline"
+                                  role="combobox"
+                                  className={cn(
+                                    "w-full justify-between py-5",
+                                    !field.value && "text-muted-foreground"
+                                  )}
+                                  disabled={loadingOffices}
+                                >
+                                  {field.value
+                                    ? offices.find((o) => o.id === field.value)?.name
+                                    : "Select an office"}
+                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                              </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent
+                              className="w-full p-0"
+                              align="start"
+                              onCloseAutoFocus={(e) => e.preventDefault()}
+                            >
+                              <Command shouldFilter={false}>
+                                <CommandInput
+                                  placeholder="Search offices..."
+                                  value={officeSearch}
+                                  onValueChange={setOfficeSearch}
+                                  className="h-11"
+                                  onKeyDown={(e) => e.stopPropagation()}
+                                />
+                                <CommandList>
+                                  <CommandEmpty>No offices found.</CommandEmpty>
+                                  <CommandGroup>
+                                    {filteredOffices.map((office) => (
+                                      <CommandItem
+                                        key={office.id}
+                                        value={office.name}
+                                        onSelect={() => {
+                                          form.setValue("officeId", office.id);
+                                          setOfficeSearch("");
+                                          setOfficePopoverOpen(false); // ✅ Use top-level state
+                                        }}
+                                        className="cursor-pointer"
+                                      >
+                                        <Check
+                                          className={cn(
+                                            "mr-2 h-4 w-4",
+                                            office.id === field.value ? "opacity-100" : "opacity-0"
+                                          )}
+                                        />
+                                        <div className="flex flex-col">
+                                          <span className="font-medium">{office.name}</span>
+                                          {office.location && (
+                                            <span className="text-xs text-muted-foreground">
+                                              {office.location}
+                                            </span>
+                                          )}
+                                        </div>
+                                      </CommandItem>
                                     ))}
-                                  </SelectGroup>
-                                </SelectContent>
-                              </Select>
-                            ) : (
-                              <div className="text-center py-6 border-2 border-dashed border-muted rounded-lg bg-muted/20">
-                                <Building className="w-8 h-8 text-muted-foreground mx-auto mb-3 opacity-60" />
-                                <p className="text-muted-foreground font-medium">
-                                  No offices available
-                                </p>
-                              </div>
-                            )}
-                          </FormControl>
+                                  </CommandGroup>
+                                </CommandList>
+                              </Command>
+                            </PopoverContent>
+                          </Popover>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
-
+                    {/* Host Selection with Search */}
                     <FormField
                       control={form.control}
                       name="hostId"
                       render={({ field }) => (
-                        <FormItem>
+                        <FormItem className="flex flex-col">
                           <FormLabel className="flex items-center gap-2">
                             <User className="w-4 h-4" />
                             Select Host
                           </FormLabel>
-                          <FormControl>
-                            {loadingHosts ? (
-                              <div className="h-10 w-full bg-muted rounded-md animate-pulse" />
-                            ) : offices.length > 0 && hosts.length > 0 ? (
-                              <Select
-                                onValueChange={field.onChange}
-                                value={field.value}
-                                disabled={!form.watch("officeId")}
-                              >
-                                <SelectTrigger className="py-5 w-full">
-                                  <SelectValue
-                                    placeholder={
-                                      form.watch("officeId")
-                                        ? "Select a host"
-                                        : "Select an office first"
-                                    }
-                                  />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectGroup>
-                                    <SelectLabel>Available Hosts</SelectLabel>
-                                    {hosts.map((host) => {
+                          <Popover open={hostPopoverOpen} onOpenChange={setHostPopoverOpen}>
+                            <PopoverTrigger asChild>
+                              <FormControl>
+                                <Button
+                                  variant="outline"
+                                  role="combobox"
+                                  className={cn(
+                                    "w-full justify-between py-5",
+                                    !field.value && "text-muted-foreground"
+                                  )}
+                                  disabled={loadingHosts || !form.watch("officeId")}
+                                >
+                                  {field.value
+                                    ? (() => {
+                                      const selectedHost = hosts.find((h) => h.user_id === field.value);
+                                      return selectedHost
+                                        ? `${selectedHost.first_name} ${selectedHost.last_name}`
+                                        : "Select a host";
+                                    })()
+                                    : "Select a host"}
+                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                              </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent
+                              className="w-full p-0"
+                              align="start"
+                              onCloseAutoFocus={(e) => e.preventDefault()}
+                            >
+                              <Command shouldFilter={false}>
+                                <CommandInput
+                                  placeholder="Search hosts..."
+                                  value={hostSearch}
+                                  onValueChange={setHostSearch}
+                                  className="h-11"
+                                  onKeyDown={(e) => e.stopPropagation()}
+                                />
+                                <CommandList>
+                                  <CommandEmpty>No hosts found.</CommandEmpty>
+                                  <CommandGroup>
+                                    {filteredHosts.map((host) => {
                                       const fullName = `${host.first_name} ${host.last_name}`;
                                       return (
-                                        <SelectItem
+                                        <CommandItem
                                           key={host.user_id}
-                                          value={host.user_id}
+                                          value={fullName}
+                                          onSelect={() => {
+                                            form.setValue("hostId", host.user_id);
+                                            setHostSearch("");
+                                            setHostPopoverOpen(false); // ✅ Use top-level state
+                                          }}
+                                          className="cursor-pointer"
                                         >
-                                          {fullName}
-                                        </SelectItem>
+                                          <Check
+                                            className={cn(
+                                              "mr-2 h-4 w-4",
+                                              host.user_id === field.value ? "opacity-100" : "opacity-0"
+                                            )}
+                                          />
+                                          <div className="flex flex-col">
+                                            <span className="font-medium">{fullName}</span>
+                                            <div className="flex gap-2 text-xs text-muted-foreground">
+                                              {host.position && <span>{host.position}</span>}
+                                              {host.email && <span>• {host.email}</span>}
+                                            </div>
+                                          </div>
+                                        </CommandItem>
                                       );
                                     })}
-                                  </SelectGroup>
-                                </SelectContent>
-                              </Select>
-                            ) : (
-                              <div className="text-center py-6 border-2 border-dashed border-muted rounded-lg bg-muted/20">
-                                <User className="w-8 h-8 text-muted-foreground mx-auto mb-3 opacity-60" />
-                                <p className="text-muted-foreground font-medium">
-                                  {form.watch("officeId")
-                                    ? "No hosts available for selected office"
-                                    : "Please select an office first"}
-                                </p>
-                              </div>
-                            )}
-                          </FormControl>
+                                  </CommandGroup>
+                                </CommandList>
+                              </Command>
+                            </PopoverContent>
+                          </Popover>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -632,15 +806,19 @@ export default function AddReceptionform({ token }: AddReception) {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {form.watch("officeId") && (
                       <Badge variant="secondary" className="w-fit">
+                        <Building className="w-3 h-3 mr-1" />
                         Office: {offices.find((o) => o.id === form.watch("officeId"))?.name}
                       </Badge>
                     )}
                     {form.watch("hostId") && (
                       <Badge variant="secondary" className="w-fit">
+                        <User className="w-3 h-3 mr-1" />
                         Host: {getHostName(form.watch("hostId"))}
                       </Badge>
                     )}
                   </div>
+
+
                 </div>
               )}
 
@@ -650,10 +828,10 @@ export default function AddReceptionform({ token }: AddReception) {
                   <div className="space-y-2">
                     <h3 className="text-xl font-semibold flex gap-2">
                       <FileText className="w-5 h-5 text-brand" />
-                      Visit Purpose
+                      Visit Purpose (optional)
                     </h3>
                     <p className="text-brand-gray text-start">
-                      Describe the reason for the citizen's visit
+                      Describe the reason for the guest's visit
                     </p>
                   </div>
 
@@ -681,12 +859,12 @@ export default function AddReceptionform({ token }: AddReception) {
               {step === 4 && (
                 <div className="space-y-6">
                   <div className="space-y-2">
-                    <h3 className="text-xl font-semibold flex  gap-2">
+                    <h3 className="text-xl font-semibold flex gap-2">
                       <Clock className="w-5 h-5 text-brand" />
                       Schedule Appointment
                     </h3>
                     <p className="text-brand-gray text-start">
-                      Select the date and time for the citizen's appointment
+                      Select the date and time for the guest's appointment
                     </p>
                   </div>
 
@@ -825,7 +1003,7 @@ export default function AddReceptionform({ token }: AddReception) {
                       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium flex items-center gap-2">
                           <User className="w-4 h-4" />
-                          Citizen Information
+                          Guest Information
                         </CardTitle>
                         <Button
                           type="button"
@@ -840,8 +1018,17 @@ export default function AddReceptionform({ token }: AddReception) {
                         <p className="font-semibold">
                           {formData.firstName} {formData.lastName}
                         </p>
-                        <p className="text-sm">{formData.phone}</p>
-                        {formData.email && <p className="text-sm">{formData.email}</p>}
+                        <p className="text-sm">
+                          <strong>Phone:</strong> {formData.phone}
+                        </p>
+                        {formData.email && (
+                          <p className="text-sm">
+                            <strong>Email:</strong> {formData.email}
+                          </p>
+                        )}
+                        <Badge variant="outline" className="text-xs">
+                          Cleaned: {cleanPhoneNumber(formData.phone)}
+                        </Badge>
                       </CardContent>
                     </Card>
 
@@ -893,7 +1080,7 @@ export default function AddReceptionform({ token }: AddReception) {
                         </Button>
                       </CardHeader>
                       <CardContent>
-                        <p className="text-sm">{formData.purpose}</p>
+                        <p className="text-sm">{formData.purpose || "No purpose provided"}</p>
                       </CardContent>
                     </Card>
 
@@ -937,7 +1124,7 @@ export default function AddReceptionform({ token }: AddReception) {
                   <Button
                     type="button"
                     onClick={nextStep}
-                    className="ml-auto bg-brand hover:bg-brand/90"
+                    className="ml-auto bg-brand hover:bg-brand/90 py-4"
                   >
                     Continue
                   </Button>
@@ -961,7 +1148,7 @@ export default function AddReceptionform({ token }: AddReception) {
                     <Button
                       type="submit"
                       disabled={loading}
-                      className="bg-brand hover:bg-brand/90"
+                      className="bg-brand hover:bg-brand/90 py-4"
                     >
                       {loading ? "Creating Appointment..." : "Confirm Appointment"}
                     </Button>
@@ -972,6 +1159,6 @@ export default function AddReceptionform({ token }: AddReception) {
           </Form>
         </CardContent>
       </Card>
-    </div>
+    </div >
   );
 }

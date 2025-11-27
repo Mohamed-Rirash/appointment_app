@@ -121,9 +121,16 @@ export function PostponeAppointmentDialog({
             const newAppointmentDate = new Date(
                 `${newDate.toISOString().split('T')[0]}T${selectedTimeSlot}`
             ).toISOString();
-            //   'http://localhost/api/v1/appointments/dae1450a-6094-4b37-8b8b-a2af5a73bfe6/postpone'
+            // 'http://localhost/api/v1/appointments/dae1450a-6094-4b37-8b8b-a2af5a73bfe6/reschedule' \
+
+            console.log("pOOO", {
+                new_appointment_date: newAppointmentDate,
+                new_time_slot: selectedTimeSlot,
+                status: "PENDING",
+                reason: reason,
+            })
             const res = await fetch(
-                `${baseURL}/appointments/${appointmentId}/postpone`,
+                `${baseURL}/appointments/${appointmentId}/reschedule`,
                 {
                     method: "POST",
                     headers: {

@@ -15,11 +15,12 @@ import {
     CalendarDays,
     AlertCircle,
     RefreshCw,
-    History,
     Users,
     Filter,
     MoreVertical,
-    Sparkles
+    Sparkles,
+    Printer,
+    CheckCheck
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -32,6 +33,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Checkbox } from "@/components/ui/checkbox";
 
 // API Response Interface
 interface APIAppointment {
@@ -84,6 +86,7 @@ export function TodayAppointments({ token: propToken }: TodayAppointmentsProps) 
     const [inputValue, setInputValue] = useState("");
     const [searchTerm, setSearchTerm] = useState("");
     const [activeFilter, setActiveFilter] = useState<string>("all");
+    const [printedAppointments, setPrintedAppointments] = useState<Set<string>>(new Set());
 
     const getTodayDateString = () => {
         const today = new Date();
@@ -141,6 +144,79 @@ export function TodayAppointments({ token: propToken }: TodayAppointmentsProps) 
         setActiveFilter("all");
     };
 
+    const handlePrint = (appointment: Appointment) => {
+        // Add to printed set
+        setPrintedAppointments(prev => new Set(prev).add(appointment.id));
+
+        // Create print content
+        const printContent = `
+            <html>
+                <head>
+                    <title>Appointment - ${appointment.citizen.full_name}</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; padding: 20px; }
+                        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; }
+                        .info-row { margin: 15px 0; padding: 10px; background: #f8f9fa; border-radius: 8px; }
+                        .label { font-weight: bold; color: #667eea; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h1>Appointment Details</h1>
+                        <p>${format(new Date(), 'PPP')}</p>
+                    </div>
+                    <div class="info-row">
+                        <div class="label">Citizen:</div>
+                        <div>${appointment.citizen.full_name}</div>
+                        ${appointment.citizen.phone_number ? `<div>Phone: ${appointment.citizen.phone_number}</div>` : ''}
+                    </div>
+                    <div class="info-row">
+                        <div class="label">Host:</div>
+                        <div>${appointment.host.full_name}</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="label">Time:</div>
+                        <div>${formatTime(appointment.time_slot)}</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="label">Purpose:</div>
+                        <div>${appointment.purpose || 'General appointment'}</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="label">Status:</div>
+                        <div>${appointment.status}</div>
+                    </div>
+                </body>
+            </html>
+        `;
+
+        // Open print window
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+            printWindow.document.write(printContent);
+            printWindow.document.close();
+            printWindow.focus();
+            setTimeout(() => {
+                printWindow.print();
+                printWindow.close();
+            }, 250);
+        }
+
+        toast.success("Print dialog opened successfully");
+    };
+
+    const togglePrinted = (appointmentId: string) => {
+        setPrintedAppointments(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(appointmentId)) {
+                newSet.delete(appointmentId);
+            } else {
+                newSet.add(appointmentId);
+            }
+            return newSet;
+        });
+    };
+
     const { data: appointments, isLoading, error } = useQuery<Appointment[]>({
         queryKey: ["today-appointments", searchTerm],
         queryFn: async () => {
@@ -179,7 +255,6 @@ export function TodayAppointments({ token: propToken }: TodayAppointmentsProps) 
                 }
 
                 const data: APIAppointment[] = await response.json();
-                console.log("Data", data)
                 const todayAppointments = data.filter((appt) => appt.appointment_date.startsWith(today));
                 return todayAppointments.map((appt: APIAppointment) => transformAppointment(appt));
             }
@@ -187,7 +262,6 @@ export function TodayAppointments({ token: propToken }: TodayAppointmentsProps) 
         staleTime: 1000 * 60 * 5,
     });
 
-    console.log("DAtaapi", appointments)
     const getStatusBadge = (status: string) => {
         const variants: Record<string, {
             variant: any;
@@ -415,42 +489,6 @@ export function TodayAppointments({ token: propToken }: TodayAppointmentsProps) 
                             <Search className="h-5 w-5 mr-3" />
                             Search
                         </Button>
-
-                        {/* <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button
-                                    variant="outline"
-                                    size="lg"
-                                    className="px-6 py-6 rounded-2xl border-2 border-gray-200/60 hover:border-gray-300 transition-all duration-300"
-                                >
-                                    <Filter className="h-5 w-5 mr-2" />
-                                    Filter
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent className="w-48 rounded-2xl shadow-xl border-0 p-2">
-                                <DropdownMenuItem
-                                    onClick={() => setActiveFilter("all")}
-                                    className="rounded-xl flex items-center gap-3 p-3"
-                                >
-                                    <div className={`w-2 h-2 rounded-full ${activeFilter === "all" ? "bg-blue-500" : "bg-gray-300"}`} />
-                                    All Appointments
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    onClick={() => setActiveFilter("approved")}
-                                    className="rounded-xl flex items-center gap-3 p-3"
-                                >
-                                    <div className={`w-2 h-2 rounded-full ${activeFilter === "approved" ? "bg-green-500" : "bg-gray-300"}`} />
-                                    Approved
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    onClick={() => setActiveFilter("pending")}
-                                    className="rounded-xl flex items-center gap-3 p-3"
-                                >
-                                    <div className={`w-2 h-2 rounded-full ${activeFilter === "pending" ? "bg-amber-500" : "bg-gray-300"}`} />
-                                    Pending
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu> */}
                     </div>
                 </div>
 
@@ -516,12 +554,15 @@ export function TodayAppointments({ token: propToken }: TodayAppointmentsProps) 
                             <Table>
                                 <TableHeader>
                                     <TableRow className="bg-white hover:bg-white border-b border-gray-100">
+                                        <TableHead className="w-10 font-semibold text-gray-600 py-5 text-sm uppercase tracking-wide">
+                                            <Printer className="w-4 h-4" />
+                                        </TableHead>
                                         <TableHead className="w-28 font-semibold text-gray-600 py-5 text-sm uppercase tracking-wide">Time</TableHead>
                                         <TableHead className="font-semibold text-gray-600 py-5 text-sm uppercase tracking-wide">Citizen</TableHead>
                                         <TableHead className="font-semibold text-gray-600 py-5 text-sm uppercase tracking-wide">Host</TableHead>
                                         <TableHead className="font-semibold text-gray-600 py-5 text-sm uppercase tracking-wide">Purpose</TableHead>
                                         <TableHead className="w-36 font-semibold text-gray-600 py-5 text-sm uppercase tracking-wide">Status</TableHead>
-                                        <TableHead className="w-20 font-semibold text-gray-600 py-5 text-sm uppercase tracking-wide"></TableHead>
+                                        <TableHead className="w-20 font-semibold text-gray-600 py-5 text-sm uppercase tracking-wide">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -531,6 +572,16 @@ export function TodayAppointments({ token: propToken }: TodayAppointmentsProps) 
                                             className="hover:bg-gradient-to-r hover:from-blue-50/30 hover:to-purple-50/20 transition-all duration-300 cursor-pointer group border-b border-gray-50 last:border-b-0"
                                             onClick={() => console.log("View appointment:", appointment.id)}
                                         >
+                                            {/* Printed Checkbox */}
+                                            <TableCell className="py-5">
+                                                <Checkbox
+                                                    checked={printedAppointments.has(appointment.id)}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    onCheckedChange={() => togglePrinted(appointment.id)}
+                                                    className="rounded-lg"
+                                                />
+                                            </TableCell>
+
                                             <TableCell className="py-5">
                                                 <div className="flex items-center gap-2">
                                                     <Clock className="h-4 w-4 text-gray-400" />
@@ -544,7 +595,7 @@ export function TodayAppointments({ token: propToken }: TodayAppointmentsProps) 
                                                 <div className="flex items-center gap-4">
                                                     <Avatar className="h-11 w-11 ring-2 ring-white shadow-md">
                                                         <AvatarImage
-                                                            src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${appointment.citizen.id}`}
+                                                            src={`https://api.dicebear.com/7.x/avataaars/svg?seed= ${appointment.citizen.id}`}
                                                         />
                                                         <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-semibold">
                                                             {appointment.citizen.full_name
@@ -598,7 +649,15 @@ export function TodayAppointments({ token: propToken }: TodayAppointmentsProps) 
                                             </TableCell>
 
                                             <TableCell className="py-5">
-                                                {getStatusBadge(appointment.status)}
+                                                <div className="flex items-center gap-2">
+                                                    {getStatusBadge(appointment.status)}
+                                                    {printedAppointments.has(appointment.id) && (
+                                                        <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 border-0">
+                                                            <CheckCheck className="w-3 h-3 mr-1" />
+                                                            Printed
+                                                        </Badge>
+                                                    )}
+                                                </div>
                                             </TableCell>
 
                                             <TableCell className="py-5">
@@ -607,22 +666,21 @@ export function TodayAppointments({ token: propToken }: TodayAppointmentsProps) 
                                                         <Button
                                                             variant="ghost"
                                                             className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl"
+                                                            onClick={(e) => e.stopPropagation()}
                                                         >
                                                             <MoreVertical className="h-4 w-4" />
                                                         </Button>
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end" className="rounded-2xl shadow-xl border-0 p-2 w-48">
-                                                        <DropdownMenuItem className="rounded-xl p-3 flex items-center gap-3">
-                                                            <CalendarDays className="h-4 w-4" />
-                                                            View Details
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem className="rounded-xl p-3 flex items-center gap-3">
-                                                            <Clock className="h-4 w-4" />
-                                                            Check In
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem className="rounded-xl p-3 flex items-center gap-3 text-red-600">
-                                                            <X className="h-4 w-4" />
-                                                            Cancel
+                                                        <DropdownMenuItem
+                                                            className="rounded-xl p-3 flex items-center gap-3"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handlePrint(appointment);
+                                                            }}
+                                                        >
+                                                            <Printer className="h-4 w-4" />
+                                                            Print
                                                         </DropdownMenuItem>
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
@@ -639,35 +697,32 @@ export function TodayAppointments({ token: propToken }: TodayAppointmentsProps) 
                         {filteredAppointments.map((appointment: Appointment) => (
                             <Card
                                 key={appointment.id}
-                                className="p-6 hover:shadow-2xl transition-all duration-300 cursor-pointer border-0 shadow-lg bg-white/80 backdrop-blur-sm rounded-3xl"
-                                onClick={() => console.log("View appointment:", appointment.id)}
+                                className={cn(
+                                    "p-6 hover:shadow-2xl transition-all duration-300 cursor-pointer border-0 shadow-lg bg-white/80 backdrop-blur-sm rounded-3xl",
+                                    printedAppointments.has(appointment.id) && "ring-2 ring-emerald-200"
+                                )}
                             >
                                 <div className="flex items-start justify-between mb-4">
-                                    <div className="flex items-center gap-3 bg-gray-50 px-4 py-2 rounded-2xl">
-                                        <Clock className="h-4 w-4 text-gray-500" />
-                                        <p className="font-bold text-gray-900 font-mono">{formatTime(appointment.time_slot)}</p>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        {getStatusBadge(appointment.status)}
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" className="h-8 w-8 p-0 rounded-xl">
-                                                    <MoreVertical className="h-4 w-4" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end" className="rounded-2xl shadow-xl border-0 p-2">
-                                                <DropdownMenuItem className="rounded-xl p-3">View Details</DropdownMenuItem>
-                                                <DropdownMenuItem className="rounded-xl p-3">Check In</DropdownMenuItem>
-                                                <DropdownMenuItem className="rounded-xl p-3 text-red-600">Cancel</DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex items-center gap-2 bg-gray-50 px-4 py-2 rounded-2xl">
+                                            <Clock className="h-4 w-4 text-gray-500" />
+                                            <p className="font-bold text-gray-900 font-mono">
+                                                {formatTime(appointment.time_slot)}
+                                            </p>
+                                        </div>
+                                        {printedAppointments.has(appointment.id) && (
+                                            <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 border-0">
+                                                <CheckCheck className="w-3 h-3 mr-1" />
+                                                Printed
+                                            </Badge>
+                                        )}
                                     </div>
                                 </div>
 
                                 <div className="flex items-center gap-4 mb-4">
                                     <Avatar className="h-12 w-12 ring-2 ring-white shadow-md">
                                         <AvatarImage
-                                            src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${appointment.citizen.id}`}
+                                            src={`https://api.dicebear.com/7.x/avataaars/svg?seed= ${appointment.citizen.id}`}
                                         />
                                         <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-semibold">
                                             {appointment.citizen.full_name
@@ -677,15 +732,34 @@ export function TodayAppointments({ token: propToken }: TodayAppointmentsProps) 
                                         </AvatarFallback>
                                     </Avatar>
                                     <div className="flex-1">
-                                        <p className="font-bold text-lg text-gray-900">
+                                        <h3 className="font-bold text-lg text-gray-900">
                                             {appointment.citizen.full_name}
-                                        </p>
+                                        </h3>
                                         {appointment.citizen.phone_number && (
                                             <p className="text-sm text-gray-500 flex items-center gap-1 mt-1">
                                                 📞 {appointment.citizen.phone_number}
                                             </p>
                                         )}
                                     </div>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" className="h-8 w-8 p-0 rounded-xl">
+                                                <MoreVertical className="h-4 w-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end" className="rounded-2xl shadow-xl border-0 p-2 w-48">
+                                            <DropdownMenuItem
+                                                className="rounded-xl p-3 flex items-center gap-3"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handlePrint(appointment);
+                                                }}
+                                            >
+                                                <Printer className="h-4 w-4" />
+                                                Print
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
                                 </div>
 
                                 <div className="space-y-3 text-sm border-t border-gray-100 pt-4">
@@ -697,15 +771,15 @@ export function TodayAppointments({ token: propToken }: TodayAppointmentsProps) 
                                         </div>
                                     </div>
 
-                                    {appointment.purpose && (
-                                        <div className="flex items-start gap-3 p-3 bg-gray-50/50 rounded-2xl">
-                                            <Calendar className="h-4 w-4 text-gray-500 mt-0.5" />
-                                            <div className="flex-1">
-                                                <p className="text-xs text-gray-500">Purpose</p>
-                                                <p className="font-medium text-gray-900 leading-relaxed">{appointment.purpose}</p>
-                                            </div>
+                                    <div className="flex items-start gap-3 p-3 bg-gray-50/50 rounded-2xl">
+                                        <FileText className="h-4 w-4 text-gray-500 mt-0.5" />
+                                        <div className="flex-1">
+                                            <p className="text-xs text-gray-500">Purpose</p>
+                                            <p className="font-medium text-gray-900 leading-relaxed">
+                                                {appointment.purpose || "General appointment"}
+                                            </p>
                                         </div>
-                                    )}
+                                    </div>
 
                                     {appointment.status === "cancelled" && appointment.decisionReason && (
                                         <div className="flex items-start gap-3 p-3 bg-red-50/50 rounded-2xl">
@@ -728,6 +802,19 @@ export function TodayAppointments({ token: propToken }: TodayAppointmentsProps) 
                                             </div>
                                         </div>
                                     )}
+                                </div>
+
+                                {/* Printed Checkbox for Mobile */}
+                                <div className="mt-4 pt-4 border-t border-gray-100">
+                                    <label className="flex items-center gap-3 cursor-pointer">
+                                        <Checkbox
+                                            checked={printedAppointments.has(appointment.id)}
+                                            onClick={(e) => e.stopPropagation()}
+                                            onCheckedChange={() => togglePrinted(appointment.id)}
+                                            className="rounded-lg"
+                                        />
+                                        <span className="text-sm font-medium text-gray-700">Marked as Printed</span>
+                                    </label>
                                 </div>
                             </Card>
                         ))}
@@ -755,6 +842,3 @@ function SkeletonLoader({ rows = 5 }: { rows?: number }) {
         </CardContent>
     );
 }
-
-
-

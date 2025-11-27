@@ -132,7 +132,7 @@ interface CreateAppointmentData {
   appointment: {
     host_id: string;
     office_id: string;
-    purpose: string;
+    purpose?: string;
     appointment_date: string;
     time_slotted: string;
     status: "PENDING";
