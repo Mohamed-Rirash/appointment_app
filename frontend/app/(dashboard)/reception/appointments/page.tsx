@@ -5,7 +5,7 @@ export default async function Appointments() {
     const session = await getSession()
     const token = session?.user.access_token
     return (
-        <div>
+        <div className="p-6">
             <AppointmentList token={token} />
         </div>
     )

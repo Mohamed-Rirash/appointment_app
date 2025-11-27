@@ -97,7 +97,7 @@ interface AddReception {
 const formSchema = z.object({
   firstName: z.string().min(1, "First name is required").max(50),
   lastName: z.string().min(1, "Last name is required").max(50),
-  email: z.string().email("Invalid email format").optional().or(z.literal("")),
+  email: z.email("Invalid email format").optional().or(z.literal("")),
   phone: z
     .string()
     .min(1, "Phone number is required")
@@ -127,7 +127,7 @@ const formSchema = z.object({
       return true;
     }, "Please enter a valid phone number (e.g., 063 123 4567 or +1 555 123 4567)"),
   purpose: z.string().optional().or(z.literal("")),
-  date: z.date({ required_error: "Date is required" }),
+  date: z.date("Date is required"),
   timeSlot: z.string().min(1, "Time slot is required"),
   officeId: z.string().min(1, "Office selection is required"),
   hostId: z.string().min(1, "Host selection is required"),

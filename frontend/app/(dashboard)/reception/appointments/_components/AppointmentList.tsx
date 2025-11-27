@@ -44,8 +44,18 @@ export default function AppointmentList({ token }: { token?: string }) {
   })
 
   const updateStatusMutation = useMutation({
-    mutationFn: ({ appointmentId, status }: { appointmentId: string; status: string }) =>
-      client.updateAppointmentStatus(appointmentId, status, token!),
+    mutationFn: ({ appointmentId, status, officeId }: { appointmentId: string; status: string; officeId: string }) => {
+      if (status === "APPROVED") {
+        return client.approveAppointment(token!, appointmentId, officeId)
+      } else if (status === "DENIED") {
+        return client.rejectAppointment(token!, appointmentId, officeId, "")
+      } else if (status === "CANCELED") {
+        // For CANCELED, we'll use the decision endpoint with CANCELED status
+        // This might need to be implemented in the client if it doesn't exist
+        return client.updateAppointmentStatus(appointmentId, token!)
+      }
+      throw new Error(`Unsupported status: ${status}`)
+    },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["appointments"] })
       toast.success(`Appointment ${variables.status.toLowerCase()} successfully`, {
@@ -134,8 +144,8 @@ export default function AppointmentList({ token }: { token?: string }) {
     return !isPastAppointment && appt.status !== "COMPLETED" && appt.status !== "CANCELED"
   }
 
-  const handleStatusUpdate = (appointmentId: string, status: "APPROVED" | "DENIED" | "CANCELED") => {
-    updateStatusMutation.mutate({ appointmentId, status })
+  const handleStatusUpdate = (appointmentId: string, status: "APPROVED" | "DENIED" | "CANCELED", officeId: string) => {
+    updateStatusMutation.mutate({ appointmentId, status, officeId })
   }
 
   const totalAppointments = data?.total || 0
@@ -209,7 +219,7 @@ export default function AppointmentList({ token }: { token?: string }) {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            {isSelectedDateToday ? "Today's Appointments" : "Appointments"}
+            {isSelectedDateToday ? "My Appointments" : "Appointments"}
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
             {isSelectedDateToday ? "Manage appointments created today" : format(selectedDate, "EEEE, MMMM d, yyyy")}
@@ -375,7 +385,7 @@ export default function AppointmentList({ token }: { token?: string }) {
                           )}
                           {appt.decision_reason && (
                             <div className="flex items-center gap-2 text-muted-foreground col-span-full">
-                              <Eye className="w-4 h-4 flex-shrink-0" />
+                              <Eye className="w-4 h-4 shrink-0" />
                               <span className="italic truncate">{appt.decision_reason}</span>
                             </div>
                           )}
@@ -383,14 +393,14 @@ export default function AppointmentList({ token }: { token?: string }) {
 
                         {/* Action buttons */}
                         {canModify && (
-                          <div className="flex items-center gap-2 mt-4 pt-3 border-t">
+                          <div className="flex items-center gap-2 mt-4 pt-3">
                             {(appt.status === "PENDING" || appt.status === "APPROVED") && (
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => handleStatusUpdate(appt.appointment_id, "CANCELED")}
+                                onClick={() => handleStatusUpdate(appt.appointment_id, "CANCELED", appt.office_id)}
                                 disabled={updateStatusMutation.isPending}
-                                className="h-8 text-xs gap-1.5"
+                                className="bg-red-400  py-5 hover:bg-red-500 text-white hover:text-white font-bold w-full gap-1.5"
                               >
                                 <X className="w-3.5 h-3.5" />
                                 Cancel

@@ -20,7 +20,9 @@ import {
     MoreVertical,
     Sparkles,
     Printer,
-    CheckCheck
+    CheckCheck,
+    FileText,
+    History
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -34,6 +36,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/libs/utils";
 
 // API Response Interface
 interface APIAppointment {
@@ -202,7 +205,7 @@ export function TodayAppointments({ token: propToken }: TodayAppointmentsProps) 
             }, 250);
         }
 
-        toast.success("Print dialog opened successfully");
+
     };
 
     const togglePrinted = (appointmentId: string) => {
@@ -641,7 +644,6 @@ export function TodayAppointments({ token: propToken }: TodayAppointmentsProps) 
                                                     )}
                                                     {appointment.newAppointmentDate && (
                                                         <p className="text-xs text-blue-600 font-medium flex items-center gap-2 bg-blue-50 px-3 py-1.5 rounded-lg">
-                                                            <History className="h-3 w-3" />
                                                             Rescheduled: {formatDate(appointment.newAppointmentDate)}
                                                         </p>
                                                     )}

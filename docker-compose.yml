@@ -156,7 +156,7 @@ services:
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile
       args:
       - NEXT_PUBLIC_API_URL=/api/v1
       - NEXT_PUBLIC_API_FRONT=/api/auth

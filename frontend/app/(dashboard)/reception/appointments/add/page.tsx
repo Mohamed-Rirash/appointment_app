@@ -1,6 +1,5 @@
 import { getSession } from "@/helpers/actions/getsession";
 import { redirect } from "next/navigation";
-import AppointmentManager from "./_components/AppointmentManager";
 import AppointmentReceptionManager from "./_components/AppointmentReceptionManager";
 
 export default async function AddAppointment() {
