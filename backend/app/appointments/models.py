@@ -26,7 +26,7 @@ citizen_info = Table(
     Column("id", UUID(as_uuid=True), primary_key=True, default=uuid.uuid4),
     Column("firstname", String(100), nullable=False),
     Column("lastname", String(100), nullable=False),
-    Column("email", String(100), nullable=False),
+    Column("email", String(100), nullable=True),
     Column("phone", String(20), unique=True, nullable=False),
 )
 
@@ -45,7 +45,7 @@ appointments = Table(
     # Which office
     Column("office_id", UUID(as_uuid=True), ForeignKey("offices.id"), nullable=False),
     # Purpose of visit
-    Column("purpose", Text, nullable=False),
+    Column("purpose", Text, nullable=True),
     # Appointment date and time
     Column("appointment_date", DateTime(timezone=True), nullable=False),
     Column("time_slotted", Time, nullable=False),
