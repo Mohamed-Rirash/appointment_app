@@ -1,0 +1,122 @@
+# Name of your application. Used to uniquely configure containers.
+service: Appointment App
+
+# Name of the container image.
+image: rirash3/appointment_app
+
+# Deploy to these servers.
+servers:
+  web:
+    - 91.99.197.253
+  # job:
+  #   hosts:
+  #     - 192.168.0.1
+  #   cmd: bin/jobs
+
+# Enable SSL auto certification via Let's Encrypt and allow for multiple apps on a single web server.
+# Remove this section when using multiple web servers and ensure you terminate SSL at your load balancer.
+#
+# Note: If using Cloudflare, set encryption mode in SSL/TLS setting to "Full" to enable CF-to-app encryption.
+proxy:
+  ssl: true
+  host: deploy-with-kamal.nikolovlazar.com
+  # app_port: 8080
+  healthcheck:
+    path: /health
+    interval: 2
+    timeout: 10
+
+# Credentials for your image host.
+registry:
+  # Specify the registry server, if you're not using Docker Hub
+  #server: registry.digitalocean.com / ghcr.io / ...
+  username:
+    - KAMAL_REGISTRY_USERNAME
+  # Always use an access token rather than real password (pulled from .kamal/secrets).
+  password:
+    - KAMAL_REGISTRY_PASSWORD
+
+# Configure builder setup.
+builder:
+  arch: arm64
+  context: .
+  dockerfile: Dockerfile
+  # cache:
+  #   type: registry
+  #   options: mode=max
+  # Pass in additional build args needed for your Dockerfile.
+  # args:
+  #   RUBY_VERSION: <%= ENV["RBENV_VERSION"] || ENV["rvm_ruby_string"] || "#{RUBY_ENGINE}-#{RUBY_ENGINE_VERSION}" %>
+
+# Inject ENV variables into containers (secrets come from .kamal/secrets).
+env:
+  clear:
+    APP_NAME: 'Deploy with Kamal'
+    APP_ENV: production
+    APP_DEBUG: false
+    APP_URL: https://deploy-with-kamal.nikolovlazar.com
+    ASSET_URL: https://deploy-with-kamal.nikolovlazar.com
+    FORCE_HTTPS: true
+    DB_CONNECTION: pgsql
+    DB_HOST: db
+    DB_PORT: 5432
+    REDIS_HOST: redis
+    REDIS_PORT: 6379
+    CACHE_DRIVER: database
+    SESSION_DRIVER: database
+    QUEUE_CONNECTION: database
+    BROADCAST_DRIVER: log
+  secret:
+    - APP_KEY
+    - POSTGRES_DB
+    - POSTGRES_USER
+    - POSTGRES_PASSWORD
+    - DB_DATABASE
+    - DB_USERNAME
+    - DB_PASSWORD
+
+# Aliases are triggered with "bin/kamal <alias>". You can overwrite arguments on invocation:
+# "bin/kamal app logs -r job" will tail logs from the first server in the job section.
+# aliases:
+#   shell: app exec --interactive --reuse "bash"
+
+# Use a different ssh user than root
+ssh:
+  user: lazar-kamal
+
+# Use a persistent storage volume.
+# volumes:
+#   - 'laravel-storage:/var/www/storage'
+
+# Bridge fingerprinted assets, like JS and CSS, between versions to avoid
+# hitting 404 on in-flight requests. Combines all files from new and old
+# version inside the asset_path.
+# asset_path: /app/public/assets
+
+# Configure rolling deploys by setting a wait time between batches of restarts.
+# boot:
+#   limit: 10 # Can also specify as a percentage of total hosts, such as "25%"
+#   wait: 2
+
+# Use accessory services (secrets come from .kamal/secrets).
+accessories:
+  db:
+    image: postgres:17
+    port: '127.0.0.1:5432:5432'
+    host: 91.99.197.253
+    service: db
+    env:
+      secret:
+        - POSTGRES_DB
+        - POSTGRES_USER
+        - POSTGRES_PASSWORD
+    volumes:
+      - /mnt/web-volume/postgresql-data:/var/lib/postgresql/data
+  redis:
+    image: redis:alpine
+    port: '127.0.0.1:6379:6379'
+    service: redis
+    host: 91.99.197.253
+    volumes:
+      - /mnt/web-volume/redis-data:/data
+
