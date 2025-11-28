@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class AuthSettings(BaseSettings):
-    JWT_SECRET: str = Field(..., alias="SECRET_KEY")
+    JWT_SECRET: str = Field("secret", alias="SECRET_KEY")
     JWT_ALGORITHM: str = "HS256"  # default if missing
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 50
     REFRESH_TOKEN_EXPIRE_MINUTES: int = 10
