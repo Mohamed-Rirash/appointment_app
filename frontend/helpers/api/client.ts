@@ -792,10 +792,10 @@ export const client = {
     }
   },
 
-  // completes appointment
+  // completes appointment host
   async updateAppointmentStatus(id: string, token: string | undefined) {
     const response = await apiClient.post(
-      `http://localhost/api/v1/appointments/${id}/complete`,
+      `/appointments/${id}/complete`,
       {},
       {
         headers: { Authorization: `Bearer ${token}` },
@@ -803,8 +803,65 @@ export const client = {
     );
     return response.data;
   },
+  // concel appointmetn reception
+  async cancelAppointment(
+    id: string,
+    reason: string,
+    token: string | undefined
+  ) {
+    const response = await apiClient.post(
+      `/appointments/${id}/cancel`,
+      { reason },
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+    return response.data;
+  },
 
-  //approrove appointment
+  // reception get status
+  async getDashboardStats(token: string) {
+    const response = await apiClient.get(`/status`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  },
+
+  // reception gate search
+  async searchAppointmentss(searchTerm: string, token: string) {
+    const response = await apiClient.get(
+      `/appointments/gates/search?search=${encodeURIComponent(searchTerm)}`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+    return response.data;
+  },
+
+  // get todays appointment
+  async getReceptionAppointments(
+    token: string,
+    onDate?: string,
+    limit?: number,
+    offset?: number,
+    status?: string
+  ) {
+    const params = new URLSearchParams();
+    if (onDate) params.append("on_date", onDate);
+    if (limit) params.append("limit", limit.toString());
+    if (offset) params.append("offset", offset.toString());
+    if (status) params.append("status", status);
+
+    const response = await apiClient.get(
+      `/views/reception/appointments?${params}`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+    return response.data;
+  },
+
+  //approrove appointment host
   async approveAppointment(
     token: string | undefined,
     appointmentId: string,
@@ -823,6 +880,7 @@ export const client = {
     return responce.data;
   },
 
+  // rejection appointment host
   async rejectAppointment(
     token: string | undefined,
     appointmentId: string,

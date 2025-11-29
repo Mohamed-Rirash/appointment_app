@@ -1,13 +1,13 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/helpers/actions/getsession";
-import Dashboard from "./components/Dashboard";
+import TodayAppointments from "./_components/todaysAppointment";
 
 export const metadata = {
     title: "Reception Desk - KulanDesk",
     description: "",
 };
 
-export default async function ReceptionDashboard() {
+export default async function TodaysAppointment() {
     const session = await getSession();
     const token = session?.user.access_token;
 
@@ -15,16 +15,10 @@ export default async function ReceptionDashboard() {
         redirect("/Signin");
     }
 
-    const today = new Date().toLocaleDateString("en-US", {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-    });
 
     return (
         <div className="p-6">
-            <Dashboard token={token} />
+            <TodayAppointments token={token} />
         </div>
     );
 }

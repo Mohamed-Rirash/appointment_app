@@ -7,12 +7,13 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
 import { format, parseISO, isToday, isPast, startOfDay } from "date-fns"
 import {
   CalendarIcon,
   Clock,
   FileText,
-  Eye,
   RefreshCw,
   Users,
   CalendarDays,
@@ -24,6 +25,7 @@ import {
   X,
   Phone,
   Sparkles,
+  User,
 } from "lucide-react"
 import { useState } from "react"
 import { cn } from "@/libs/utils"
@@ -35,6 +37,9 @@ export default function AppointmentList({ token }: { token?: string }) {
   const [isCalendarOpen, setIsCalendarOpen] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize] = useState(20)
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null)
+  const [cancelReason, setCancelReason] = useState("")
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["appointments", format(selectedDate, "yyyy-MM-dd"), currentPage],
@@ -43,27 +48,19 @@ export default function AppointmentList({ token }: { token?: string }) {
     enabled: !!token,
   })
 
-  const updateStatusMutation = useMutation({
-    mutationFn: ({ appointmentId, status, officeId }: { appointmentId: string; status: string; officeId: string }) => {
-      if (status === "APPROVED") {
-        return client.approveAppointment(token!, appointmentId, officeId)
-      } else if (status === "DENIED") {
-        return client.rejectAppointment(token!, appointmentId, officeId, "")
-      } else if (status === "CANCELED") {
-        // For CANCELED, we'll use the decision endpoint with CANCELED status
-        // This might need to be implemented in the client if it doesn't exist
-        return client.updateAppointmentStatus(appointmentId, token!)
-      }
-      throw new Error(`Unsupported status: ${status}`)
-    },
-    onSuccess: (_, variables) => {
+  // Proper cancel mutation using the correct endpoint
+  const cancelMutation = useMutation({
+    mutationFn: ({ appointmentId, reason }: { appointmentId: string; reason: string }) =>
+      client.cancelAppointment(appointmentId, reason, token!),
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["appointments"] })
-      toast.success(`Appointment ${variables.status.toLowerCase()} successfully`, {
-        icon: variables.status === "APPROVED" ? "✅" : variables.status === "CANCELED" ? "🚫" : "❌",
-      })
+      toast.success("Appointment cancelled successfully")
+      setCancelDialogOpen(false)
+      setCancelReason("")
+      setSelectedAppointment(null)
     },
     onError: (error: any) => {
-      const errorMessage = error.response?.data?.detail?.message || error.message || "Failed to update appointment"
+      const errorMessage = error.response?.data?.detail?.message || error.message || "Failed to cancel appointment"
       toast.error(errorMessage)
     },
   })
@@ -94,41 +91,47 @@ export default function AppointmentList({ token }: { token?: string }) {
         label: "Declined",
         description: "Host declined this request",
       },
-      CANCELED: {
-        bg: "bg-muted",
-        text: "text-muted-foreground",
-        border: "border-border",
-        dot: "bg-muted-foreground",
-        label: "Canceled",
-        description: "Appointment was canceled",
+      CANCELLED: {
+        bg: "bg-gray-500/10",
+        text: "text-gray-600",
+        border: "border-gray-200",
+        dot: "bg-gray-500",
+        label: "Cancelled",
+        description: "Appointment was cancelled",
       },
       COMPLETED: {
-        bg: "bg-sky-500/10",
-        text: "text-sky-600",
-        border: "border-sky-200",
-        dot: "bg-sky-500",
+        bg: "bg-blue-500/10",
+        text: "text-blue-600",
+        border: "border-blue-200",
+        dot: "bg-blue-500",
         label: "Completed",
         description: "Meeting finished successfully",
       },
+      NO_SHOW: {
+        bg: "bg-red-500/10",
+        text: "text-red-600",
+        border: "border-red-200",
+        dot: "bg-red-500",
+        label: "No Show",
+        description: "Citizen did not attend",
+      },
       POSTPONED: {
-        bg: "bg-violet-500/10",
-        text: "text-violet-600",
-        border: "border-violet-200",
-        dot: "bg-violet-500",
-        label: "Rescheduled",
-        description: "Moved to another time",
+        bg: "bg-purple-500/10",
+        text: "text-purple-600",
+        border: "border-purple-200",
+        dot: "bg-purple-500",
+        label: "Postponed",
+        description: "Appointment was rescheduled",
       },
     }
-    return (
-      configs[status as keyof typeof configs] || {
-        bg: "bg-muted",
-        text: "text-muted-foreground",
-        border: "border-border",
-        dot: "bg-muted-foreground",
-        label: status,
-        description: "",
-      }
-    )
+    return configs[status as keyof typeof configs] || {
+      bg: "bg-muted",
+      text: "text-muted-foreground",
+      border: "border-border",
+      dot: "bg-muted-foreground",
+      label: status,
+      description: "",
+    }
   }
 
   const isAppointmentPast = (appointmentDate: string, timeSlotted: string) => {
@@ -138,14 +141,27 @@ export default function AppointmentList({ token }: { token?: string }) {
 
   const isSelectedDateToday = isToday(selectedDate)
 
-  const canModifyAppointment = (appt: Appointment) => {
+  const canCancelAppointment = (appt: Appointment) => {
     const appointmentDateTime = parseISO(`${appt.appointment_date}T${appt.time_slotted}`)
     const isPastAppointment = isPast(appointmentDateTime)
-    return !isPastAppointment && appt.status !== "COMPLETED" && appt.status !== "CANCELED"
+    // Reception can only cancel pending or approved appointments that haven't passed
+    return !isPastAppointment && (appt.status === "PENDING" || appt.status === "APPROVED")
   }
 
-  const handleStatusUpdate = (appointmentId: string, status: "APPROVED" | "DENIED" | "CANCELED", officeId: string) => {
-    updateStatusMutation.mutate({ appointmentId, status, officeId })
+  const handleCancelClick = (appt: Appointment) => {
+    setSelectedAppointment(appt)
+    setCancelDialogOpen(true)
+  }
+
+  const handleCancelConfirm = () => {
+    if (selectedAppointment && cancelReason.trim()) {
+      cancelMutation.mutate({
+        appointmentId: selectedAppointment.appointment_id,
+        reason: cancelReason.trim()
+      })
+    } else {
+      toast.error("Please provide a cancellation reason")
+    }
   }
 
   const totalAppointments = data?.total || 0
@@ -180,7 +196,7 @@ export default function AppointmentList({ token }: { token?: string }) {
         <div className="space-y-3">
           {[...Array(4)].map((_, i) => (
             <div key={i} className="flex gap-4 p-4 rounded-xl border bg-card">
-              <Skeleton className="h-16 w-16 rounded-lg flex-shrink-0" />
+              <Skeleton className="h-16 w-16 rounded-lg shrink-0" />
               <div className="space-y-2 flex-1">
                 <Skeleton className="h-5 w-48" />
                 <Skeleton className="h-4 w-32" />
@@ -249,9 +265,9 @@ export default function AppointmentList({ token }: { token?: string }) {
             </PopoverContent>
           </Popover>
 
-          <Button variant="ghost" size="icon" onClick={() => refetch()} disabled={isLoading} className="h-9 w-9">
+          {/* <Button variant="ghost" size="icon" onClick={() => refetch()} disabled={isLoading} className="h-9 w-9">
             <RefreshCw className={cn("w-4 h-4", isLoading && "animate-spin")} />
-          </Button>
+          </Button> */}
 
           {!isSelectedDateToday && (
             <Button
@@ -316,15 +332,15 @@ export default function AppointmentList({ token }: { token?: string }) {
               const statusConfig = getStatusConfig(appt.status)
               const appointmentDate = parseISO(appt.appointment_date)
               const isAppointmentToday = isToday(appointmentDate)
-              const canModify = canModifyAppointment(appt)
+              const canCancel = canCancelAppointment(appt)
 
               return (
                 <Card
                   key={appt.appointment_id}
                   className={cn(
-                    "group transition-all duration-200 hover:shadow-md",
+                    "group transition-all duration-200 hover:shadow-md  border-none!  bg-linear-to-br from-brand-primary/40 to-brand-primary shadow-gren",
                     isPastAppointment && "opacity-60",
-                    updateStatusMutation.isPending && "pointer-events-none opacity-70",
+                    cancelMutation.isPending && "pointer-events-none opacity-70",
                   )}
                 >
                   <CardContent className="p-4">
@@ -332,7 +348,7 @@ export default function AppointmentList({ token }: { token?: string }) {
                       {/* Time block */}
                       <div
                         className={cn(
-                          "flex-shrink-0 w-16 h-16 rounded-lg flex flex-col items-center justify-center text-center transition-colors",
+                          "shrink-0 w-16 h-16 rounded-lg flex flex-col items-center justify-center text-center transition-colors",
                           isPastAppointment ? "bg-muted text-muted-foreground" : "bg-primary/5 text-primary",
                         )}
                       >
@@ -345,14 +361,17 @@ export default function AppointmentList({ token }: { token?: string }) {
                         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-3">
                           <div>
                             <h3 className="font-semibold text-foreground truncate">{fullName}</h3>
-                            <p className="text-sm text-muted-foreground">{statusConfig.description}</p>
+                            <p className="text-sm text-muted-foreground flex items-center gap-1">
+                              <User className="w-3.5 h-3.5" />
+                              Host: {appt.host_first_name} {appt.host_last_name}
+                            </p>
                           </div>
 
                           {/* Status badge */}
                           <Badge
                             variant="outline"
                             className={cn(
-                              "flex-shrink-0 font-medium",
+                              "shrink-0 font-medium",
                               statusConfig.bg,
                               statusConfig.text,
                               statusConfig.border,
@@ -364,10 +383,10 @@ export default function AppointmentList({ token }: { token?: string }) {
                         </div>
 
                         {/* Details grid */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                        <div className=" text-sm flex flex-col gap-y-2 ">
                           {appt.purpose && (
                             <div className="flex items-center gap-2 text-muted-foreground">
-                              <FileText className="w-4 h-4 flex-shrink-0" />
+                              <FileText className="w-4 h-4 shrink-0" />
                               <span className="truncate">{appt.purpose}</span>
                             </div>
                           )}
@@ -383,29 +402,21 @@ export default function AppointmentList({ token }: { token?: string }) {
                               <span>{format(appointmentDate, "MMM d, yyyy")}</span>
                             </div>
                           )}
-                          {appt.decision_reason && (
-                            <div className="flex items-center gap-2 text-muted-foreground col-span-full">
-                              <Eye className="w-4 h-4 shrink-0" />
-                              <span className="italic truncate">{appt.decision_reason}</span>
-                            </div>
-                          )}
                         </div>
 
-                        {/* Action buttons */}
-                        {canModify && (
-                          <div className="flex items-center gap-2 mt-4 pt-3">
-                            {(appt.status === "PENDING" || appt.status === "APPROVED") && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleStatusUpdate(appt.appointment_id, "CANCELED", appt.office_id)}
-                                disabled={updateStatusMutation.isPending}
-                                className="bg-red-400  py-5 hover:bg-red-500 text-white hover:text-white font-bold w-full gap-1.5"
-                              >
-                                <X className="w-3.5 h-3.5" />
-                                Cancel
-                              </Button>
-                            )}
+                        {/* Cancel button - only show if appointment can be cancelled */}
+                        {canCancel && (
+                          <div className="flex items-center gap-2 mt-4 pt-3 border-t">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleCancelClick(appt)}
+                              disabled={cancelMutation.isPending}
+                              className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 gap-1.5"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                              Cancel Appointment
+                            </Button>
                           </div>
                         )}
                       </div>
@@ -536,6 +547,65 @@ export default function AppointmentList({ token }: { token?: string }) {
           )}
         </div>
       )}
+
+      {/* Cancel Confirmation Dialog */}
+      <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cancel Appointment</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to cancel this appointment? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {selectedAppointment && (
+              <div className="bg-muted/50 p-3 rounded-lg text-sm">
+                <p><strong>Citizen:</strong> {selectedAppointment.citizen_firstname} {selectedAppointment.citizen_lastname}</p>
+                <p><strong>Time:</strong> {format(parseISO(selectedAppointment.appointment_date), "MMM d, yyyy")} at {selectedAppointment.time_slotted.substring(0, 5)}</p>
+                <p><strong>Purpose:</strong> {selectedAppointment.purpose || "Not specified"}</p>
+                <p><strong>Host:</strong> {selectedAppointment.host_first_name} {selectedAppointment.host_last_name}</p>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <label htmlFor="cancel-reason" className="text-sm font-medium">
+                Cancellation Reason *
+              </label>
+              <Input
+                id="cancel-reason"
+                placeholder="Please provide a reason for cancellation..."
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                className="w-full"
+              />
+              <p className="text-xs text-muted-foreground">
+                This reason will be recorded and visible to the host.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setCancelDialogOpen(false)
+                setCancelReason("")
+                setSelectedAppointment(null)
+              }}
+            >
+              Keep Appointment
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleCancelConfirm}
+              disabled={!cancelReason.trim() || cancelMutation.isPending}
+            >
+              {cancelMutation.isPending ? "Cancelling..." : "Confirm Cancellation"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
