@@ -1,3 +1,10 @@
+.vscode
+node_modules/
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
 # appointement_booking_app - Git Ignore File
 
 # Byte-compiled / optimized / DLL files
@@ -33,7 +40,7 @@ nb/
 MANIFEST
 .next/
 .kamal/
-deploy.yml
+
 # PyInstaller
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
@@ -58,6 +65,9 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 cover/
+/scripts/
+.pre-commit-config.yaml
+
 
 # Translations
 *.mo
@@ -309,4 +319,5 @@ docs/build/
 
 # Copier answers (keep for updates)
 # .copier-answers.yml
+
 

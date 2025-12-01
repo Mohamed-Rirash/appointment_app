@@ -1,380 +1,228 @@
-# Appointment Booking Application
+# 🗓️ MocaadApp - Appointment Booking System
 
-A modern, production-ready full-stack web application for managing appointments and office scheduling. Built with FastAPI, Next.js, and PostgreSQL, featuring comprehensive authentication, role-based access control, and a professional admin dashboard.
+A full-stack appointment booking and visitor management system built with **FastAPI** and **Next.js**.
 
-## 📋 Table of Contents
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Python](https://img.shields.io/badge/python-3.11+-green.svg)
+![Next.js](https://img.shields.io/badge/next.js-16-black.svg)
+![Docker](https://img.shields.io/badge/docker-ready-blue.svg)
 
-- [Overview](#overview)
-- [Technology Stack](#technology-stack)
-- [Key Features](#key-features)
-- [Quick Start](#quick-start)
-- [Project Structure](#project-structure)
-- [Documentation](#documentation)
-- [License](#license)
+---
 
-## Overview
+## 📋 Overview
 
-This application provides a complete solution for appointment booking and office management with:
+MocaadApp is a comprehensive appointment booking system that enables organizations to manage visitor appointments, check-ins, and office resources efficiently.
 
-- **Multi-tenant office management** with customizable scheduling
-- **Role-based access control (RBAC)** with admin, staff, and user roles
-- **Secure authentication** using JWT tokens with refresh token rotation
-- **Professional admin dashboard** for user and office management
-- **Responsive design** with dark mode support
-- **Production-ready deployment** with Docker and Nginx
+### ✨ Key Features
 
-## Technology Stack
+| Feature | Description |
+|---------|-------------|
+| 🔐 **Role-Based Access** | Admin, Host, and Reception roles with specific permissions |
+| 📅 **Appointment Management** | Create, schedule, reschedule, and cancel appointments |
+| 🏢 **Office Management** | Manage multiple offices and locations |
+| 👥 **Visitor Check-in** | QR code and walk-in check-in support |
+| 📧 **Email Notifications** | Automated email confirmations and reminders |
+| 📱 **SMS Notifications** | Optional SMS alerts for appointments |
+| 📊 **Dashboard Analytics** | Real-time statistics and reporting |
+| 🔒 **Secure Authentication** | JWT-based auth with password hashing |
+
+---
+
+## 🏗️ Tech Stack
 
 ### Backend
-- **[FastAPI](https://fastapi.tiangolo.com)** - Modern Python web framework
-  - **[SQLModel](https://sqlmodel.tiangolo.com)** - SQL ORM with Pydantic integration
-  - **[PostgreSQL](https://www.postgresql.org)** - Relational database
-  - **[Pydantic](https://docs.pydantic.dev)** - Data validation and settings management
-  - **[Alembic](https://alembic.sqlalchemy.org)** - Database migrations
-  - **[Pytest](https://pytest.org)** - Testing framework
+- ⚡ **FastAPI** - High-performance Python web framework
+- 🗄️ **SQLAlchemy** + **SQLModel** - Database ORM
+- 🐘 **PostgreSQL** - Database
+- 🔐 **JWT** - Authentication
+- 📧 **FastAPI-Mail** - Email notifications
+- ✅ **Pytest** - Testing
 
 ### Frontend
-- **[Next.js](https://nextjs.org)** - React framework with TypeScript
-  - **[React 18+](https://react.dev)** - UI library
-  - **[TanStack Query](https://tanstack.com/query)** - Server state management
-  - **[TanStack Router](https://tanstack.com/router)** - Client-side routing
-  - **[Chakra UI](https://chakra-ui.com)** - Component library
-  - **[NextAuth.js](https://next-auth.js.org)** - Authentication
-  - **[Playwright](https://playwright.dev)** - E2E testing
+- ⚛️ **Next.js 16** - React framework
+- 🎨 **TailwindCSS 4** - Styling
+- 📦 **Zustand** - State management
+- 🔄 **React Query** - Server state
+- 🧩 **Radix UI** - Components
+- 📝 **React Hook Form** + **Zod** - Forms & validation
 
 ### Infrastructure
-- **[Docker Compose](https://www.docker.com)** - Container orchestration
-- **[Nginx](https://nginx.org)** - Reverse proxy and load balancer
-- **[Redis](https://redis.io)** - Caching and session management
-- **[Mailpit](https://mailpit.axllent.org)** - Email testing (development)
+- 🐳 **Docker** - Containerization
+- 🔀 **Traefik** - Reverse proxy with auto SSL
+- 🔒 **Let's Encrypt** - SSL certificates
 
-## Key Features
+---
 
-### Authentication & Security
-- ✅ JWT-based authentication with secure token refresh
-- ✅ CSRF protection with double-submit cookie pattern
-- ✅ Secure password hashing (bcrypt)
-- ✅ Email-based password recovery
-- ✅ Role-based access control (RBAC)
-- ✅ User verification and activation workflows
-
-### Admin Dashboard
-- 👥 User management (create, edit, deactivate, suspend)
-- 🏢 Office management with location tracking
-- 📊 User statistics and activity monitoring
-- 🔐 Role and permission assignment
-- 📧 Email invitation system
-
-### Appointment Management
-- 📅 Office-based scheduling
-- 🕐 Time slot management
-- 👤 Host assignment and availability
-- 📝 Appointment tracking and history
-
-### Developer Experience
-- 🔄 Hot-reload development environment
-- 📚 Auto-generated API documentation (Swagger UI)
-- 🧪 Comprehensive test suite
-- 🐛 VS Code debugger integration
-- 📝 Structured logging with JSON output
-
-## Quick Start
+## 🚀 Quick Start
 
 ### Prerequisites
 
-- **Docker** and **Docker Compose** (recommended)
-- **Python 3.11+** (for local development)
-- **Node.js 20+** (for frontend development)
-- **uv** (Python package manager, optional but recommended)
+- Docker & Docker Compose
+- Git
 
-### Using Docker Compose (Recommended)
-
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd appointment_app
-   ```
-
-2. **Configure environment variables**
-   ```bash
-   # Copy the example .env file
-   cp .env.example .env
-
-   # Update critical values in .env:
-   # - SECRET_KEY (generate with: python -c "import secrets; print(secrets.token_urlsafe(32))")
-   # - FIRST_SUPERUSER_PASSWORD
-   # - POSTGRES_PASSWORD
-   ```
-
-3. **Start the application**
-   ```bash
-   docker-compose up -d
-   ```
-
-4. **Access the application**
-   - Frontend: http://localhost
-   - API Documentation: http://localhost/docs
-   - Admin Email: admin@gmail.com (default)
-   - Admin Password: Check your `.env` file
-
-### Local Development
-
-#### Backend Setup
+### Development Setup
 
 ```bash
-cd backend
+# Clone the repository
+git clone <repository-url>
+cd appointment_booking_app
 
-# Install dependencies
-uv sync
+# Start development environment
+docker compose up -d
 
-# Activate virtual environment
-source .venv/bin/activate
-
-# Run migrations
-alembic upgrade head
-
-# Start development server
-fastapi run --reload app/main.py
+# View logs
+docker compose logs -f
 ```
 
-#### Frontend Setup
+### Access Development URLs
 
-```bash
-cd frontend
+| Service | URL |
+|---------|-----|
+| Frontend | http://localhost:5173 |
+| Backend API | http://localhost:8000 |
+| API Docs | http://localhost:8000/docs |
 
-# Install dependencies
-pnpm install
+### Default Credentials
 
-# Start development server
-pnpm dev
+- **Email**: `admin@example.com`
+- **Password**: `changethis`
+
+---
+
+## 📁 Project Structure
+
 ```
-
-## Project Structure
-
-```
-appointment_app/
-├── backend/                    # FastAPI application
+appointment_booking_app/
+├── backend/                 # FastAPI Backend
 │   ├── app/
-│   │   ├── api/               # API routes
-│   │   ├── auth/              # Authentication & RBAC
-│   │   ├── core/              # Core utilities (security, middleware)
-│   │   ├── models.py          # SQLModel definitions
-│   │   ├── crud.py            # Database operations
-│   │   └── main.py            # Application entry point
-│   ├── tests/                 # Test suite
-│   ├── alembic/               # Database migrations
-│   ├── Dockerfile             # Backend container
-│   └── pyproject.toml         # Python dependencies
-│
-├── frontend/                   # Next.js application
-│   ├── app/                   # Next.js app directory
-│   │   ├── (auth)/            # Authentication pages
-│   │   ├── (dashboard)/       # Protected dashboard pages
-│   │   └── api/               # API routes
-│   ├── components/            # React components
-│   ├── helpers/               # Utilities and API client
-│   ├── hooks/                 # Custom React hooks
-│   ├── Dockerfile             # Frontend container
-│   └── package.json           # Node dependencies
-│
-├── docker-compose.yml         # Service orchestration
-├── nginx.conf                 # Reverse proxy configuration
-└── .env                       # Environment variables
+│   │   ├── admin/          # Admin module
+│   │   ├── appointments/   # Appointments module
+│   │   ├── auth/           # Authentication module
+│   │   ├── notifications/  # Email/SMS notifications
+│   │   ├── office_mgnt/    # Office management
+│   │   └── main.py         # Application entry
+│   ├── tests/              # Backend tests
+│   └── Dockerfile
+├── frontend/               # Next.js Frontend
+│   ├── app/
+│   │   ├── (auth)/        # Auth pages (login, register)
+│   │   ├── (dashboard)/   # Dashboard pages
+│   │   └── api/           # API routes
+│   ├── components/        # UI components
+│   ├── helpers/           # Utilities & hooks
+│   └── Dockerfile
+├── docker-compose.yml      # Development config
+├── docker-compose.prod.yml # Production config
+└── .env.production         # Production environment
 ```
 
-## Documentation
+---
 
-### Detailed Guides
+## 🔧 Configuration
 
-- **[Backend Documentation](./backend/README.md)** - API development, testing, migrations, and deployment
-- **[Frontend Documentation](./frontend/README.md)** - UI development and component usage
-- **[Development Guide](./development.md)** - Local development setup and workflows
-- **[Deployment Guide](./deployment.md)** - Production deployment instructions
+### Environment Variables
 
-### API Documentation
+Create a `.env` file in the root directory:
 
-Once the application is running, access the interactive API documentation:
+```env
+# Database
+POSTGRES_SERVER=db
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=changethis
+POSTGRES_DB=app
 
-- **Swagger UI**: http://localhost/docs
-- **ReDoc**: http://localhost/redoc
-- **OpenAPI Schema**: http://localhost/openapi.json
+# Security
+SECRET_KEY=your-secret-key-here
 
-### Environment Configuration
+# Email (Gmail)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASSWORD=your-app-password
 
-Key environment variables to configure:
+# Admin User
+FIRST_SUPERUSER=admin@example.com
+FIRST_SUPERUSER_PASSWORD=changethis
+```
 
-| Variable | Purpose | Example |
-|----------|---------|---------|
-| `SECRET_KEY` | JWT signing key | `python -c "import secrets; print(secrets.token_urlsafe(32))"` |
-| `ENVIRONMENT` | Deployment environment | `local`, `development`, `staging`, `production` |
-| `FRONTEND_HOST` | Frontend URL for links | `http://localhost` or `https://example.com` |
-| `POSTGRES_PASSWORD` | Database password | Generate a secure password |
-| `FIRST_SUPERUSER` | Admin email | `admin@example.com` |
-| `FIRST_SUPERUSER_PASSWORD` | Admin password | Secure password |
-| `SMTP_HOST` | Email server | `smtp.gmail.com` or `mailpit` (dev) |
+Generate secure keys with:
+```bash
+openssl rand -base64 32
+```
 
-See `.env` file for complete configuration options.
+---
 
-## Common Tasks
+## 🐳 Docker Commands
 
-### Running Tests
+```bash
+# Development
+docker compose up -d                    # Start all services
+docker compose down                     # Stop all services
+docker compose logs -f                  # View logs
+docker compose exec backend bash        # Shell into backend
+
+# Production
+docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+docker compose -f docker-compose.prod.yml --env-file .env.production down
+docker compose -f docker-compose.prod.yml --env-file .env.production logs -f
+```
+
+---
+
+## 👥 User Roles
+
+| Role | Permissions |
+|------|-------------|
+| **Admin** | Full system access, user management, office management |
+| **Host** | Manage own appointments, set availability |
+| **Reception** | Check-in visitors, manage walk-ins |
+
+---
+
+## 📚 Documentation
+
+| Document | Description |
+|----------|-------------|
+| [Backend README](./backend/README.md) | Backend API documentation |
+| [Frontend README](./frontend/README.md) | Frontend documentation |
+| [Deployment Guide](./DEPLOYMENT_GUIDE.md) | Production deployment |
+| [Development Guide](./development.md) | Development setup |
+
+---
+
+## 🧪 Testing
 
 ```bash
 # Backend tests
 cd backend
-bash scripts/test.sh
+pytest
 
-# Frontend E2E tests
-cd frontend
-pnpm test:e2e
+# With coverage
+pytest --cov=app --cov-report=html
 ```
-
-### Database Migrations
-
-```bash
-# Create a new migration
-docker compose exec backend alembic revision --autogenerate -m "Description"
-
-# Apply migrations
-docker compose exec backend alembic upgrade head
-
-# Rollback last migration
-docker compose exec backend alembic downgrade -1
-```
-
-### Accessing Services
-
-```bash
-# Backend shell
-docker compose exec backend bash
-
-# Frontend shell
-docker compose exec frontend sh
-
-# Database shell
-docker compose exec db psql -U postgres -d app
-
-# View logs
-docker compose logs -f backend
-docker compose logs -f frontend
-```
-
-### Generating Secret Keys
-
-```bash
-python -c "import secrets; print(secrets.token_urlsafe(32))"
-```
-
-## Architecture
-
-### Authentication Flow
-
-1. User logs in with email/password
-2. Backend validates credentials and issues JWT tokens
-3. Access token stored in memory, refresh token in httpOnly cookie
-4. CSRF token issued for double-submit protection
-5. Subsequent requests include access token in Authorization header
-6. Token refresh handled automatically via refresh endpoint
-
-### API Architecture
-
-- **RESTful API** with standard HTTP methods
-- **Role-based access control** enforced at endpoint level
-- **Request/response validation** using Pydantic models
-- **Structured error responses** with detailed error messages
-- **Rate limiting** on sensitive endpoints
-- **CORS** configured for frontend origin
-
-### Database Schema
-
-- **Users** - User accounts with roles and permissions
-- **Offices** - Office locations with scheduling configuration
-- **Appointments** - Booking records with time slots
-- **Roles & Permissions** - RBAC configuration
-- **Token Denylist** - Revoked tokens for logout
-
-## Performance & Security
-
-### Performance Optimizations
-- Database query optimization with indexed lookups
-- Redis caching for frequently accessed data
-- Connection pooling for database and Redis
-- Gzip compression for API responses
-- Static asset caching with proper headers
-
-### Security Features
-- HTTPS/TLS in production
-- CSRF protection with double-submit cookies
-- SQL injection prevention via parameterized queries
-- XSS protection via Content Security Policy headers
-- Rate limiting on authentication endpoints
-- Secure password hashing with bcrypt
-- JWT token expiration and refresh rotation
-- CORS configuration for frontend origin only
-
-## Troubleshooting
-
-### Common Issues
-
-**Port already in use**
-```bash
-# Find and kill process using port 80
-lsof -i :80
-kill -9 <PID>
-```
-
-**Database connection errors**
-```bash
-# Check database is running
-docker compose ps db
-
-# View database logs
-docker compose logs db
-```
-
-**Frontend not connecting to API**
-- Verify `NEXT_PUBLIC_API_URL` is set to `/api/v1`
-- Check nginx proxy is running: `docker compose ps nginx`
-- Verify CORS origins in backend `.env`
-
-**CSRF token errors**
-- Ensure cookies are enabled in browser
-- Check that `X-CSRF-Token` header is being sent
-- Verify cookie domain matches request domain
-
-### Getting Help
-
-- Check logs: `docker compose logs -f <service>`
-- Review API docs: http://localhost/docs
-- Check backend README: [backend/README.md](./backend/README.md)
-- Check frontend README: [frontend/README.md](./frontend/README.md)
-
-## Contributing
-
-1. Create a feature branch: `git checkout -b feature/your-feature`
-2. Make your changes and commit: `git commit -am 'Add feature'`
-3. Push to branch: `git push origin feature/your-feature`
-4. Submit a pull request
-
-### Code Standards
-
-- **Backend**: Follow PEP 8, use type hints, write tests
-- **Frontend**: Use TypeScript, follow ESLint rules, write tests
-- **Commits**: Use conventional commit messages
-- **Documentation**: Update docs for API changes
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Support
-
-For issues, questions, or suggestions:
-- Open an issue on GitHub
-- Check existing documentation
-- Review API documentation at http://localhost/docs
 
 ---
 
-**Last Updated**: October 2025
-**Version**: 1.0.0
+## 🌐 Production URLs
+
+| Service | URL |
+|---------|-----|
+| Frontend | https://dashboard.mocaadapp.org |
+| Backend API | https://api.mocaadapp.org |
+| API Docs | https://api.mocaadapp.org/docs |
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file.
+
+---
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
