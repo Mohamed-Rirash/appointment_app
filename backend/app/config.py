@@ -36,6 +36,37 @@ def parse_cors(v: Any) -> list[str]:
         raise ValueError(f"Invalid CORS origin format: {v}")
 
 
+def parse_hosts(v: Any) -> list[str]:
+    """
+    Parse allowed hosts from environment variable.
+    Handles:
+      - Comma-separated strings: "host1,host2"
+      - JSON arrays: '["host1","host2"]'
+      - Empty values: "" or unset → []
+      - Lists (for programmatic use)
+    Always returns list[str].
+    """
+    if v is None:
+        return []
+    if isinstance(v, str):
+        v = v.strip()
+        if not v:
+            return []
+        # Try JSON first
+        if v.startswith("["):
+            import json
+            try:
+                return json.loads(v)
+            except (json.JSONDecodeError, ValueError):
+                pass
+        # Fall back to comma-separated
+        return [host.strip() for host in v.split(",") if host.strip()]
+    elif isinstance(v, list | tuple):
+        return [str(host).strip() for host in v if host]
+    else:
+        raise ValueError(f"Invalid allowed hosts format: {v}")
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env", env_ignore_empty=True, extra="ignore"
@@ -53,28 +84,30 @@ class Settings(BaseSettings):
     # --------------------
     # SECURITY & AUTH
     # --------------------
-    SECRET_KEY: str = "secret"
+    SECRET_KEY: str = "CHANGE_ME_TO_STRONG_SECRET_32_CHARS_MIN"
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 15  # 15 minutes - reduced from 24 hours
+    REFRESH_TOKEN_EXPIRE_MINUTES: int = 10080  # 7 days
     # Optional JWT hardening
     JWT_ISSUER: str | None = None
     JWT_AUDIENCE: str | None = None
-    JWT_DENYLIST_ENABLED: bool = False
+    JWT_DENYLIST_ENABLED: bool = True  # Enable token denylist for logout
 
     # --------------------
     # DATABASE
     # --------------------
 
-    POSTGRES_SERVER: str = "db"
-    POSTGRES_PORT: int = 5432
-    POSTGRES_USER: str = "postgres"
-    POSTGRES_PASSWORD: str = "postgres"
-    POSTGRES_DB: str = "appointement_app"
+    POSTGRES_SERVER: str
+    POSTGRES_PORT: int
+    POSTGRES_USER: str
+    POSTGRES_PASSWORD: str
+    POSTGRES_DB: str
 
     @computed_field  # type: ignore[misc]
     @property
     def SQLALCHEMY_DATABASE_URI(self) -> PostgresDsn:
-        return f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"  # type: ignore
+        # type: ignore
+        return f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
 
     # --------------------
     # REDIS & CACHING
@@ -136,7 +169,7 @@ class Settings(BaseSettings):
     # SECURITY HEADERS & MIDDLEWARE
     # --------------------
     ENABLE_SECURITY_HEADERS: bool = True
-    ALLOWED_HOSTS: list[str] = ["*"]
+    ALLOWED_HOSTS: Annotated[list[str], BeforeValidator(parse_hosts)] = ["localhost", "127.0.0.1"]  # Restrict to specific hosts
     TRUSTED_PROXIES: list[str] = []
     MAX_REQUEST_SIZE: int = 16 * 1024 * 1024  # 16MB
     REQUEST_TIMEOUT: int = 30
@@ -146,7 +179,8 @@ class Settings(BaseSettings):
     # --------------------
 
     BACKEND_CORS_ORIGINS: Annotated[list[AnyUrl] | str, BeforeValidator(parse_cors)] = [
-        AnyUrl("http://localhost:3000")
+        AnyUrl("http://localhost:3000"),
+        AnyUrl("http://127.0.0.1:3000"),
     ]
 
     # --------------------
@@ -155,6 +189,12 @@ class Settings(BaseSettings):
 
     ALLOWED_EMAIL_DOMAINS: list[str] = ["gmail.com", "amoud.org"]
     ENFORCE_EMAIL_DOMAIN: bool = True
+
+    # --------------------
+    # EMAIL/SMTP SETTINGS
+    # --------------------
+    # These are used by both email service and CORS middleware
+    USE_CREDENTIALS: bool = True  # For CORS and SMTP authentication
 
     # --------------------
     # SMS SETTINGS
@@ -171,15 +211,13 @@ class Settings(BaseSettings):
     # --------------------
     # THIRD-PARTY & EXTERNAL
     # --------------------
-    SENTRY_DSN: HttpUrl | None = None
-    SENTRY_TRACES_SAMPLE_RATE: float = 0.1
-    SENTRY_ENVIRONMENT: str | None = None
+    # SENTRY_DSN is already defined above in SENTRY ERROR TRACKING section
 
     # --------------------
     # FIRST SUPERUSER (bootstrap)
     # --------------------
     FIRST_SUPERUSER: str | None = "admin@example.com"
-    FIRST_SUPERUSER_PASSWORD: str = "changethis"
+    FIRST_SUPERUSER_PASSWORD: str = "CHANGE_ME_TO_STRONG_PASSWORD_32_CHARS_MIN"
 
     def _check_default_secret(self, var_name: str, value: str | None) -> None:
         """Validate secret values are strong and not defaults.
@@ -188,7 +226,14 @@ class Settings(BaseSettings):
         - Enforce minimum length of 32 characters for cryptographic keys
         - In local env, warn; in non-local envs, raise to fail-fast
         """
-        weak_values = {"secret", "changethis", "", None}
+        weak_values = {
+            "secret",
+            "changethis",
+            "CHANGE_ME_TO_STRONG_SECRET_32_CHARS_MIN",
+            "CHANGE_ME_TO_STRONG_PASSWORD_32_CHARS_MIN",
+            "",
+            None,
+        }
         message = None
         if value in weak_values:
             message = f"The value of {var_name} is a weak default. Please set a strong secret."
@@ -197,7 +242,9 @@ class Settings(BaseSettings):
 
         if message:
             if self.ENVIRONMENT == "local":
-                pass
+                import warnings
+
+                warnings.warn(message, stacklevel=2)
             else:
                 raise ValueError(message)
 
@@ -205,8 +252,10 @@ class Settings(BaseSettings):
     def _enforce_non_default_secrets(self) -> "Settings":
         self._check_default_secret("SECRET_KEY", self.SECRET_KEY)
         self._check_default_secret("POSTGRES_PASSWORD", self.POSTGRES_PASSWORD)
-        self._check_default_secret("SMS_API_KEY", self.SMS_API_KEY)
-        self._check_default_secret("SMS_API_SECRET", self.SMS_API_SECRET)
+        # Only check SMS secrets if SMS is enabled
+        if self.SMS_ENABLED:
+            self._check_default_secret("SMS_API_KEY", self.SMS_API_KEY)
+            self._check_default_secret("SMS_API_SECRET", self.SMS_API_SECRET)
         self._check_default_secret(
             "FIRST_SUPERUSER_PASSWORD", self.FIRST_SUPERUSER_PASSWORD
         )
