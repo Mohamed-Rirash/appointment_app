@@ -2,7 +2,7 @@
 # Dokploy Docker-Compose – mocaadapp.org
 #   Public:
 #     https://api.mocaadapp.org  → FastAPI  (port 8000)
-#     https://mocaadapp.org      → NextJS   (port 3000)
+#     https://mocaadapp.org      → NextJS   (port 3001)
 #   Internal only: postgres, redis, prestart
 # =============================================================================
 
@@ -131,9 +131,10 @@ services:
       NEXT_PUBLIC_API_URL: https://api.${DOMAIN}/api/v1
       NEXT_PUBLIC_API_FRONT: https://${DOMAIN}
       PORT: 3001
+      HOSTNAME: "0.0.0.0"
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.mocaad-frontend.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.mocaad-frontend.rule=Host(`${DOMAIN}`) || Host(`www.${DOMAIN}`)"
       - "traefik.http.routers.mocaad-frontend.entrypoints=websecure"
       - "traefik.http.routers.mocaad-frontend.tls.certResolver=letsencrypt"
       - "traefik.http.services.mocaad-frontend.loadbalancer.server.port=3001"
