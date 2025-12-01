@@ -1,13 +1,21 @@
 # =============================================================================
-# Dokploy Docker-Compose – mocaadapp.org
-#   Public:
-#     https://api.mocaadapp.org  → FastAPI  (port 8000)
-#     https://mocaadapp.org      → NextJS   (port 3001)
-#   Internal only: postgres, redis, prestart
+# MOCAADAPP – Full Stack Deployment (FastAPI + NextJS + Dokploy)
+#   Public Endpoints:
+#     https://api.${DOMAIN}          → Backend (FastAPI)
+#     https://${DOMAIN}              → Frontend (Next.js)
+#     https://${DOKPLOY_DOMAIN}      → Dokploy dashboard
+#   Internal Services:
+#     postgres, redis, prestart
+#
+#   Requirements:
+#     - dokploy-network must exist externally
+#     - Traefik must be running on the host as reverse proxy
 # =============================================================================
 
 services:
-
+  # ===========================================================================
+  # POSTGRES DATABASE
+  # ===========================================================================
   postgres:
     image: postgres:15-alpine
     restart: always
@@ -26,6 +34,9 @@ services:
       start_period: 30s
       timeout: 10s
 
+  # ===========================================================================
+  # REDIS
+  # ===========================================================================
   redis:
     image: redis:7-alpine
     restart: always
@@ -39,6 +50,9 @@ services:
       interval: 10s
       retries: 3
 
+  # ===========================================================================
+  # PRESTART SCRIPT (runs DB migrations, setup, etc.)
+  # ===========================================================================
   prestart:
     build:
       context: ./backend
@@ -56,7 +70,8 @@ services:
       SECRET_KEY: ${SECRET_KEY}
       FIRST_SUPERUSER: ${FIRST_SUPERUSER}
       FIRST_SUPERUSER_PASSWORD: ${FIRST_SUPERUSER_PASSWORD}
-      # SMTP / Mail
+
+      # SMTP
       MAIL_SERVER: ${MAIL_SERVER:-smtp.gmail.com}
       MAIL_PORT: ${MAIL_PORT:-587}
       MAIL_USERNAME: ${MAIL_USERNAME}
@@ -66,23 +81,31 @@ services:
       MAIL_STARTTLS: ${MAIL_STARTTLS:-true}
       MAIL_SSL_TLS: ${MAIL_SSL_TLS:-false}
       USE_CREDENTIALS: ${USE_CREDENTIALS:-true}
+
       # DB
       POSTGRES_SERVER: postgres
       POSTGRES_PORT: 5432
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
       # Redis
       REDIS_URL: redis://redis:6379
+
       # CORS
       BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:-["https://${DOMAIN}"]}
+
       # SMS
       SMS_ENABLED: ${SMS_ENABLED:-false}
       SMS_API_KEY: ${SMS_API_KEY:-}
       SMS_API_SECRET: ${SMS_API_SECRET:-}
+
       # Sentry
       SENTRY_DSN: ${SENTRY_DSN:-}
 
+  # ===========================================================================
+  # BACKEND – FastAPI
+  # ===========================================================================
   backend:
     build:
       context: ./backend
@@ -110,6 +133,9 @@ services:
       - "traefik.http.routers.mocaad-backend.tls.certResolver=letsencrypt"
       - "traefik.http.services.mocaad-backend.loadbalancer.server.port=8000"
 
+  # ===========================================================================
+  # FRONTEND – Next.js (production)
+  # ===========================================================================
   frontend:
     build:
       context: ./frontend
@@ -139,10 +165,35 @@ services:
       - "traefik.http.routers.mocaad-frontend.tls.certResolver=letsencrypt"
       - "traefik.http.services.mocaad-frontend.loadbalancer.server.port=3001"
 
+  # ===========================================================================
+  # DOKPLOY DASHBOARD – https://${DOKPLOY_DOMAIN}
+  # ===========================================================================
+  dokploy:
+    image: dokploy/dokploy:latest
+    restart: always
+    networks:
+      - dokploy-network
+    ports:
+      - 3000
+    environment:
+      NODE_ENV: production
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dokploy.rule=Host(`${DOKPLOY_DOMAIN}`)"
+      - "traefik.http.routers.dokploy.entrypoints=websecure"
+      - "traefik.http.routers.dokploy.tls.certResolver=letsencrypt"
+      - "traefik.http.services.dokploy.loadbalancer.server.port=3000"
+
+# ===========================================================================
+# VOLUMES
+# ===========================================================================
 volumes:
   pg-data:
   redis-data:
 
+# ===========================================================================
+# NETWORKS
+# ===========================================================================
 networks:
   dokploy-network:
     external: true
