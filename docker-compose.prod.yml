@@ -124,18 +124,19 @@ services:
     depends_on:
       - backend
     ports:
-      - 3000
+      - 3001
     environment:
       IRON_SESSION_PASSWORD: ${IRON_SESSION_PASSWORD}
       API_URL: http://backend:8000/api/v1
       NEXT_PUBLIC_API_URL: https://api.${DOMAIN}/api/v1
       NEXT_PUBLIC_API_FRONT: https://${DOMAIN}
+      PORT: 3001
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.mocaad-frontend.rule=Host(`${DOMAIN}`)"
       - "traefik.http.routers.mocaad-frontend.entrypoints=websecure"
       - "traefik.http.routers.mocaad-frontend.tls.certResolver=letsencrypt"
-      - "traefik.http.services.mocaad-frontend.loadbalancer.server.port=3000"
+      - "traefik.http.services.mocaad-frontend.loadbalancer.server.port=3001"
 
 volumes:
   pg-data:
