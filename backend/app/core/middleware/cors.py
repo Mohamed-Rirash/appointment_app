@@ -41,14 +41,29 @@ def setup_cors(app: FastAPI) -> None:
     ):
         allowed_origins.append("http://localhost:3000")
 
+    # Explicit list of allowed headers
+    allowed_headers = [
+        "Accept",
+        "Accept-Language",
+        "Content-Language",
+        "Content-Type",
+        "Authorization",
+        "X-Requested-With",
+        "X-Request-ID",
+        "X-API-Key",
+        "X-CSRF-Token",
+        "Cache-Control",
+        "Pragma",
+    ]
+
     # In local/dev, allow credentials for cross-site cookie refresh flow
     if settings.is_development:
         app.add_middleware(
             CORSMiddleware,
             allow_origins=allowed_origins,
             allow_credentials=True,
-            allow_methods=["*"],
-            allow_headers=["*"],
+            allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+            allow_headers=allowed_headers,
             expose_headers=[
                 "X-Request-ID",
                 "X-RateLimit-Limit",
@@ -57,7 +72,7 @@ def setup_cors(app: FastAPI) -> None:
                 "Retry-After",
                 "X-CSRF-Token",
             ],
-            max_age=86400,
+            max_age=3600,  # 1 hour
         )
     else:
         app.add_middleware(
@@ -66,7 +81,7 @@ def setup_cors(app: FastAPI) -> None:
             allow_credentials=settings.USE_CREDENTIALS,
             # Explicitly list common methods including OPTIONS for preflight
             allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-            allow_headers=["*"],  # allow all headers
+            allow_headers=allowed_headers,  # Explicit headers instead of "*"
             expose_headers=[
                 "X-Request-ID",
                 "X-RateLimit-Limit",
@@ -75,7 +90,7 @@ def setup_cors(app: FastAPI) -> None:
                 "Retry-After",
                 "X-CSRF-Token",
             ],
-            max_age=86400,  # 24 hours
+            max_age=3600,  # 1 hour instead of 24 hours
         )
 
 

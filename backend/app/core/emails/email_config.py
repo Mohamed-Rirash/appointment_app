@@ -10,6 +10,9 @@ class EmailConfig(BaseSettings):
     """
     Central email configuration using environment variables.
     Compatible with FastAPI-Mail and SMTP.
+
+    Development: Uses mailcatcher (no auth, port 1025)
+    Production: Uses Gmail SMTP (auth required, port 587 with STARTTLS)
     """
 
     model_config = SettingsConfigDict(
@@ -22,11 +25,11 @@ class EmailConfig(BaseSettings):
     MAIL_PASSWORD: SecretStr = ""  # pyright: ignore[reportAssignmentType]
     MAIL_FROM: str = "noreply@test.com"
     MAIL_FROM_NAME: str = "App"
-    MAIL_SERVER: str = "mailpit"  # or "smtp.gmail.com"
-    MAIL_PORT: int = 1025  # Gmail uses 587
-    MAIL_STARTTLS: bool = False  # Gmail -> True
+    MAIL_SERVER: str = "mailcatcher"  # Development: mailcatcher, Production: smtp.gmail.com
+    MAIL_PORT: int = 1025  # Development: 1025, Production (Gmail): 587
+    MAIL_STARTTLS: bool = False  # Development: False, Production (Gmail): True
     MAIL_SSL_TLS: bool = False
-    USE_CREDENTIALS: bool = False
+    USE_CREDENTIALS: bool = False  # Development: False, Production: True
     MAIL_DEBUG: int = 1
     TEMPLATE_FOLDER: Path = Path(__file__).parent.parent.parent / "templates"
 

@@ -38,16 +38,31 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
                     "max-age=31536000; includeSubDomains; preload"
                 )
 
-            # Content Security Policy (basic) - Allow Swagger UI CDN resources
-            response.headers["Content-Security-Policy"] = (
-                "default-src 'self'; "
-                "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
-                "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
-                "img-src 'self' data: https:; "
-                "font-src 'self' https://cdn.jsdelivr.net; "
-                "connect-src 'self'; "
-                "frame-ancestors 'none';"
-            )
+            # Content Security Policy - Strict for production
+            if request.url.scheme == "https" or not settings.is_development:
+                # Production: Strict CSP without unsafe-inline
+                response.headers["Content-Security-Policy"] = (
+                    "default-src 'self'; "
+                    "script-src 'self' https://cdn.jsdelivr.net; "
+                    "style-src 'self' https://cdn.jsdelivr.net; "
+                    "img-src 'self' data: https:; "
+                    "font-src 'self' https://cdn.jsdelivr.net; "
+                    "connect-src 'self'; "
+                    "frame-ancestors 'none'; "
+                    "base-uri 'self'; "
+                    "form-action 'self';"
+                )
+            else:
+                # Development: Allow unsafe-inline for Swagger UI
+                response.headers["Content-Security-Policy"] = (
+                    "default-src 'self'; "
+                    "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+                    "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+                    "img-src 'self' data: https:; "
+                    "font-src 'self' https://cdn.jsdelivr.net; "
+                    "connect-src 'self'; "
+                    "frame-ancestors 'none';"
+                )
 
         return response
 
