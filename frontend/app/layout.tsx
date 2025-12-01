@@ -44,8 +44,8 @@ const satoshi = localFont({
 
 
 export const metadata: Metadata = {
-  title: "simple",
-  description: "governtmetn",
+  title: "Appointment Booking System",
+  description: "Professional appointment booking and office management system",
 };
 
 export default function RootLayout({

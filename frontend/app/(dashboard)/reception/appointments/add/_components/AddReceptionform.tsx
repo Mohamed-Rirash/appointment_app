@@ -552,7 +552,7 @@ export default function AddReceptionform({ token }: AddReception) {
                           <FormLabel className="flex items-center gap-2">
                             <Phone className="w-4 h-4" />
                             Phone Number
-                            {isPhoneValid(field.value) && (
+                            {field.value && isPhoneValid(field.value) && (
                               <Badge variant="secondary" className="text-xs">
                                 ✓ Valid
                               </Badge>
