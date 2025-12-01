@@ -30,6 +30,7 @@ dependencies = [
     "sqlalchemy-views>=0.3.2",
     "fastapi-mail>=1.5.3",
     "tenacity>=9.1.2",
+    "sqlmodel>=0.0.22",
 ]
 
 # uv replaces [dependency-groups.dev] with "optional-dependencies"
