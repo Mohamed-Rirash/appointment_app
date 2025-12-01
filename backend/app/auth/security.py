@@ -29,10 +29,20 @@ async def verify_password(hashed_password: str, plan_password: str):
 
 
 def str_encode(string: str) -> str:
+    """DEPRECATED: Base64 encoding provides no security. Use proper encryption instead."""
+    logging.warning(
+        "str_encode() is deprecated and provides no security. "
+        "Use proper encryption from app.core.security instead."
+    )
     return base64.b85encode(string.encode("ascii")).decode("ascii")
 
 
 def str_decode(string: str) -> str:
+    """DEPRECATED: Base64 decoding provides no security. Use proper encryption instead."""
+    logging.warning(
+        "str_decode() is deprecated and provides no security. "
+        "Use proper encryption from app.core.security instead."
+    )
     return base64.b85decode(string.encode("ascii")).decode("ascii")
 
 

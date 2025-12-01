@@ -7,8 +7,6 @@ from fastapi import APIRouter, BackgroundTasks, Depends, Request, status
 from fastapi.responses import Response
 from fastapi.security import OAuth2PasswordRequestForm
 
-logger = logging.getLogger(__name__)
-
 from app.auth.dependencies import CurrentUser, require_authentication
 from app.auth.schemas import (
     LoginResponse,
@@ -30,6 +28,9 @@ from app.auth.service import (
     user_authenticate_service,
 )
 from app.database import get_db
+from app.rate_limiting import rate_limit
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/users",
@@ -39,8 +40,10 @@ router = APIRouter(
 
 
 @router.post("/login", status_code=status.HTTP_200_OK, response_model=LoginResponse)
+@rate_limit(requests=5, window=300, per="ip")  # 5 attempts per 5 minutes per IP
 async def login_user(
     response: Response,
+    request: Request,
     data: OAuth2PasswordRequestForm = Depends(),
     session: Database = Depends(get_db),
 ):
@@ -50,6 +53,7 @@ async def login_user(
 @router.post(
     "/refresh", status_code=status.HTTP_200_OK, response_model=RefreshTokenResponse
 )
+@rate_limit(requests=10, window=300, per="ip")  # 10 attempts per 5 minutes per IP
 async def refresh_token(
     response: Response,
     request: Request,
@@ -113,7 +117,9 @@ async def change_password(
     status_code=status.HTTP_200_OK,
     response_model=MessageResponse,
 )
+@rate_limit(requests=3, window=3600, per="ip")  # 3 attempts per hour per IP
 async def request_password_reset(
+    http_request: Request,
     request: PasswordResetRequest,
     background_tasks: BackgroundTasks,
     session: Database = Depends(get_db),
@@ -126,8 +132,11 @@ async def request_password_reset(
 @router.post(
     "/reset-password", status_code=status.HTTP_200_OK, response_model=MessageResponse
 )
+@rate_limit(requests=5, window=3600, per="ip")  # 5 attempts per hour per IP
 async def reset_password(
-    request: PasswordResetConfirm, session: Database = Depends(get_db)
+    http_request: Request,
+    request: PasswordResetConfirm,
+    session: Database = Depends(get_db),
 ):
     """Reset password using token"""
     await reset_password_service(session, request)
@@ -137,8 +146,11 @@ async def reset_password(
 @router.post(
     "/set-password", status_code=status.HTTP_200_OK, response_model=MessageResponse
 )
+@rate_limit(requests=5, window=3600, per="ip")  # 5 attempts per hour per IP
 async def set_password_first_time(
-    request: PasswordResetConfirm, session: Database = Depends(get_db)
+    http_request: Request,
+    request: PasswordResetConfirm,
+    session: Database = Depends(get_db),
 ):
     """Set password using invitation/reset token (first login flow)."""
     await set_password_first_time_service(session, request)
