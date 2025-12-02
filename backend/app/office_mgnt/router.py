@@ -46,7 +46,7 @@ async def get_unassigned_users(
 # office CRUD
 # --------------------------------------------------
 @router.post(
-    "",
+    "/",
     status_code=status.HTTP_201_CREATED,
     response_model=sch.OfficeRead,
     summary="Register a new office",
@@ -66,7 +66,7 @@ async def create_office(
 
 
 @router.get(
-    "",
+    "/",
     response_model=list[sch.OfficeRead],
     summary="get all the offices we have registered (admins, reception)",
     description="Retrieve all offices. Optionally filter by status (`active` or `deactivated`).",
