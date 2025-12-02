@@ -149,6 +149,7 @@ services:
       - "traefik.http.routers.mocaad-backend.entrypoints=websecure"
       - "traefik.http.routers.mocaad-backend.tls.certResolver=letsencrypt"
       - "traefik.http.services.mocaad-backend.loadbalancer.server.port=8000"
+      - "traefik.http.routers.mocaad-backend.middlewares=https-proto@file"
 
   # ===========================================================================
   # FRONTEND – Next.js (production)
@@ -171,7 +172,7 @@ services:
     environment:
       IRON_SESSION_PASSWORD: ${IRON_SESSION_PASSWORD}
       API_URL: https://api.${DOMAIN}/api/v1
-      NEXT_PUBLIC_API_URL: /api/v1
+      NEXT_PUBLIC_API_URL: https://api.${DOMAIN}/api/v1
       NEXT_PUBLIC_API_FRONT: /api/auth
       PORT: 3001
       HOSTNAME: "0.0.0.0"
