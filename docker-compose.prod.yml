@@ -152,7 +152,7 @@ services:
       - 3001
     environment:
       IRON_SESSION_PASSWORD: ${IRON_SESSION_PASSWORD}
-      API_URL: http://backend:8000/api/v1
+      API_URL: https://api.${DOMAIN}/api/v1
       NEXT_PUBLIC_API_URL: https://api.${DOMAIN}/api/v1
       NEXT_PUBLIC_API_FRONT: https://${DOMAIN}
       PORT: 3001
