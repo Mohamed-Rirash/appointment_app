@@ -58,15 +58,12 @@ class ViewAppointmentCrud:
         offset: int = 0,
     ):
         base_filters = [
-            # Include appointments created by the user OR hosted by the user
-            or_(
-                appointment_details.c.issued_by == user_id,
-            ),
-            # Compare only the DATE part to avoid datetime equality issues
+            appointment_details.c.issued_by == user_id,
             func.date(appointment_details.c.created_at) == target_date,
         ]
         if status:
             base_filters.append(appointment_details.c.status == status.upper())
+
         filters = and_(*base_filters)
 
         data_query = (
