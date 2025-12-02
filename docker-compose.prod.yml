@@ -102,6 +102,24 @@ services:
       # Sentry
       SENTRY_DSN: ${SENTRY_DSN:-}
 
+    # ===========================================================================
+  # ADMINER – Database Manager (for PostgreSQL)
+  # ===========================================================================
+  adminer:
+    image: adminer:latest
+    restart: always
+    networks:
+      - dokploy-network
+    depends_on:
+      - postgres
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.mocaad-adminer.rule=Host(`adminer.${DOMAIN}`)"
+      - "traefik.http.routers.mocaad-adminer.entrypoints=websecure"
+      - "traefik.http.routers.mocaad-adminer.tls.certResolver=letsencrypt"
+      - "traefik.http.services.mocaad-adminer.loadbalancer.server.port=8080"
+      # Optional: Add basic auth for extra security (see note below)
+
   # ===========================================================================
   # BACKEND – FastAPI
   # ===========================================================================
