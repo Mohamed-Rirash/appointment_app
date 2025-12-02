@@ -11,6 +11,7 @@ from app.auth.router import router as auth_router
 from app.config import get_settings
 from app.database import database
 from app.office_mgnt.router import router as office_router
+from app.office_mgnt.router import hostavailableroutes
 from app.status.routes import router as status_router
 from app.views.routes import view_router
 
@@ -63,6 +64,7 @@ async def health_check():
 app.include_router(auth_router, prefix=settings.API_V1_STR)
 app.include_router(admin_router, prefix=settings.API_V1_STR)
 app.include_router(office_router, prefix=settings.API_V1_STR)
+app.include_router(hostavailableroutes, prefix=settings.API_V1_STR)
 app.include_router(appointment_router, prefix=settings.API_V1_STR)
 app.include_router(view_router, prefix=settings.API_V1_STR)
 app.include_router(status_router, prefix=settings.API_V1_STR)
