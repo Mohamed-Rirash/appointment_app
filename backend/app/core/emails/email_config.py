@@ -1,18 +1,13 @@
 from functools import lru_cache
 from pathlib import Path
-from typing import Any
 
-from pydantic import SecretStr, field_validator
+from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class EmailConfig(BaseSettings):
     """
-    Central email configuration using environment variables.
-    Compatible with FastAPI-Mail and SMTP.
-
-    Development: Uses mailcatcher (no auth, port 1025)
-    Production: Uses Gmail SMTP (auth required, port 587 with STARTTLS)
+    Email configuration for the Resend API.
     """
 
     model_config = SettingsConfigDict(
@@ -21,41 +16,10 @@ class EmailConfig(BaseSettings):
         extra="ignore",
     )
 
-    MAIL_USERNAME: str = ""
-    MAIL_PASSWORD: SecretStr = ""  # pyright: ignore[reportAssignmentType]
-    MAIL_FROM: str = "noreply@test.com"
-    MAIL_FROM_NAME: str = "App"
-    MAIL_SERVER: str = "mailcatcher"  # Development: mailcatcher, Production: smtp.gmail.com
-    MAIL_PORT: int = 1025  # Development: 1025, Production (Gmail): 587
-    MAIL_STARTTLS: bool = False  # Development: False, Production (Gmail): True
-    MAIL_SSL_TLS: bool = False
-    USE_CREDENTIALS: bool = False  # Development: False, Production: True
-    MAIL_DEBUG: int = 1
+    MAIL_PASSWORD: SecretStr
+    MAIL_FROM: str = "noreply@example.com"
+    MAIL_FROM_NAME: str = "MyApp"
     TEMPLATE_FOLDER: Path = Path(__file__).parent.parent.parent / "templates"
-
-    @field_validator("MAIL_DEBUG", mode="before")
-    @classmethod
-    def parse_mail_debug(cls, v: Any) -> int:
-        """Convert string 'True'/'False' to int 1/0"""
-        if isinstance(v, str):
-            return 1 if v.lower() in ("true", "1", "yes", "on") else 0
-        return int(v)
-
-    @field_validator("MAIL_PORT", mode="before")
-    @classmethod
-    def parse_mail_port(cls, v: Any) -> int:
-        """Convert string port to int"""
-        if isinstance(v, str):
-            return int(v)
-        return v
-
-    @field_validator("MAIL_STARTTLS", "MAIL_SSL_TLS", "USE_CREDENTIALS", mode="before")
-    @classmethod
-    def parse_bool_fields(cls, v: Any) -> bool:
-        """Convert string 'True'/'False' to bool"""
-        if isinstance(v, str):
-            return v.lower() in ("true", "1", "yes", "on")
-        return bool(v)
 
 
 @lru_cache
