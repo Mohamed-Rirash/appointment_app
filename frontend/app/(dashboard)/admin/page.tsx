@@ -75,10 +75,21 @@ export interface RecentActivity {
   office_name?: string;
 }
 
+const getApiBaseUrl = () =>
+  process.env.NEXT_PUBLIC_API_URL ?? process.env.API_URL ?? "";
+
+const buildApiUrl = (path: string) => {
+  const base = getApiBaseUrl().replace(/\/$/, "");
+  if (!base) {
+    return path.startsWith("/") ? path : `/${path}`;
+  }
+  return `${base}${path.startsWith("/") ? path : `/${path}`}`;
+};
+
 async function getOffices(token: string) {
   try {
     const res = await fetch(
-      `${process.env.API_URL}/offices`,
+      buildApiUrl("/offices"),
       {
         headers: { Authorization: `Bearer ${token}` },
         next: { revalidate: 60 } // Revalidate every 60 seconds
