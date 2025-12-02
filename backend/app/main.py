@@ -10,8 +10,8 @@ from app.appointments.routers import appointment_router
 from app.auth.router import router as auth_router
 from app.config import get_settings
 from app.database import database
-from app.office_mgnt.router import router as office_router
 from app.office_mgnt.router import hostavailableroutes
+from app.office_mgnt.router import router as office_router
 from app.status.routes import router as status_router
 from app.views.routes import view_router
 

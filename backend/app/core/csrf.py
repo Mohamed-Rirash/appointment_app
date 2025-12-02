@@ -3,7 +3,6 @@ CSRF Protection for FastAPI application
 """
 
 import secrets
-from datetime import UTC, datetime, timedelta
 
 from fastapi import HTTPException, Request, status
 from loguru import logger
