@@ -148,8 +148,8 @@ services:
       - "traefik.http.routers.mocaad-backend.rule=Host(`api.${DOMAIN}`)"
       - "traefik.http.routers.mocaad-backend.entrypoints=websecure"
       - "traefik.http.routers.mocaad-backend.tls.certResolver=letsencrypt"
-      - "traefik.http.services.mocaad-backend.loadbalancer.server.port=8000"
       - "traefik.http.routers.mocaad-backend.middlewares=https-proto@file"
+      - "traefik.http.services.mocaad-backend.loadbalancer.server.port=8000"
 
   # ===========================================================================
   # FRONTEND – Next.js (production)
