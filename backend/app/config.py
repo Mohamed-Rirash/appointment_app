@@ -5,13 +5,8 @@ Generated from FastAPI Production Boilerplate
 
 from typing import Annotated, Any, Literal
 
-from pydantic import (
-    AnyUrl,
-    BeforeValidator,
-    PostgresDsn,
-    computed_field,
-    model_validator,
-)
+from pydantic import (AnyUrl, BeforeValidator, PostgresDsn, computed_field,
+                      model_validator)
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -54,6 +49,7 @@ def parse_hosts(v: Any) -> list[str]:
         # Try JSON first
         if v.startswith("["):
             import json
+
             try:
                 return json.loads(v)
             except (json.JSONDecodeError, ValueError):
@@ -74,7 +70,7 @@ class Settings(BaseSettings):
     # --------------------
     # PROJECT INFO
     # --------------------
-    PROJECT_NAME: str = "appointement_booking_app"
+    PROJECT_NAME: str = "Mocaad Appointment Booking"
     ENVIRONMENT: Literal["local", "development", "staging", "production"] = "local"
     API_V1_STR: str = "/api/v1"
 
@@ -118,7 +114,7 @@ class Settings(BaseSettings):
     REDIS_DB: int = 0
     REDIS_SSL: bool = False
     CACHE_TTL: int = 300
-    CACHE_PREFIX: str = "appointement_booking_app_app"
+    CACHE_PREFIX: str = "mocaad"
 
     # --------------------
     # RATE LIMITING
@@ -168,7 +164,10 @@ class Settings(BaseSettings):
     # SECURITY HEADERS & MIDDLEWARE
     # --------------------
     ENABLE_SECURITY_HEADERS: bool = True
-    ALLOWED_HOSTS: Annotated[list[str], BeforeValidator(parse_hosts)] = ["localhost", "127.0.0.1"]  # Restrict to specific hosts
+    ALLOWED_HOSTS: Annotated[list[str], BeforeValidator(parse_hosts)] = [
+        "localhost",
+        "127.0.0.1",
+    ]  # Restrict to specific hosts
     TRUSTED_PROXIES: list[str] = []
     MAX_REQUEST_SIZE: int = 16 * 1024 * 1024  # 16MB
     REQUEST_TIMEOUT: int = 30
